@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ThemeToggleButton, useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/cn";
+import { getSupabaseSession } from "@/lib/supabase/client";
 import {
   canCreateProject,
   type IdeModeName,
@@ -356,9 +357,7 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
     setCreatingExampleId(exampleId);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const session = await getSupabaseSession(supabase);
 
       if (!session) {
         router.push("/login");

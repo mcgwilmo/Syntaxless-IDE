@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getSupabaseBrowserClient,
+  getSupabaseSession,
+} from "@/lib/supabase/client";
 import {
   SubscriptionRecord,
   SubscriptionTier,
@@ -146,9 +149,7 @@ export default function DashboardPage() {
   const [sessionEmail, setSessionEmail] = useState("");
 
   async function loadProjects() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const session = await getSupabaseSession(supabase);
 
     if (!session) {
       router.replace("/login");
@@ -206,9 +207,7 @@ export default function DashboardPage() {
 
     setIsCreating(true);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const session = await getSupabaseSession(supabase);
 
     if (!session) {
       router.replace("/login");

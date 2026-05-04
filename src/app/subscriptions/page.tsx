@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getSupabaseBrowserClient,
+  getSupabaseSession,
+} from "@/lib/supabase/client";
 import {
   SUBSCRIPTION_META,
   SubscriptionRecord,
@@ -186,9 +189,7 @@ export default function SubscriptionsPage() {
 
   useEffect(() => {
     async function bootstrap() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const session = await getSupabaseSession(supabase);
 
       if (!session) {
         setIsAuthed(false);

@@ -7,7 +7,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Editor, { type Monaco } from "@monaco-editor/react";
 import type { editor as MonacoEditor } from "monaco-editor";
 import { createPortal } from "react-dom";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getSupabaseBrowserClient,
+  getSupabaseSession,
+} from "@/lib/supabase/client";
 import { ThemeToggleButton, type Theme, useTheme } from "@/components/theme-provider";
 import {
   SubscriptionRecord,
@@ -46,6 +49,10 @@ type InterpretationLine = {
   strict_specificity_reasoning?: string | null;
   strict_specificity_status?: string | null;
   strict_structure_penalty?: number | null;
+  ai_message?: string | null;
+  logic_risk?: string | null;
+  suggested_fix?: string | null;
+  generated_code_excerpt?: string | null;
 };
 
 type ResolvedInterpretationLine = InterpretationLine & {
@@ -362,6 +369,12 @@ const MODE_META: Record<
     terminalText: "text-emerald-200",
     terminalBorder: "border-t-emerald-400",
   },
+};
+
+type TerminalEntry = {
+  id: string;
+  stream: "stdout" | "stderr" | "system" | "input";
+  text: string;
 };
 
 const LAYOUT_META: Record<
@@ -973,6 +986,13 @@ function formatIntentLabel(line: InterpretationLine) {
   if (target) return `${action} ${target}`;
   if (source) return `${action} ${source}`;
   return action;
+}
+
+function terminalStreamLabel(stream: TerminalEntry["stream"]) {
+  if (stream === "stdout") return "Output";
+  if (stream === "stderr") return "Error";
+  if (stream === "input") return "Input";
+  return "System";
 }
 
 function getDevStepStatusClass(status: string, theme: Theme = "dark") {
@@ -1904,7 +1924,7 @@ function IdePageContent() {
   const wsBaseUrl = useMemo(() => toWsUrl(backendUrl), [backendUrl]);
 
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
-  const terminalScrollRef = useRef<HTMLPreElement | null>(null);
+  const terminalScrollRef = useRef<HTMLDivElement | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const treeMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1942,6 +1962,13 @@ function IdePageContent() {
 
   const [generatedPython, setGeneratedPython] = useState("");
   const [terminalOutput, setTerminalOutput] = useState("Terminal output will appear here.\n");
+  const [terminalEntries, setTerminalEntries] = useState<TerminalEntry[]>([
+    {
+      id: "initial",
+      stream: "system",
+      text: "Terminal output will appear here.",
+    },
+  ]);
   const [terminalInput, setTerminalInput] = useState("");
   const [inputPrompt, setInputPrompt] = useState<string | null>(null);
 
@@ -2029,44 +2056,6 @@ function IdePageContent() {
     return scores.reduce((sum, score) => sum + score, 0) / scores.length;
   }, [interpretationLines]);
 
-  const derivedRawAverageSpecificity = useMemo(() => {
-    const scores = interpretationLines
-      .map((line) =>
-        typeof line.raw_specificity_score === "number" && Number.isFinite(line.raw_specificity_score)
-          ? line.raw_specificity_score
-          : null
-      )
-      .filter((score): score is number => score !== null);
-    if (scores.length === 0) return null;
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  }, [interpretationLines]);
-
-  const derivedStrictAverageSpecificity = useMemo(() => {
-    const scores = interpretationLines
-      .map((line) =>
-        typeof line.strict_specificity_score === "number" &&
-        Number.isFinite(line.strict_specificity_score)
-          ? line.strict_specificity_score
-          : null
-      )
-      .filter((score): score is number => score !== null);
-    if (scores.length === 0) return null;
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  }, [interpretationLines]);
-
-  const derivedAverageStructureScore = useMemo(() => {
-    const scores = interpretationLines
-      .map((line) =>
-        typeof line.structure_specificity_score === "number" &&
-        Number.isFinite(line.structure_specificity_score)
-          ? line.structure_specificity_score
-          : null
-      )
-      .filter((score): score is number => score !== null);
-    if (scores.length === 0) return null;
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  }, [interpretationLines]);
-
   const derivedAverageStructurePenalty = useMemo(() => {
     const scores = interpretationLines
       .map((line) =>
@@ -2142,6 +2131,28 @@ function IdePageContent() {
     if (visualArtifacts.length > 0) parts.push(`${visualArtifacts.length} visual`);
     return parts.length > 0 ? parts.join(" · ") : "Run or check to populate results";
   }, [diagnosticsSummary, normalizedProblemStatement, problemAlignment?.status, problemMode, visualArtifacts.length]);
+
+  const checkMetrics = useMemo(
+    () => [
+      {
+        label: "Time",
+        value: formatDurationMs(devMetrics?.total_duration_ms),
+      },
+      {
+        label: "Specificity",
+        value: formatScore(devMetrics?.average_specificity ?? derivedAverageSpecificity),
+      },
+      {
+        label: "Struct Penalty",
+        value: formatScore(devMetrics?.average_structure_penalty ?? derivedAverageStructurePenalty),
+      },
+    ],
+    [
+      devMetrics,
+      derivedAverageSpecificity,
+      derivedAverageStructurePenalty,
+    ]
+  );
 
   function showToast(text: string) {
     setToast({ text, visible: true });
@@ -2258,9 +2269,7 @@ function IdePageContent() {
   }
 
   async function handleSubmitBugReport(values: BugReportFormValues) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const session = await getSupabaseSession(supabase);
 
     if (!session?.user?.id) {
       showToast("You must be signed in to report a bug.");
@@ -2373,8 +2382,34 @@ function IdePageContent() {
     }
   }
 
-  function appendTerminal(text: string) {
+  function appendTerminal(text: string, stream: TerminalEntry["stream"] = "system") {
     setTerminalOutput((prev) => prev + text);
+    if (!text) return;
+    setTerminalEntries((prev) => {
+      const base = prev.length === 1 && prev[0]?.id === "initial" ? [] : prev;
+      return [
+        ...base,
+        {
+          id: uid("terminal"),
+          stream,
+          text,
+        },
+      ];
+    });
+  }
+
+  function replaceTerminalEntries(entries: TerminalEntry[]) {
+    setTerminalEntries(
+      entries.length > 0
+        ? entries
+        : [
+            {
+              id: uid("terminal"),
+              stream: "system",
+              text: "Program finished with no output.",
+            },
+          ]
+    );
   }
 
   function replaceVisualArtifacts(
@@ -2457,6 +2492,26 @@ function IdePageContent() {
       } else {
         setTerminalOutput(stdout || "Program finished with no output.");
       }
+      replaceTerminalEntries([
+        ...(stderr.trim()
+          ? [
+              {
+                id: uid("terminal"),
+                stream: "stderr" as const,
+                text: stderr,
+              },
+            ]
+          : []),
+        ...(stdout.trim()
+          ? [
+              {
+                id: uid("terminal"),
+                stream: "stdout" as const,
+                text: stdout,
+              },
+            ]
+          : []),
+      ]);
 
       replaceVisualArtifacts(data.id, data.artifacts || [], "persisted");
       setMode(resolveModeForTier(activeTier, data.mode || null));
@@ -2496,9 +2551,7 @@ function IdePageContent() {
 
   useEffect(() => {
     async function bootstrap() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const session = await getSupabaseSession(supabase);
 
       if (!session) {
         router.replace("/login");
@@ -2899,12 +2952,12 @@ function IdePageContent() {
       }
 
       if (payload.type === "stdout") {
-        appendTerminal(payload.text || "");
+        appendTerminal(payload.text || "", "stdout");
         return;
       }
 
       if (payload.type === "stderr") {
-        appendTerminal(payload.text || "");
+        appendTerminal(payload.text || "", "stderr");
         return;
       }
 
@@ -2913,7 +2966,7 @@ function IdePageContent() {
         setShowBottomPanel(true);
         setActiveBottomTab("terminal");
         if (payload.prompt) {
-          appendTerminal(payload.prompt);
+          appendTerminal(payload.prompt, "system");
         }
         return;
       }
@@ -2952,7 +3005,7 @@ function IdePageContent() {
       }
 
       if (payload.type === "error") {
-        appendTerminal((payload.message || "Run stream error.") + "\n");
+        appendTerminal((payload.message || "Run stream error.") + "\n", "system");
         setIsRunning(false);
         setInputPrompt(null);
         setStatusMessage("Run failed.");
@@ -2964,7 +3017,7 @@ function IdePageContent() {
     };
 
     ws.onerror = () => {
-      appendTerminal("WebSocket stream error.\n");
+      appendTerminal("WebSocket stream error.\n", "system");
       setIsRunning(false);
       setInputPrompt(null);
       setStatusMessage("Run stream failed.");
@@ -2985,6 +3038,7 @@ function IdePageContent() {
       setActiveBottomTab("terminal");
       setStatusMessage(`Starting ${MODE_META[mode].label} run...`);
       setTerminalOutput("");
+      setTerminalEntries([]);
       applyProblemAlignmentState(null);
       applyInterpretationState([], currentFilePath, activeFile.content);
       setVisualArtifacts([]);
@@ -3026,7 +3080,7 @@ function IdePageContent() {
       if (data.status === "blocked") {
         setIsRunning(false);
         setStatusMessage("Blocked.");
-        appendTerminal((data.stderr || "Execution blocked.") + "\n");
+        appendTerminal((data.stderr || "Execution blocked.") + "\n", "stderr");
         setShowBottomPanel(true);
         setActiveBottomTab(layoutMode === "minimalist" ? "terminal" : "validation");
         if (data.run?.id) {
@@ -3057,7 +3111,7 @@ function IdePageContent() {
         value: terminalInput,
       })
     );
-    appendTerminal(terminalInput + "\n");
+    appendTerminal(terminalInput + "\n", "input");
     setTerminalInput("");
     setInputPrompt(null);
   }
@@ -4150,13 +4204,69 @@ function IdePageContent() {
                     <div className={`min-h-0 flex-1 overflow-hidden rounded-[1.1rem] border ${panelBorderClass} ${isLight ? "bg-slate-50" : "bg-[#050505]"}`}>
                       {activeBottomTab === "terminal" && (
                         <div className="flex h-full flex-col">
-                          <pre
+                          <div
                             ref={terminalScrollRef}
-                            className={`flex-1 overflow-auto whitespace-pre-wrap p-3 text-[13px] ${terminalTextClass}`}
+                            className="min-h-0 flex-1 overflow-auto p-3"
                             style={protectedDarkTerminalTextStyle}
                           >
-                            {terminalOutput || "Terminal output will appear here."}
-                          </pre>
+                            <div className="min-w-0 space-y-2">
+                              {terminalEntries.length === 0 ? (
+                                <div
+                                  className={`rounded-[0.95rem] border px-3 py-2.5 text-[13px] ${
+                                    isLight
+                                      ? "border-slate-200 bg-white text-slate-500"
+                                      : "border-neutral-900 bg-[#0d0d0d] text-neutral-500"
+                                  }`}
+                                >
+                                  Terminal output will appear here.
+                                </div>
+                              ) : (
+                                terminalEntries.map((entry) => (
+                                  <div
+                                    key={entry.id}
+                                    className={`rounded-[0.95rem] border ${
+                                      entry.stream === "stderr"
+                                        ? isLight
+                                          ? "border-rose-200 bg-rose-50"
+                                          : "border-rose-500/20 bg-rose-500/[0.06]"
+                                        : entry.stream === "stdout"
+                                        ? isLight
+                                          ? "border-sky-200 bg-white"
+                                          : "border-sky-500/15 bg-sky-500/[0.04]"
+                                        : isLight
+                                        ? "border-slate-200 bg-white"
+                                        : "border-neutral-900 bg-[#0d0d0d]"
+                                    }`}
+                                  >
+                                    <div
+                                      className={`flex items-center justify-between border-b px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                                        entry.stream === "stderr"
+                                          ? isLight
+                                            ? "border-rose-200 text-rose-700"
+                                            : "border-rose-500/15 text-rose-200"
+                                          : entry.stream === "stdout"
+                                          ? isLight
+                                            ? "border-sky-100 text-sky-700"
+                                            : "border-sky-500/10 text-sky-200"
+                                          : isLight
+                                          ? "border-slate-200 text-slate-500"
+                                          : "border-neutral-900 text-neutral-500"
+                                      }`}
+                                    >
+                                      <span>{terminalStreamLabel(entry.stream)}</span>
+                                      <span>{entry.text.split(/\r?\n/).filter(Boolean).length || 1} line</span>
+                                    </div>
+                                    <pre
+                                      className={`whitespace-pre-wrap px-3 py-2.5 text-[13px] leading-6 ${terminalTextClass}`}
+                                      style={protectedDarkTerminalTextStyle}
+                                    >
+                                      {entry.text}
+                                    </pre>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
 
                           {inputPrompt && (
                             <div className={`border-t p-2.5 ${panelBorderClass} ${isLight ? "bg-white" : "bg-[#090909]"}`}>
@@ -4226,6 +4336,26 @@ function IdePageContent() {
                             </div>
                           )}
 
+                          <div className={`grid grid-cols-3 gap-2 border-b px-3 py-2 ${panelBorderClass} ${isLight ? "bg-white" : "bg-[#0b0b0b]"}`}>
+                            {checkMetrics.map((metric) => (
+                              <div
+                                key={metric.label}
+                                className={`rounded-[0.8rem] border px-2.5 py-2 ${
+                                  isLight
+                                    ? "border-slate-200 bg-slate-50"
+                                    : "border-neutral-800 bg-black/20"
+                                }`}
+                              >
+                                <div className={`text-[9px] font-semibold uppercase tracking-[0.14em] ${softTextClass}`}>
+                                  {metric.label}
+                                </div>
+                                <div className={`mt-1 text-[12px] font-medium ${strongTextAltClass}`}>
+                                  {metric.value}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
                           <div className={`grid grid-cols-[80px_88px_minmax(0,1fr)] border-b px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] ${panelBorderClass} ${isLight ? "bg-slate-50 text-slate-500" : "bg-[#090909] text-neutral-500"}`}>
                             <div>Line</div>
                             <div>Status</div>
@@ -4271,6 +4401,29 @@ function IdePageContent() {
                                           </span>
                                           {line.message}
                                         </div>
+                                        {(line.ai_message || line.logic_risk || line.suggested_fix) && (
+                                          <div
+                                            className={`mt-2 rounded-[0.8rem] border px-2.5 py-2 text-[11px] leading-5 ${
+                                              line.logic_risk
+                                                ? isLight
+                                                  ? "border-amber-200 bg-amber-50 text-amber-800"
+                                                  : "border-amber-500/20 bg-amber-500/[0.06] text-amber-100"
+                                                : isLight
+                                                ? "border-slate-200 bg-slate-50 text-slate-600"
+                                                : "border-neutral-800 bg-[#0a0a0a] text-neutral-300"
+                                            }`}
+                                          >
+                                            {line.ai_message && <div>{line.ai_message}</div>}
+                                            {line.logic_risk && (
+                                              <div className="mt-1">
+                                                Logic risk: {line.logic_risk}
+                                              </div>
+                                            )}
+                                            {line.suggested_fix && (
+                                              <div className="mt-1">Fix: {line.suggested_fix}</div>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   );
@@ -4644,71 +4797,7 @@ function IdePageContent() {
                           Run Metrics
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                          {[
-                            {
-                              label: "Status",
-                              value: devMetrics?.runtime_status || (isRunning ? "running" : "idle"),
-                            },
-                            {
-                              label: "Total",
-                              value: formatDurationMs(devMetrics?.total_duration_ms),
-                            },
-                            {
-                              label: "Analysis",
-                              value: formatDurationMs(
-                                devMetrics?.steps?.find((step) => step.key === "analysis")?.duration_ms
-                              ),
-                            },
-                            {
-                              label: "Execution",
-                              value: formatDurationMs(
-                                devMetrics?.execution_duration_ms ??
-                                  devMetrics?.steps?.find((step) => step.key === "execution")?.duration_ms
-                              ),
-                            },
-                            {
-                              label: "Warnings",
-                              value: String(devMetrics?.warning_lines ?? diagnosticsSummary.warnings),
-                            },
-                            {
-                              label: "Blocked",
-                              value: String(devMetrics?.blocked_lines ?? diagnosticsSummary.blocked),
-                            },
-                            {
-                              label: "Mode Specificity",
-                              value: formatScore(devMetrics?.average_specificity ?? derivedAverageSpecificity),
-                            },
-                            {
-                              label: "Raw Specificity",
-                              value: formatScore(
-                                devMetrics?.raw_average_specificity ?? derivedRawAverageSpecificity
-                              ),
-                            },
-                            {
-                              label: "Strict Score",
-                              value: formatScore(
-                                devMetrics?.strict_average_specificity ?? derivedStrictAverageSpecificity
-                              ),
-                            },
-                            {
-                              label: "Structure Score",
-                              value: formatScore(
-                                devMetrics?.average_structure_specificity ??
-                                  derivedAverageStructureScore
-                              ),
-                            },
-                            {
-                              label: "Mode Struct Penalty",
-                              value: formatScore(
-                                devMetrics?.average_structure_penalty ??
-                                  derivedAverageStructurePenalty
-                              ),
-                            },
-                            {
-                              label: "Artifacts",
-                              value: String(devMetrics?.artifact_count ?? visualArtifacts.length),
-                            },
-                          ].map((metric) => (
+                          {checkMetrics.map((metric) => (
                             <div
                               key={metric.label}
                               className={`rounded-[0.95rem] border px-3 py-2 ${
@@ -4723,26 +4812,6 @@ function IdePageContent() {
                               </div>
                             </div>
                           ))}
-                        </div>
-
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          <div
-                            className={`rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] ${
-                              isLight ? "border-slate-200 bg-white text-slate-600" : "border-neutral-800 bg-[#090909] text-neutral-400"
-                            }`}
-                          >
-                            Generator {devMetrics?.generator_path || "n/a"}
-                          </div>
-                          <div
-                            className={`rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] ${getCompatibilityClass(devMetrics?.mode_gate_status, theme)}`}
-                          >
-                            Mode Gate {devMetrics?.mode_gate_status || "n/a"}
-                          </div>
-                          <div
-                            className={`rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] ${getCompatibilityClass(devMetrics?.strict_mode_gate_status, theme)}`}
-                          >
-                            Strict Gate {devMetrics?.strict_mode_gate_status || "n/a"}
-                          </div>
                         </div>
                       </div>
 
@@ -4900,6 +4969,32 @@ function IdePageContent() {
                                   {line.specificity_reasoning && (
                                     <div className={`mt-2 text-[11px] leading-5 ${softTextClass}`}>
                                       Mode note: {line.specificity_reasoning}
+                                    </div>
+                                  )}
+
+                                  {(line.ai_message || line.logic_risk || line.suggested_fix || line.generated_code_excerpt) && (
+                                    <div
+                                      className={`mt-2 rounded-[0.8rem] border px-2.5 py-2 text-[11px] leading-5 ${
+                                        line.logic_risk
+                                          ? isLight
+                                            ? "border-amber-200 bg-amber-50 text-amber-800"
+                                            : "border-amber-500/20 bg-amber-500/[0.06] text-amber-100"
+                                          : isLight
+                                          ? "border-slate-200 bg-slate-50 text-slate-600"
+                                          : "border-neutral-800 bg-[#0a0a0a] text-neutral-300"
+                                      }`}
+                                    >
+                                      <div className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${softTextClass}`}>
+                                        AI Line Feedback
+                                      </div>
+                                      {line.ai_message && <div className="mt-1">{line.ai_message}</div>}
+                                      {line.logic_risk && <div className="mt-1">Logic risk: {line.logic_risk}</div>}
+                                      {line.suggested_fix && <div className="mt-1">Fix: {line.suggested_fix}</div>}
+                                      {line.generated_code_excerpt && (
+                                        <code className="mt-2 block whitespace-pre-wrap rounded-[0.65rem] bg-black/10 px-2 py-1 font-mono text-[10px]">
+                                          {line.generated_code_excerpt}
+                                        </code>
+                                      )}
                                     </div>
                                   )}
 

@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getSupabaseBrowserClient,
+  getSupabaseSession,
+} from "@/lib/supabase/client";
 
 export default function FaqRedirectPage() {
   const router = useRouter();
@@ -10,9 +13,9 @@ export default function FaqRedirectPage() {
 
   useEffect(() => {
     async function redirectToTarget() {
-      const { data } = await supabase.auth.getSession();
+      const session = await getSupabaseSession(supabase);
 
-      router.replace(data.session ? "/resources" : "/login");
+      router.replace(session ? "/resources" : "/login");
     }
 
     void redirectToTarget();

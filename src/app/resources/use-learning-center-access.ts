@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getSupabaseBrowserClient,
+  getSupabaseSession,
+} from "@/lib/supabase/client";
 import {
   getOrCreateSubscription,
   type SubscriptionTier,
@@ -31,8 +34,7 @@ export function useLearningCenterAccess() {
 
     async function bootstrap() {
       try {
-        const { data } = await supabase.auth.getSession();
-        const session = data.session;
+        const session = await getSupabaseSession(supabase);
 
         if (!session) {
           setIsAuthed(false);

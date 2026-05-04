@@ -9,7 +9,10 @@ import {
 } from "@/components/site-shell";
 import { SiteFooter } from "@/components/site-footer";
 import { useTheme } from "@/components/theme-provider";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getSupabaseBrowserClient,
+  getSupabaseSession,
+} from "@/lib/supabase/client";
 import {
   type SubscriptionTier,
   getOrCreateSubscription,
@@ -554,9 +557,7 @@ export default function DocsPage() {
 
   useEffect(() => {
     async function bootstrap() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const session = await getSupabaseSession(supabase);
 
       if (!session) {
         setIsAuthed(false);

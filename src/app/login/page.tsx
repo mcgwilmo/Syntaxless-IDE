@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthPageShell, AuthPanel } from "@/components/site-shell";
 import { useTheme } from "@/components/theme-provider";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  getSupabaseBrowserClient,
+  getSupabaseSession,
+} from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,10 +21,10 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace("/dashboard");
+    getSupabaseSession(supabase).then((session) => {
+      if (session) router.replace("/dashboard");
     });
-  }, [router, supabase.auth]);
+  }, [router, supabase]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
