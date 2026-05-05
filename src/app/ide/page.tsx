@@ -373,8 +373,9 @@ const MODE_META: Record<
 
 type TerminalEntry = {
   id: string;
-  stream: "stdout" | "stderr" | "system" | "input";
+  stream: "stdout" | "stderr" | "system" | "input" | "runtime";
   text: string;
+  symbol?: string;
 };
 
 const LAYOUT_META: Record<
@@ -992,6 +993,7 @@ function terminalStreamLabel(stream: TerminalEntry["stream"]) {
   if (stream === "stdout") return "Output";
   if (stream === "stderr") return "Error";
   if (stream === "input") return "Input";
+  if (stream === "runtime") return "Runtime";
   return "System";
 }
 
@@ -2398,6 +2400,22 @@ function IdePageContent() {
     });
   }
 
+  function appendRuntimeIndicator(symbol: string) {
+    setTerminalOutput((prev) => prev + `[${symbol}]\n`);
+    setTerminalEntries((prev) => {
+      const base = prev.length === 1 && prev[0]?.id === "initial" ? [] : prev;
+      return [
+        ...base,
+        {
+          id: uid("terminal"),
+          stream: "runtime",
+          text: "",
+          symbol,
+        },
+      ];
+    });
+  }
+
   function replaceTerminalEntries(entries: TerminalEntry[]) {
     setTerminalEntries(
       entries.length > 0
@@ -2948,6 +2966,11 @@ function IdePageContent() {
 
       if (payload.type === "run_started") {
         setStatusMessage("Execution started.");
+        if (payload.executor_mode === "subprocess") {
+          appendRuntimeIndicator("SP");
+          setShowBottomPanel(true);
+          setActiveBottomTab("terminal");
+        }
         return;
       }
 
@@ -4221,49 +4244,72 @@ function IdePageContent() {
                                   Terminal output will appear here.
                                 </div>
                               ) : (
-                                terminalEntries.map((entry) => (
-                                  <div
-                                    key={entry.id}
-                                    className={`rounded-[0.95rem] border ${
-                                      entry.stream === "stderr"
-                                        ? isLight
-                                          ? "border-rose-200 bg-rose-50"
-                                          : "border-rose-500/20 bg-rose-500/[0.06]"
-                                        : entry.stream === "stdout"
-                                        ? isLight
-                                          ? "border-sky-200 bg-white"
-                                          : "border-sky-500/15 bg-sky-500/[0.04]"
-                                        : isLight
-                                        ? "border-slate-200 bg-white"
-                                        : "border-neutral-900 bg-[#0d0d0d]"
-                                    }`}
-                                  >
+                                terminalEntries.map((entry) =>
+                                  entry.stream === "runtime" ? (
                                     <div
-                                      className={`flex items-center justify-between border-b px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                                        entry.stream === "stderr"
-                                          ? isLight
-                                            ? "border-rose-200 text-rose-700"
-                                            : "border-rose-500/15 text-rose-200"
-                                          : entry.stream === "stdout"
-                                          ? isLight
-                                            ? "border-sky-100 text-sky-700"
-                                            : "border-sky-500/10 text-sky-200"
-                                          : isLight
-                                          ? "border-slate-200 text-slate-500"
-                                          : "border-neutral-900 text-neutral-500"
+                                      key={entry.id}
+                                      className={`inline-flex w-fit items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                                        isLight
+                                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                          : "border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-200"
                                       }`}
                                     >
+                                      <span
+                                        className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] ${
+                                          isLight
+                                            ? "border-emerald-200 bg-white"
+                                            : "border-emerald-400/25 bg-emerald-400/[0.08]"
+                                        }`}
+                                        aria-label="Subprocess runtime"
+                                      >
+                                        {entry.symbol || "SP"}
+                                      </span>
                                       <span>{terminalStreamLabel(entry.stream)}</span>
-                                      <span>{entry.text.split(/\r?\n/).filter(Boolean).length || 1} line</span>
                                     </div>
-                                    <pre
-                                      className={`whitespace-pre-wrap px-3 py-2.5 text-[13px] leading-6 ${terminalTextClass}`}
-                                      style={protectedDarkTerminalTextStyle}
+                                  ) : (
+                                    <div
+                                      key={entry.id}
+                                      className={`rounded-[0.95rem] border ${
+                                        entry.stream === "stderr"
+                                          ? isLight
+                                            ? "border-rose-200 bg-rose-50"
+                                            : "border-rose-500/20 bg-rose-500/[0.06]"
+                                          : entry.stream === "stdout"
+                                          ? isLight
+                                            ? "border-sky-200 bg-white"
+                                            : "border-sky-500/15 bg-sky-500/[0.04]"
+                                          : isLight
+                                          ? "border-slate-200 bg-white"
+                                          : "border-neutral-900 bg-[#0d0d0d]"
+                                      }`}
                                     >
-                                      {entry.text}
-                                    </pre>
-                                  </div>
-                                ))
+                                      <div
+                                        className={`flex items-center justify-between border-b px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                                          entry.stream === "stderr"
+                                            ? isLight
+                                              ? "border-rose-200 text-rose-700"
+                                              : "border-rose-500/15 text-rose-200"
+                                            : entry.stream === "stdout"
+                                            ? isLight
+                                              ? "border-sky-100 text-sky-700"
+                                              : "border-sky-500/10 text-sky-200"
+                                            : isLight
+                                            ? "border-slate-200 text-slate-500"
+                                            : "border-neutral-900 text-neutral-500"
+                                        }`}
+                                      >
+                                        <span>{terminalStreamLabel(entry.stream)}</span>
+                                        <span>{entry.text.split(/\r?\n/).filter(Boolean).length || 1} line</span>
+                                      </div>
+                                      <pre
+                                        className={`whitespace-pre-wrap px-3 py-2.5 text-[13px] leading-6 ${terminalTextClass}`}
+                                        style={protectedDarkTerminalTextStyle}
+                                      >
+                                        {entry.text}
+                                      </pre>
+                                    </div>
+                                  )
+                                )
                               )}
                             </div>
                           </div>
