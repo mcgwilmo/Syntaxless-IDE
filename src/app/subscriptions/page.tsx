@@ -22,6 +22,7 @@ import { useTheme } from "@/components/theme-provider";
 
 const TIERS: SubscriptionTier[] = ["free", "student", "plus", "pro"];
 const MOST_POPULAR_TIER: SubscriptionTier = "plus";
+type BillingCycle = "monthly" | "yearly";
 
 const CARD_META: Record<
   SubscriptionTier,
@@ -101,15 +102,47 @@ function CheckIcon({ className = "" }: { className?: string }) {
   );
 }
 
+function SwitchIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M16 3h5v5" />
+      <path d="M21 3 14 10" />
+      <path d="M8 21H3v-5" />
+      <path d="M3 21l7-7" />
+    </svg>
+  );
+}
+
+function getAnnualPrice(monthlyPrice: number) {
+  const annualPrice = monthlyPrice * 12;
+
+  if (Number.isInteger(annualPrice)) {
+    return annualPrice;
+  }
+
+  return Math.round(annualPrice - 0.99) + 0.99;
+}
+
 function getPriceContent(
   tier: SubscriptionTier,
   email: string,
-  subscription: SubscriptionRecord | null
+  subscription: SubscriptionRecord | null,
+  billingCycle: BillingCycle
 ) {
   if (tier === "free") {
     return {
       amount: "$0",
-      suffix: "/mo",
+      suffix: billingCycle === "yearly" ? "/yr" : "/mo",
       note: "Starter access",
     };
   }
@@ -117,15 +150,25 @@ function getPriceContent(
   if (tier === "student" && isPartneredSchoolEmail(email) && subscription?.partnered_school_verified) {
     return {
       amount: "$0",
-      suffix: "/mo",
+      suffix: billingCycle === "yearly" ? "/yr" : "/mo",
       note: "Partner-school verified",
     };
   }
 
+  const amount =
+    billingCycle === "yearly"
+      ? getAnnualPrice(SUBSCRIPTION_META[tier].monthlyPrice)
+      : SUBSCRIPTION_META[tier].monthlyPrice;
+
   return {
-    amount: `$${SUBSCRIPTION_META[tier].monthlyPrice.toFixed(2)}`,
-    suffix: "/mo",
-    note: tier === "student" ? "Discounted .edu pricing" : "Billed monthly",
+    amount: `$${amount.toFixed(2)}`,
+    suffix: billingCycle === "yearly" ? "/yr" : "/mo",
+    note:
+      billingCycle === "yearly"
+        ? "Billed yearly"
+        : tier === "student"
+        ? "Discounted .edu pricing"
+        : "Billed monthly",
   };
 }
 
@@ -186,6 +229,7 @@ export default function SubscriptionsPage() {
   const [status, setStatus] = useState("Loading pricing...");
   const [isUpdating, setIsUpdating] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
 
   useEffect(() => {
     async function bootstrap() {
@@ -430,6 +474,33 @@ export default function SubscriptionsPage() {
                 {status}
               </div>
             </div>
+
+            <div className={`mx-auto mt-7 inline-flex items-center gap-1 rounded-full border p-1 ${isLight ? "border-slate-200 bg-white/90 shadow-[0_14px_32px_rgba(15,23,42,0.08)]" : "border-white/10 bg-white/[0.04]"}`}>
+              {(["monthly", "yearly"] as const).map((cycle) => {
+                const isSelected = billingCycle === cycle;
+
+                return (
+                  <button
+                    key={cycle}
+                    type="button"
+                    onClick={() => setBillingCycle(cycle)}
+                    aria-pressed={isSelected}
+                    className={`flex h-10 items-center gap-2 rounded-full px-4 text-xs uppercase tracking-[0.2em] transition-all duration-300 ${
+                      isSelected
+                        ? isLight
+                          ? "bg-slate-950 text-white"
+                          : "bg-cyan-300 text-slate-950"
+                        : isLight
+                        ? "text-slate-500 hover:text-slate-900"
+                        : "text-neutral-400 hover:text-white"
+                    }`}
+                  >
+                    {cycle === "yearly" ? <SwitchIcon className="h-4 w-4" /> : null}
+                    {cycle}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {partneredEligible && !partneredVerified && isAuthed ? (
@@ -469,7 +540,7 @@ export default function SubscriptionsPage() {
                 const meta = SUBSCRIPTION_META[tier];
                 const card = CARD_META[tier];
                 const isCurrent = currentTier === tier;
-                const price = getPriceContent(tier, email, subscription);
+                const price = getPriceContent(tier, email, subscription, billingCycle);
                 const features = getFeatureList(tier, email, subscription);
 
                 return (

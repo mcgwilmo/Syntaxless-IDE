@@ -47,7 +47,7 @@ export const SUBSCRIPTION_META: Record<
     label: "Plus",
     description:
       "More room for projects, more IDE modes, including Problem Solving, and access to the normal layout.",
-    monthlyPrice: 9.99,
+    monthlyPrice: 17.99,
     projectLimit: 50,
     synthFileLimit: 10,
     allowedModes: ["strict", "standard", "abstraction", "problem_solving"],
@@ -58,7 +58,7 @@ export const SUBSCRIPTION_META: Record<
     label: "Student",
     description:
       "Problem Solving mode for student workflows, discounted for .edu users, and free for verified partner schools.",
-    monthlyPrice: 4.99,
+    monthlyPrice: 8.99,
     projectLimit: 50,
     synthFileLimit: 10,
     allowedModes: ["problem_solving"],
@@ -69,7 +69,7 @@ export const SUBSCRIPTION_META: Record<
     label: "Pro",
     description:
       "Everything unlocked, including Problem Solving, Vibe mode, Developer layout, and unlimited scale.",
-    monthlyPrice: 24.99,
+    monthlyPrice: 34.99,
     projectLimit: null,
     synthFileLimit: null,
     allowedModes: ["strict", "standard", "abstraction", "problem_solving", "vibe"],
@@ -245,8 +245,8 @@ export function getTierPriceLabel(
   subscription?: Partial<SubscriptionRecord> | null
 ): string {
   if (tier === "free") return "Free";
-  if (tier === "plus") return "$9.99 / month";
-  if (tier === "pro") return "$24.99 / month";
+  if (tier === "plus") return "$17.99 / month";
+  if (tier === "pro") return "$34.99 / month";
 
   const partnered = isPartneredSchoolEmail(email);
   const verified = !!subscription?.partnered_school_verified;
@@ -255,5 +255,5 @@ export function getTierPriceLabel(
     return "Free after verification";
   }
 
-  return "$4.99 / month";
+  return "$8.99 / month";
 }
