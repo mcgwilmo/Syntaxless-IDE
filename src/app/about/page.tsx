@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
 import { SiteFooter } from "@/components/site-footer";
 import {
   AppPageBackground,
@@ -10,15 +9,6 @@ import {
   TypingHeading,
 } from "@/components/site-shell";
 import { useTheme } from "@/components/theme-provider";
-import {
-  getSupabaseBrowserClient,
-  getSupabaseSession,
-} from "@/lib/supabase/client";
-import {
-  type SubscriptionTier,
-  getOrCreateSubscription,
-  SUBSCRIPTION_META,
-} from "@/lib/subscriptions";
 import { cn } from "@/lib/cn";
 
 const IMPACT_POINTS = [
@@ -97,38 +87,7 @@ function ArrowIcon({ className }: { className?: string }) {
 }
 
 export default function AboutPage() {
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const { isLight } = useTheme();
-  const [isAuthed, setIsAuthed] = useState(false);
-  const [currentTier, setCurrentTier] = useState<SubscriptionTier>("free");
-
-  useEffect(() => {
-    async function bootstrap() {
-      const session = await getSupabaseSession(supabase);
-
-      if (!session) {
-        setIsAuthed(false);
-        setCurrentTier("free");
-        return;
-      }
-
-      setIsAuthed(true);
-
-      try {
-        const record = await getOrCreateSubscription(
-          supabase,
-          session.user.id,
-          session.user.email ?? ""
-        );
-        setCurrentTier(record.tier);
-      } catch (error) {
-        console.error(error);
-        setCurrentTier("free");
-      }
-    }
-
-    void bootstrap();
-  }, [supabase]);
 
   const pageClass = isLight
     ? "bg-[#eef3f9] text-slate-900"
@@ -151,11 +110,9 @@ export default function AboutPage() {
       <AppPageBackground />
 
       <SiteHeader
-        tierLabel={isAuthed ? SUBSCRIPTION_META[currentTier].label : undefined}
-        authHref={isAuthed ? "/dashboard" : "/login"}
-        authLabel={isAuthed ? "Dashboard" : "Login"}
-        learningCenterHref={isAuthed ? "/resources" : "/login"}
-        showSignOut={isAuthed}
+        authHref="/login"
+        authLabel="Login"
+        learningCenterHref="/resources"
         className="page-enter-soft"
         surfaceClassName={isLight ? "border-slate-200 bg-white/80" : "border-white/[0.08] bg-black/55"}
       />
@@ -369,7 +326,7 @@ export default function AboutPage() {
         </section>
       </PageFrame>
 
-      <SiteFooter requireAuthForLinks={!isAuthed} />
+      <SiteFooter />
     </main>
   );
 }
