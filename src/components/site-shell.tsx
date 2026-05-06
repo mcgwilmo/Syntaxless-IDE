@@ -68,6 +68,7 @@ type TypingHeadingProps = {
 const PRIMARY_NAV_ITEMS = [
   { href: "/subscriptions", label: "Pricing" },
   { href: "/docs", label: "Release Notes" },
+  { href: "/about", label: "About" },
   { href: "/resources", label: "Learning Center" },
 ] as const;
 const REVEAL_ROOT_MARGIN = "0px 0px -12% 0px";
@@ -400,7 +401,7 @@ export function SiteHeader({
               className={cn(
                 "hidden min-w-0 items-center overflow-hidden transition-[max-width,opacity,transform,margin] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:flex",
                 isMenuOpen
-                  ? "mr-1 max-w-[34rem] translate-x-0 opacity-100"
+                  ? "mr-1 max-w-[46rem] translate-x-0 opacity-100"
                   : "pointer-events-none mr-0 max-w-0 translate-x-4 opacity-0"
               )}
               aria-hidden={!isMenuOpen}
