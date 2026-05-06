@@ -20,6 +20,7 @@ type SiteHeaderProps = {
   authHref: string;
   authLabel: string;
   learningCenterHref?: string;
+  requireAuthForNavigation?: boolean;
   showSignOut?: boolean;
   maxWidth?: "6xl" | "7xl";
   hideOnScroll?: boolean;
@@ -71,6 +72,7 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/about", label: "About" },
   { href: "/resources", label: "Learning Center" },
 ] as const;
+const PUBLIC_NAV_HREFS = new Set(["/", "/home", "/subscriptions", "/about", "/login", "/signup"]);
 const REVEAL_ROOT_MARGIN = "0px 0px -12% 0px";
 
 function getWidthClass(maxWidth: "6xl" | "7xl") {
@@ -191,6 +193,7 @@ export function SiteHeader({
   authHref,
   authLabel,
   learningCenterHref = "/resources",
+  requireAuthForNavigation = false,
   showSignOut = false,
   maxWidth = "7xl",
   hideOnScroll = true,
@@ -211,6 +214,8 @@ export function SiteHeader({
     ),
     { href: authHref, label: authLabel },
   ];
+  const getNavigationHref = (href: string) =>
+    requireAuthForNavigation && !PUBLIC_NAV_HREFS.has(href) ? "/login" : href;
 
   function toggleMenu() {
     setIsMenuOpen((current) => !current);
@@ -413,7 +418,7 @@ export function SiteHeader({
                   return (
                     <Link
                       key={`${item.label}-${item.href}`}
-                      href={item.href}
+                      href={getNavigationHref(item.href)}
                       onClick={closeMenu}
                       tabIndex={isMenuOpen ? 0 : -1}
                       className={cn(
@@ -486,7 +491,7 @@ export function SiteHeader({
                   return (
                     <Link
                       key={`${item.label}-${item.href}`}
-                      href={item.href}
+                      href={getNavigationHref(item.href)}
                       onClick={closeMenu}
                       tabIndex={isMenuOpen ? 0 : -1}
                       className={cn(

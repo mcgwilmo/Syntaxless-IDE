@@ -569,7 +569,7 @@ export default function HomePage() {
       return;
     }
 
-    router.push("/resources");
+    router.push(isAuthed ? "/resources" : "/login");
   }
 
   return (
@@ -584,6 +584,7 @@ export default function HomePage() {
         tierLabel={isAuthed ? SUBSCRIPTION_META[currentTier].label : undefined}
         authHref={isAuthed ? "/dashboard" : "/login"}
         authLabel={isAuthed ? "Dashboard" : "Login"}
+        requireAuthForNavigation={!isAuthed}
         showSignOut={isAuthed}
         hideOnScroll
         surfaceClassName={isLight ? "border-slate-200 bg-white/78" : "border-white/[0.06] bg-black/40"}
@@ -1194,7 +1195,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <SiteFooter className="order-5" />
+      <SiteFooter className="order-5" requireAuthForLinks={!isAuthed} />
 
       <style jsx global>{`
         @keyframes cursorBlink {

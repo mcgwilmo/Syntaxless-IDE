@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AppPageBackground,
   PageFrame,
@@ -549,6 +550,7 @@ function ChangelogEntry({
 }
 
 export default function DocsPage() {
+  const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const { isLight } = useTheme();
   const [isAuthed, setIsAuthed] = useState(false);
@@ -562,6 +564,7 @@ export default function DocsPage() {
       if (!session) {
         setIsAuthed(false);
         setCurrentTier("free");
+        router.replace("/login");
         return;
       }
 
@@ -581,7 +584,7 @@ export default function DocsPage() {
     }
 
     void bootstrap();
-  }, [supabase]);
+  }, [router, supabase]);
 
   return (
     <main

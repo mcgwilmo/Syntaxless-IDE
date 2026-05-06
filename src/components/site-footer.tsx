@@ -125,9 +125,11 @@ function PlaceholderSocialIcon({ kind }: { kind: PlaceholderIconKind }) {
 export function SiteFooter({
   className,
   socialLinks = DEFAULT_SOCIAL_LINKS,
+  requireAuthForLinks = false,
 }: {
   className?: string;
   socialLinks?: FooterSocialLink[];
+  requireAuthForLinks?: boolean;
 }) {
   const { isLight } = useTheme();
 
@@ -145,7 +147,7 @@ export function SiteFooter({
               {socialLinks.map((link) => (
                 <a
                   key={link.label}
-                  href={link.href}
+                  href={requireAuthForLinks ? "/login" : link.href}
                   className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-300",
                     isLight
