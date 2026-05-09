@@ -187,38 +187,55 @@ body {
 }
 
 .ide-validation-line--warning {
-  background: linear-gradient(90deg, rgba(250, 204, 21, 0.14), rgba(250, 204, 21, 0.04));
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.075), rgba(250, 204, 21, 0.018));
 }
 
 .ide-validation-line--blocked {
-  background: linear-gradient(90deg, rgba(244, 63, 94, 0.16), rgba(244, 63, 94, 0.05));
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.095), rgba(244, 63, 94, 0.024));
 }
 
 .ide-problem-line--warning {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.04));
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.02));
 }
 
-.ide-validation-gutter--warning,
-.ide-validation-gutter--blocked {
-  width: 4px !important;
-  margin-left: 2px;
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--warning,
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--blocked,
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--problem {
+  cursor: pointer;
+  position: relative;
+}
+
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--warning::before,
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--blocked::before,
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--problem::before {
+  align-items: center;
   border-radius: 999px;
+  display: flex;
+  font-size: 10px;
+  font-weight: 700;
+  height: 16px;
+  justify-content: center;
+  left: 50%;
+  line-height: 1;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
 }
 
-.ide-validation-gutter--warning {
-  background: rgba(250, 204, 21, 0.82);
-  box-shadow: 0 0 10px rgba(250, 204, 21, 0.22);
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--warning::before,
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--problem::before {
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(251, 191, 36, 0.72);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.08);
+  color: rgb(251, 191, 36);
+  content: "!";
 }
 
-.ide-validation-gutter--blocked {
-  background: rgba(251, 113, 133, 0.88);
-  box-shadow: 0 0 12px rgba(251, 113, 133, 0.24);
-}
-
-.ide-problem-gutter--warning {
-  width: 4px !important;
-  margin-left: 2px;
-  border-radius: 999px;
-  background: rgba(251, 191, 36, 0.88);
-  box-shadow: 0 0 12px rgba(251, 191, 36, 0.24);
+.monaco-editor .glyph-margin .ide-diagnostic-glyph--blocked::before {
+  background: rgba(244, 63, 94, 0.14);
+  border: 1px solid rgba(251, 113, 133, 0.76);
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.08);
+  color: rgb(251, 113, 133);
+  content: "!";
 }

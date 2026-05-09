@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Editor, { type Monaco } from "@monaco-editor/react";
@@ -53,6 +53,8 @@ type InterpretationLine = {
   logic_risk?: string | null;
   suggested_fix?: string | null;
   generated_code_excerpt?: string | null;
+  assumptions?: string[];
+  unresolved_slots?: string[];
 };
 
 type ResolvedInterpretationLine = InterpretationLine & {
@@ -105,6 +107,7 @@ type ProblemAlignmentIssue = {
   message: string;
   line_number?: number | null;
   severity?: "warning" | "blocked";
+  suggested_fix?: string | null;
 };
 
 type ProblemAlignmentLineNotice = {
@@ -112,6 +115,7 @@ type ProblemAlignmentLineNotice = {
   message: string;
   line_number?: number | null;
   severity?: "warning" | "blocked";
+  suggested_fix?: string | null;
 };
 
 type ProblemAlignment = {
@@ -131,8 +135,72 @@ type ProblemAlignment = {
 };
 
 type IdeMode = "strict" | "standard" | "abstraction" | "problem_solving" | "vibe";
-type BottomTab = "terminal" | "validation" | "visual";
+type BottomTab = "terminal" | "visual";
 type LayoutMode = "minimalist" | "normal" | "developer";
+type IdeMenuId = "file" | "edit" | "view" | "help" | "account";
+
+type IdeMenuItem = {
+  label: string;
+  symbol?: string;
+  icon?: MinimalControlIconName;
+  detail?: string;
+  href?: string;
+  action?: () => void | Promise<void>;
+  disabled?: boolean;
+  active?: boolean;
+  danger?: boolean;
+};
+
+type IdeMenuGroup = {
+  id: IdeMenuId;
+  label: string;
+  symbol: string;
+  items: IdeMenuItem[];
+};
+
+type DiagnosticAction =
+  | {
+      kind: "go_to_line";
+      label: string;
+      lineNumber: number;
+    }
+  | {
+      kind: "replace_line";
+      label: string;
+      lineNumber: number;
+      nextText: string;
+    }
+  | {
+      kind: "switch_mode";
+      label: string;
+      mode: IdeMode;
+    }
+  | {
+      kind: "open_problem_panel";
+      label: string;
+    };
+
+type ActionableDiagnostic = {
+  id: string;
+  source: "syntaxless" | "problem";
+  severity: "ok" | "warning" | "blocked";
+  filePath: string;
+  lineNumber: number | null;
+  title: string;
+  message: string;
+  explanation?: string;
+  modeDetail?: string;
+  structureDetail?: string;
+  suggestedFix?: string;
+  raw?: string;
+  actions: DiagnosticAction[];
+};
+
+type DiagnosticPopupState = {
+  lineNumber: number;
+  top: number;
+  left: number;
+};
 
 type RunHistoryItem = {
   id: string;
@@ -952,6 +1020,10 @@ function describeBackendConnectionError(error: unknown, backendUrl: string) {
   return "Error talking to backend.\n";
 }
 
+function isBackendConnectionError(error: unknown) {
+  return error instanceof TypeError;
+}
+
 function formatRunTimestamp(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -1204,6 +1276,281 @@ function getProblemNoticeSeverity(
   if (notice.severity === "blocked") return "blocked";
   if (notice.kind === "logic_mismatch" || notice.kind === "missing_constraint") return "blocked";
   return "warning";
+}
+
+function getDiagnosticTitle(severity: ActionableDiagnostic["severity"], source: ActionableDiagnostic["source"]) {
+  if (source === "problem") {
+    return severity === "blocked" ? "Problem mismatch" : "Problem alignment hint";
+  }
+  if (severity === "blocked") return "Line blocked";
+  if (severity === "warning") return "Line needs attention";
+  return "Line understood";
+}
+
+function cleanDiagnosticText(value?: string | null) {
+  return (value || "").replace(/\s+/g, " ").trim();
+}
+
+function getSyntaxModeDetail(line: ResolvedInterpretationLine, mode: IdeMode) {
+  const modeScore =
+    line.specificity_score ?? line.strict_specificity_score ?? line.raw_specificity_score;
+  const modeReason =
+    cleanDiagnosticText(
+      line.specificity_reasoning ||
+        line.strict_specificity_reasoning ||
+        line.raw_specificity_reasoning ||
+        line.ai_message
+    ) || "No mode-specific note returned.";
+  const status = line.strict_specificity_status
+    ? ` Status ${humanizeType(line.strict_specificity_status)}.`
+    : "";
+
+  return `${formatScore(modeScore)} in ${MODE_META[mode].label} Mode: ${modeReason}${status}`;
+}
+
+function getSyntaxStructureDetail(line: ResolvedInterpretationLine) {
+  const structureScore = line.structure_specificity_score;
+  const penalty = line.structure_penalty ?? line.strict_structure_penalty;
+  const scoreLabel =
+    typeof penalty === "number" && Number.isFinite(penalty)
+      ? `Score ${formatScore(structureScore)}, penalty ${formatScore(penalty)}`
+      : `Score ${formatScore(structureScore)}`;
+  const structureReason =
+    cleanDiagnosticText(line.structure_reasoning || line.logic_risk || line.message) ||
+    "No structure-specific note returned.";
+
+  return `${scoreLabel}: ${structureReason}`;
+}
+
+function getDiagnosticToneClasses(severity: ActionableDiagnostic["severity"], isLight: boolean) {
+  if (severity === "blocked") {
+    return {
+      bubble: isLight
+        ? "border-rose-400 bg-white/96 text-rose-950 shadow-[0_20px_55px_rgba(225,29,72,0.18)] ring-4 ring-rose-500/10"
+        : "border-rose-400/70 bg-[#0d0708]/96 text-rose-50 shadow-[0_22px_60px_rgba(244,63,94,0.2)] ring-4 ring-rose-500/15",
+      accent: isLight ? "text-rose-700" : "text-rose-200",
+      chip: isLight
+        ? "border-rose-200 bg-rose-50 text-rose-700"
+        : "border-rose-400/30 bg-rose-500/[0.1] text-rose-200",
+      row: isLight
+        ? "border-rose-200 bg-rose-50/65 text-rose-950"
+        : "border-rose-400/20 bg-rose-500/[0.07] text-rose-50",
+      primary: isLight
+        ? "border-rose-300 bg-rose-100 text-rose-900 hover:bg-rose-200"
+        : "border-rose-400/30 bg-rose-500/[0.15] text-rose-100 hover:bg-rose-500/[0.22]",
+    };
+  }
+
+  if (severity === "warning") {
+    return {
+      bubble: isLight
+        ? "border-amber-400 bg-white/96 text-amber-950 shadow-[0_20px_55px_rgba(217,119,6,0.16)] ring-4 ring-amber-500/10"
+        : "border-amber-400/70 bg-[#0f0b04]/96 text-amber-50 shadow-[0_22px_60px_rgba(245,158,11,0.18)] ring-4 ring-amber-500/15",
+      accent: isLight ? "text-amber-700" : "text-amber-200",
+      chip: isLight
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-amber-400/30 bg-amber-500/[0.1] text-amber-200",
+      row: isLight
+        ? "border-amber-200 bg-amber-50/65 text-amber-950"
+        : "border-amber-400/20 bg-amber-500/[0.07] text-amber-50",
+      primary: isLight
+        ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
+        : "border-amber-400/30 bg-amber-500/[0.15] text-amber-100 hover:bg-amber-500/[0.22]",
+    };
+  }
+
+  return {
+    bubble: isLight
+      ? "border-emerald-300 bg-white/96 text-emerald-950 shadow-[0_20px_55px_rgba(5,150,105,0.14)] ring-4 ring-emerald-500/10"
+      : "border-emerald-400/60 bg-[#05100b]/96 text-emerald-50 shadow-[0_22px_60px_rgba(16,185,129,0.16)] ring-4 ring-emerald-500/15",
+    accent: isLight ? "text-emerald-700" : "text-emerald-200",
+    chip: isLight
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : "border-emerald-400/30 bg-emerald-500/[0.1] text-emerald-200",
+    row: isLight
+      ? "border-emerald-200 bg-emerald-50/65 text-emerald-950"
+      : "border-emerald-400/20 bg-emerald-500/[0.07] text-emerald-50",
+    primary: isLight
+      ? "border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
+      : "border-emerald-400/30 bg-emerald-500/[0.15] text-emerald-100 hover:bg-emerald-500/[0.22]",
+  };
+}
+
+function extractSuggestedReplacement(raw: string, suggestedFix?: string | null) {
+  const fix = (suggestedFix || "").trim();
+  if (!fix) return null;
+
+  const candidates = [
+    /^replace(?: this line)? with[:\s]+[`"']?(.+?)[`"']?\.?$/i,
+    /^use[:\s]+[`"']?(.+?)[`"']?\.?$/i,
+    /[`"]([^`"\n]+)[`"]/,
+  ];
+
+  for (const pattern of candidates) {
+    const match = fix.match(pattern);
+    const replacement = match?.[1]?.trim().replace(/[.;]\s*$/, "");
+
+    if (
+      replacement &&
+      !replacement.includes("\n") &&
+      replacement.length <= 180 &&
+      replacement !== raw.trim()
+    ) {
+      return replacement;
+    }
+  }
+
+  return null;
+}
+
+function buildActionableDiagnostics({
+  activeTier,
+  currentFilePath,
+  mode,
+  problemIssues,
+  problemLineNotices,
+  resolvedInterpretationLines,
+}: {
+  activeTier: SubscriptionTier;
+  currentFilePath: string;
+  mode: IdeMode;
+  problemIssues: ProblemAlignmentIssue[];
+  problemLineNotices: ProblemAlignmentLineNotice[];
+  resolvedInterpretationLines: ResolvedInterpretationLine[];
+}): ActionableDiagnostic[] {
+  const syntaxDiagnostics = resolvedInterpretationLines.map((line, index) => {
+    const severity = getSeverity(line);
+    const lineNumber = line.resolvedLineNumber;
+    const actions: DiagnosticAction[] = [];
+    const replacement = lineNumber
+      ? extractSuggestedReplacement(line.raw, line.suggested_fix)
+      : null;
+    const detailParts = [
+      cleanDiagnosticText(line.ai_message),
+      line.logic_risk ? `Logic risk: ${cleanDiagnosticText(line.logic_risk)}` : "",
+      line.specificity_reasoning ? `Mode note: ${cleanDiagnosticText(line.specificity_reasoning)}` : "",
+      line.structure_reasoning ? `Structure note: ${cleanDiagnosticText(line.structure_reasoning)}` : "",
+      ...(line.unresolved_slots || []).map((slot) => `Needs detail: ${slot}`),
+      ...(line.assumptions || []).map((assumption) => `Assumption: ${assumption}`),
+    ].filter(Boolean);
+
+    if (lineNumber) {
+      actions.push({
+        kind: "go_to_line",
+        label: "Go to line",
+        lineNumber,
+      });
+    }
+
+    if (lineNumber && replacement) {
+      actions.push({
+        kind: "replace_line",
+        label: "Apply line",
+        lineNumber,
+        nextText: replacement,
+      });
+    }
+
+    if (severity !== "ok") {
+      if (mode === "strict" && tierAllowsMode(activeTier, "standard")) {
+        actions.push({
+          kind: "switch_mode",
+          label: "Try Standard",
+          mode: "standard",
+        });
+      } else if (
+        (mode === "strict" || mode === "standard") &&
+        tierAllowsMode(activeTier, "abstraction")
+      ) {
+        actions.push({
+          kind: "switch_mode",
+          label: "Try Abstraction",
+          mode: "abstraction",
+        });
+      }
+    }
+
+    return {
+      id: `syntaxless-${index}-${lineNumber || "unmapped"}`,
+      source: "syntaxless" as const,
+      severity,
+      filePath: currentFilePath,
+      lineNumber,
+      title: getDiagnosticTitle(severity, "syntaxless"),
+      message: line.message || "TRACE interpreted this line.",
+      explanation: detailParts.join(" "),
+      modeDetail: getSyntaxModeDetail(line, mode),
+      structureDetail: getSyntaxStructureDetail(line),
+      suggestedFix: line.suggested_fix || undefined,
+      raw: line.raw,
+      actions,
+    };
+  });
+
+  const problemNoticeInputs = [
+    ...problemLineNotices,
+    ...problemIssues.filter(
+      (issue) =>
+        !problemLineNotices.some(
+          (notice) => notice.message === issue.message && notice.line_number === issue.line_number
+        )
+    ),
+  ];
+
+  const problemDiagnostics = problemNoticeInputs.map((notice, index) => {
+    const severity = getProblemNoticeSeverity(notice);
+    const lineNumber = notice.line_number ?? null;
+    const replacement = lineNumber
+      ? extractSuggestedReplacement("", notice.suggested_fix)
+      : null;
+    const actions: DiagnosticAction[] = [
+      {
+        kind: "open_problem_panel",
+        label: "Open problem",
+      },
+    ];
+
+    if (lineNumber) {
+      actions.unshift({
+        kind: "go_to_line",
+        label: "Go to line",
+        lineNumber,
+      });
+    }
+
+    if (lineNumber && replacement) {
+      actions.splice(lineNumber ? 1 : 0, 0, {
+        kind: "replace_line",
+        label: "Apply line",
+        lineNumber,
+        nextText: replacement,
+      });
+    }
+
+    return {
+      id: `problem-${index}-${lineNumber || "global"}`,
+      source: "problem" as const,
+      severity,
+      filePath: currentFilePath,
+      lineNumber,
+      title: getProblemStatusLabel(notice.kind),
+      message: notice.message,
+      explanation: "Problem Solving mode compared this line with the attached prompt.",
+      modeDetail: `n/a in Problem Solving Mode: ${notice.message}`,
+      structureDetail: lineNumber
+        ? `Structure: Linked to line ${lineNumber} in the active file.`
+        : "Structure: Applies to the problem as a whole.",
+      suggestedFix: notice.suggested_fix || undefined,
+      actions,
+    };
+  });
+
+  return [...problemDiagnostics, ...syntaxDiagnostics].sort((a, b) => {
+    const severityOrder = { blocked: 0, warning: 1, ok: 2 };
+    const severityDelta = severityOrder[a.severity] - severityOrder[b.severity];
+    if (severityDelta !== 0) return severityDelta;
+    return (a.lineNumber || Number.MAX_SAFE_INTEGER) - (b.lineNumber || Number.MAX_SAFE_INTEGER);
+  });
 }
 
 function buildArtifactUrl(
@@ -1583,9 +1930,9 @@ function ExplorerTree({
   const { isLight } = useTheme();
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {nodes.map((node) => {
-        const paddingLeft = 8 + depth * 14;
+        const paddingLeft = 10 + depth * 14;
 
         if (node.type === "folder") {
           return (
@@ -1593,10 +1940,10 @@ function ExplorerTree({
               <div
                 onClick={() => onToggleFolder(node.id)}
                 onContextMenu={(e) => onContextMenu(e, node.id, "folder")}
-                className={`group flex cursor-pointer items-center px-2 py-1.5 text-[13px] transition-all duration-200 ${
+                className={`group flex cursor-pointer items-center rounded-[0.55rem] px-2 py-1.5 text-[12px] transition-colors duration-150 ${
                   isLight
-                    ? "text-slate-600 hover:text-slate-900"
-                    : "text-neutral-200 hover:text-white"
+                    ? "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                    : "text-neutral-300 hover:bg-white/[0.045] hover:text-white"
                 }`}
                 style={{ paddingLeft }}
               >
@@ -1633,14 +1980,14 @@ function ExplorerTree({
             key={node.id}
             onClick={() => onSelectFile(node.id)}
             onContextMenu={(e) => onContextMenu(e, node.id, "file")}
-            className={`group flex cursor-pointer items-center border-l px-2 py-1.5 text-[13px] transition-all duration-200 ${
+            className={`group flex cursor-pointer items-center border-l px-2 py-1.5 text-[12px] transition-colors duration-150 ${
               isActive
                 ? isLight
-                  ? "border-slate-400 text-slate-950"
-                  : `${modeAccentClass} border-white/[0.16] text-white`
+                  ? "border-slate-500 bg-slate-100 text-slate-950"
+                  : `border-white/[0.22] bg-white/[0.045] text-white ${modeAccentClass}`
                 : isLight
-                ? "border-slate-200/70 text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                : "border-white/[0.08] text-neutral-300 hover:border-white/[0.16] hover:text-white"
+                ? "border-slate-200/70 text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950"
+                : "border-white/[0.06] text-neutral-300 hover:border-white/[0.14] hover:bg-white/[0.035] hover:text-white"
             }`}
             style={{ paddingLeft }}
           >
@@ -1921,7 +2268,7 @@ function IdePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const { isLight, theme } = useTheme();
+  const { isLight, theme, toggleTheme } = useTheme();
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
   const wsBaseUrl = useMemo(() => toWsUrl(backendUrl), [backendUrl]);
 
@@ -1930,6 +2277,7 @@ function IdePageContent() {
   const wsRef = useRef<WebSocket | null>(null);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const treeMenuRef = useRef<HTMLDivElement | null>(null);
+  const editorShellRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const editorDecorationIdsRef = useRef<string[]>([]);
@@ -1946,6 +2294,7 @@ function IdePageContent() {
 
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showTreeMenu, setShowTreeMenu] = useState(false);
+  const [openIdeMenu, setOpenIdeMenu] = useState<IdeMenuId | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(true);
 
   const [mode, setMode] = useState<IdeMode>("standard");
@@ -2000,6 +2349,7 @@ function IdePageContent() {
   const [terminalHeight, setTerminalHeight] = useState(236);
   const [isResizingTerminal, setIsResizingTerminal] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+  const [diagnosticPopup, setDiagnosticPopup] = useState<DiagnosticPopupState | null>(null);
   const [toast, setToast] = useState<ToastState>({ text: "", visible: false });
 
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
@@ -2014,6 +2364,30 @@ function IdePageContent() {
   const studentModeLocked = activeTier === "student";
   const currentModeMeta = MODE_META[mode];
   const currentLayoutMeta = LAYOUT_META[layoutMode];
+
+  const getDiagnosticPopupPosition = useCallback((lineNumber: number) => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    const shell = editorShellRef.current;
+    const editorNode = editor?.getDomNode();
+
+    if (!editor || !shell || !editorNode || !monaco) return { top: 12, left: 12 };
+
+    const editorRect = editorNode.getBoundingClientRect();
+    const shellRect = shell.getBoundingClientRect();
+    const layout = editor.getLayoutInfo();
+    const lineHeight = editor.getOption(monaco.editor.EditorOption.lineHeight);
+    const lineTop = editor.getTopForLineNumber(lineNumber) - editor.getScrollTop();
+    const top = editorRect.top - shellRect.top + lineTop + lineHeight + 6;
+    const left = editorRect.left - shellRect.left + layout.contentLeft;
+    const maxTop = Math.max(12, shell.clientHeight - 230);
+    const maxLeft = Math.max(12, shell.clientWidth - 416);
+
+    return {
+      top: Math.min(Math.max(top, 12), maxTop),
+      left: Math.min(Math.max(left, 12), maxLeft),
+    };
+  }, []);
   const synthFileLimit = getSynthFileLimit(activeTier);
   const currentSynthFileCount = useMemo(() => countSynthFiles(explorerTree), [explorerTree]);
   const problemStorageKey = useMemo(() => `codeless:problem:${projectId}`, [projectId]);
@@ -2075,30 +2449,6 @@ function IdePageContent() {
     [interpretationLines, interpretationSourceDocument]
   );
 
-  const inferredKinds = useMemo(() => {
-    const counts = new Map<string, number>();
-    interpretationLines.forEach((line) => {
-      const key = line.type || "statement";
-      counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 2);
-  }, [interpretationLines]);
-
-  const semanticHints = useMemo(() => {
-    return interpretationLines.slice(0, 2).map((line, index) => ({
-      id: index,
-      label:
-        getSeverity(line) === "blocked"
-          ? "blocked"
-          : getSeverity(line) === "warning"
-          ? "ambiguous"
-          : "valid",
-      raw: line.raw,
-    }));
-  }, [interpretationLines]);
-
   const generatedPythonAllowed = SUBSCRIPTION_META[activeTier].generatedPython;
   const problemMode = mode === "problem_solving";
   const normalizedProblemStatement = useMemo(
@@ -2121,7 +2471,57 @@ function IdePageContent() {
     () => problemAlignment?.line_notices || [],
     [problemAlignment]
   );
+  const actionableDiagnostics = useMemo(
+    () =>
+      buildActionableDiagnostics({
+        activeTier,
+        currentFilePath,
+        mode,
+        problemIssues,
+        problemLineNotices,
+        resolvedInterpretationLines,
+      }),
+    [activeTier, currentFilePath, mode, problemIssues, problemLineNotices, resolvedInterpretationLines]
+  );
+  const selectedDiagnostic = useMemo(() => {
+    if (!diagnosticPopup) return null;
 
+    const lineCount = activeFile?.content.split("\n").length || 0;
+
+    return (
+      actionableDiagnostics.find((diagnostic) => {
+        if (diagnostic.severity === "ok") return false;
+        return normalizeLineNumber(diagnostic.lineNumber, lineCount) === diagnosticPopup.lineNumber;
+      }) || null
+    );
+  }, [actionableDiagnostics, activeFile?.content, diagnosticPopup]);
+  const diagnosticPopupLineNumber = diagnosticPopup?.lineNumber ?? null;
+  const selectedDiagnosticTone = getDiagnosticToneClasses(selectedDiagnostic?.severity ?? "warning", isLight);
+
+  useEffect(() => {
+    if (diagnosticPopup && !selectedDiagnostic) {
+      setDiagnosticPopup(null);
+    }
+  }, [diagnosticPopup, selectedDiagnostic]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+
+    if (!editor || !diagnosticPopupLineNumber) return;
+
+    const scrollDisposable = editor.onDidScrollChange(() => {
+      setDiagnosticPopup((current) =>
+        current
+          ? {
+              ...current,
+              ...getDiagnosticPopupPosition(current.lineNumber),
+            }
+          : current
+      );
+    });
+
+    return () => scrollDisposable.dispose();
+  }, [diagnosticPopupLineNumber, getDiagnosticPopupPosition]);
   const outputSummaryLabel = useMemo(() => {
     const parts: string[] = [];
     if (problemMode && normalizedProblemStatement) {
@@ -2158,6 +2558,67 @@ function IdePageContent() {
 
   function showToast(text: string) {
     setToast({ text, visible: true });
+  }
+
+  function handleDiagnosticAction(action: DiagnosticAction, diagnostic: ActionableDiagnostic) {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+
+    if (action.kind === "go_to_line") {
+      editor?.focus();
+      editor?.setPosition({ lineNumber: action.lineNumber, column: 1 });
+      editor?.revealLineInCenterIfOutsideViewport(action.lineNumber);
+      setStatusMessage(`Focused line ${action.lineNumber}.`);
+      setDiagnosticPopup(null);
+      return;
+    }
+
+    if (action.kind === "replace_line") {
+      const model = editor?.getModel();
+
+      if (!editor || !monaco || !model) return;
+
+      const maxColumn = model.getLineMaxColumn(action.lineNumber);
+      editor.executeEdits("diagnostic-fix", [
+        {
+          range: new monaco.Range(action.lineNumber, 1, action.lineNumber, maxColumn),
+          text: action.nextText,
+          forceMoveMarkers: true,
+        },
+      ]);
+      updateActiveFileContent(model.getValue());
+      editor.focus();
+      setStatusMessage(`Applied suggested fix on line ${action.lineNumber}.`);
+      showToast("Suggested fix applied.");
+      setDiagnosticPopup(null);
+      return;
+    }
+
+    if (action.kind === "switch_mode") {
+      handleSelectMode(action.mode);
+      setDiagnosticPopup(null);
+      return;
+    }
+
+    setProblemPanelOpen(true);
+    setStatusMessage(diagnostic.source === "problem" ? "Opened problem guidance." : diagnostic.title);
+    setDiagnosticPopup(null);
+  }
+
+  function handleApplySelectedDiagnostic(diagnostic: ActionableDiagnostic) {
+    const applyAction = diagnostic.actions.find((action) => action.kind === "replace_line");
+
+    if (!applyAction) return;
+
+    handleDiagnosticAction(applyAction, diagnostic);
+  }
+
+  function handleJumpToSelectedDiagnostic(diagnostic: ActionableDiagnostic) {
+    const jumpAction = diagnostic.actions.find((action) => action.kind === "go_to_line");
+
+    if (jumpAction) {
+      handleDiagnosticAction(jumpAction, diagnostic);
+    }
   }
 
   function openDevVisionPrompt() {
@@ -2479,7 +2940,14 @@ function IdePageContent() {
       const data = await response.json();
       setRuns(data.runs || []);
     } catch (error) {
+      if (isBackendConnectionError(error)) {
+        setRuns([]);
+        setStatusMessage(`Run history unavailable. Backend is not reachable at ${backendUrl}.`);
+        return;
+      }
+
       console.error(error);
+      setStatusMessage("Failed to load run history.");
     }
   }
 
@@ -2905,7 +3373,7 @@ function IdePageContent() {
       setIsChecking(true);
       setStatusMessage(`Checking in ${MODE_META[mode].label} mode...`);
       setShowBottomPanel(true);
-      setActiveBottomTab(layoutMode === "minimalist" ? "terminal" : "validation");
+      setActiveBottomTab("terminal");
       applyProblemAlignmentState(null);
 
       const response = await fetch(`${backendUrl}/interpret`, {
@@ -3105,7 +3573,7 @@ function IdePageContent() {
         setStatusMessage("Blocked.");
         appendTerminal((data.stderr || "Execution blocked.") + "\n", "stderr");
         setShowBottomPanel(true);
-        setActiveBottomTab(layoutMode === "minimalist" ? "terminal" : "validation");
+        setActiveBottomTab("terminal");
         if (data.run?.id) {
           setActiveRunId(data.run.id);
         }
@@ -3156,7 +3624,18 @@ function IdePageContent() {
     const maxLineNumber = model?.getLineCount() || 0;
     const showHighlights =
       !!activeFile && interpretationSourceFilePath === currentFilePath && maxLineNumber > 0;
+    const diagnosticsByLine = new Map<number, ActionableDiagnostic[]>();
 
+    if (showHighlights) {
+      actionableDiagnostics.forEach((diagnostic) => {
+        if (diagnostic.severity === "ok") return;
+        const lineNumber = normalizeLineNumber(diagnostic.lineNumber, maxLineNumber);
+        if (!lineNumber) return;
+        const current = diagnosticsByLine.get(lineNumber) || [];
+        current.push(diagnostic);
+        diagnosticsByLine.set(lineNumber, current);
+      });
+    }
     const semanticDecorations = showHighlights
       ? resolvedInterpretationLines.flatMap((line) => {
           const severity = getSeverity(line);
@@ -3173,10 +3652,10 @@ function IdePageContent() {
                   severity === "blocked"
                     ? "ide-validation-line--blocked"
                     : "ide-validation-line--warning",
-                linesDecorationsClassName:
+                glyphMarginClassName:
                   severity === "blocked"
-                    ? "ide-validation-gutter--blocked"
-                    : "ide-validation-gutter--warning",
+                    ? "ide-diagnostic-glyph--blocked"
+                    : "ide-diagnostic-glyph--warning",
                 stickiness:
                   monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
               },
@@ -3202,10 +3681,10 @@ function IdePageContent() {
                     severity === "blocked"
                       ? "ide-validation-line--blocked"
                       : "ide-problem-line--warning",
-                  linesDecorationsClassName:
+                  glyphMarginClassName:
                     severity === "blocked"
-                      ? "ide-validation-gutter--blocked"
-                      : "ide-problem-gutter--warning",
+                      ? "ide-diagnostic-glyph--blocked"
+                      : "ide-diagnostic-glyph--problem",
                   stickiness:
                     monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
                 },
@@ -3220,9 +3699,58 @@ function IdePageContent() {
       editorDecorationIdsRef.current,
       decorations
     );
+
+    const mouseDownDisposable = editor.onMouseDown((event) => {
+      const lineNumber = event.target.position?.lineNumber ?? event.target.range?.startLineNumber;
+      const isDiagnosticGutter =
+        event.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
+        event.target.type === monaco.editor.MouseTargetType.GUTTER_LINE_DECORATIONS;
+
+      if (!lineNumber || !diagnosticsByLine.has(lineNumber)) {
+        setDiagnosticPopup(null);
+        return;
+      }
+
+      if (!isDiagnosticGutter) return;
+
+      event.event.preventDefault();
+      event.event.stopPropagation();
+      setDiagnosticPopup({
+        lineNumber,
+        ...getDiagnosticPopupPosition(lineNumber),
+      });
+    });
+
+    const mouseMoveDisposable = editor.onMouseMove((event) => {
+      const lineNumber = event.target.position?.lineNumber ?? event.target.range?.startLineNumber;
+
+      if (!lineNumber || !diagnosticsByLine.has(lineNumber)) {
+        setDiagnosticPopup((current) => (current ? null : current));
+        return;
+      }
+
+      const position = getDiagnosticPopupPosition(lineNumber);
+      setDiagnosticPopup((current) =>
+        current?.lineNumber === lineNumber &&
+        current.top === position.top &&
+        current.left === position.left
+          ? current
+          : {
+              lineNumber,
+              ...position,
+            }
+      );
+    });
+
+    return () => {
+      mouseDownDisposable.dispose();
+      mouseMoveDisposable.dispose();
+    };
   }, [
+    actionableDiagnostics,
     activeFile,
     currentFilePath,
+    getDiagnosticPopupPosition,
     interpretationSourceFilePath,
     problemLineNotices,
     problemMode,
@@ -3240,6 +3768,7 @@ function IdePageContent() {
       return;
     }
 
+    setOpenIdeMenu(null);
     setMode(nextMode);
     if (nextMode === "problem_solving" && layoutMode !== "minimalist") {
       setProblemPanelOpen(true);
@@ -3255,6 +3784,7 @@ function IdePageContent() {
       return;
     }
 
+    setOpenIdeMenu(null);
     applyLayoutMode(nextLayout);
     setShowLayoutOverlay(false);
     setStatusMessage(`${LAYOUT_META[nextLayout].label} layout selected.`);
@@ -3274,12 +3804,9 @@ function IdePageContent() {
 
   const developerExpanded = layoutMode === "developer";
   const minimalist = layoutMode === "minimalist";
-  const iconControls = layoutMode !== "developer";
-  const bottomTabs = (minimalist
-    ? ["terminal", "visual"]
-    : ["terminal", "validation", "visual"]) as BottomTab[];
+  const iconControls = minimalist;
+  const bottomTabs = ["terminal", "visual"] as BottomTab[];
   const showEditorInspector = !minimalist && !problemMode;
-  const showEditorAnalysisRail = interpretationLines.length > 0 || problemLineNotices.length > 0;
   const showProblemPanel = problemMode;
   const editableLineCount =
     activeFile?.content.split("\n").filter((line) => line.trim().length > 0).length || 0;
@@ -3351,6 +3878,163 @@ function IdePageContent() {
   const pricingCardHoverClass = isLight
     ? "hover:border-slate-300 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(241,245,249,0.96))]"
     : "hover:border-white/[0.14] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))]";
+  const menuButtonClass = (active: boolean) =>
+    joinClasses(
+      "inline-flex h-9 items-center gap-2 rounded-[0.85rem] border px-3 text-[12px] font-semibold transition-all duration-200",
+      active
+        ? isLight
+          ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)]`
+          : `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]`
+        : isLight
+        ? "border-slate-200/90 bg-white/80 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-950"
+        : "border-white/[0.08] bg-white/[0.035] text-neutral-300 hover:border-white/[0.15] hover:bg-white/[0.065] hover:text-white"
+    );
+  const menuPanelClass = isLight
+    ? "border-slate-200 bg-white/98 text-slate-800 shadow-[0_20px_60px_rgba(15,23,42,0.14)]"
+    : "border-white/[0.1] bg-[#080808]/98 text-neutral-200 shadow-[0_24px_70px_rgba(0,0,0,0.48)]";
+  const menuItemBaseClass =
+    "flex w-full items-center gap-2.5 rounded-[0.75rem] px-2.5 py-2 text-left text-[12px] transition-colors duration-150";
+  const menuItemClass = (item: IdeMenuItem) =>
+    joinClasses(
+      menuItemBaseClass,
+      item.disabled
+        ? isLight
+          ? "cursor-not-allowed text-slate-400"
+          : "cursor-not-allowed text-neutral-600"
+        : item.danger
+        ? isLight
+          ? "text-rose-700 hover:bg-rose-50"
+          : "text-rose-200 hover:bg-rose-500/[0.12]"
+        : item.active
+        ? isLight
+          ? `${currentModeMeta.accentBg} text-slate-950`
+          : `${currentModeMeta.accentBg} text-white`
+        : isLight
+        ? "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+        : "text-neutral-300 hover:bg-white/[0.06] hover:text-white"
+    );
+  const menuSymbolClass = (item?: IdeMenuItem) =>
+    joinClasses(
+      "flex h-6 w-6 shrink-0 items-center justify-center rounded-[0.6rem] border text-[12px] font-semibold",
+      item?.danger
+        ? isLight
+          ? "border-rose-200 bg-rose-50 text-rose-700"
+          : "border-rose-400/25 bg-rose-500/[0.1] text-rose-200"
+        : isLight
+        ? "border-slate-200 bg-white text-slate-600"
+        : "border-white/[0.08] bg-white/[0.04] text-neutral-300"
+    );
+  const desktopIdeMenus: IdeMenuGroup[] = [
+    {
+      id: "file",
+      label: "File",
+      symbol: "▣",
+      items: [
+        {
+          label: "Dashboard",
+          symbol: "⌂",
+          href: "/dashboard",
+          detail: "Return to projects",
+        },
+      ],
+    },
+    {
+      id: "edit",
+      label: "Edit",
+      symbol: "✎",
+      items: [
+        {
+          label: pythonButtonLabel,
+          icon: "python",
+          action: handleTogglePython,
+          disabled: !generatedPythonAllowed,
+          active: generatedPythonAllowed && showPython,
+          detail: generatedPythonAllowed ? "Generated Python panel" : "Upgrade required",
+        },
+        {
+          label: resultsButtonLabel,
+          icon: "results",
+          action: () => setShowBottomPanel((prev) => !prev),
+          active: showBottomPanel,
+          detail: "Terminal and visual output",
+        },
+        {
+          label: devVisionButtonLabel,
+          icon: "vision",
+          action: devVisionEnabled ? exitDevVision : openDevVisionPrompt,
+          active: devVisionEnabled,
+          detail: "Developer diagnostics",
+        },
+      ],
+    },
+    {
+      id: "view",
+      label: "View",
+      symbol: "◫",
+      items: [
+        {
+          label: isLight ? "Dark Theme" : "Light Theme",
+          symbol: isLight ? "☾" : "☀",
+          action: toggleTheme,
+          detail: "Switch editor theme",
+        },
+        {
+          label: "Mode",
+          icon: "mode",
+          action: () => {
+            if (!studentModeLocked) setShowModeOverlay(true);
+          },
+          disabled: studentModeLocked,
+          detail: studentModeLocked ? "Student plan is locked" : currentModeMeta.label,
+        },
+        {
+          label: "Layout",
+          icon: "layout",
+          action: () => setShowLayoutOverlay(true),
+          detail: currentLayoutMeta.label,
+        },
+      ],
+    },
+    {
+      id: "help",
+      label: "Help",
+      symbol: "?",
+      items: [
+        {
+          label: "Tutorials",
+          icon: "tutorial",
+          action: openTutorialPlaceholder,
+          detail: "Learning resources",
+        },
+        {
+          label: "Report Bug",
+          icon: "bug",
+          action: openUiBugReport,
+          detail: "Tell us what went wrong",
+        },
+      ],
+    },
+    {
+      id: "account",
+      label: "Account",
+      symbol: "@",
+      items: [
+        {
+          label: "Manage Subscription",
+          icon: "subscriptions",
+          href: "/subscriptions",
+          detail: activeTier.toUpperCase(),
+        },
+        {
+          label: "Sign Out",
+          icon: "signout",
+          action: handleSignOut,
+          danger: true,
+          detail: sessionEmail || "Current session",
+        },
+      ],
+    },
+  ];
 
   return (
     <main
@@ -3381,64 +4065,16 @@ function IdePageContent() {
             className={`relative overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${sidebarSurfaceClass} ${sidebarContainerClass}`}
           >
             <div
-              className={`h-full w-[17rem] p-3.5 transition-all duration-500 ${
+              className={`flex h-full min-h-0 w-[17rem] flex-col p-3.5 transition-all duration-500 ${
                 sidebarOpen ? "opacity-100 blur-0" : "opacity-0 blur-sm"
               }`}
             >
-              <div className={`mb-4 border-b pb-4 ${sidebarDividerClass}`}>
-                <div className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${sectionLabelClass}`}>
-                  Project
-                </div>
-                <input
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  className={`w-full bg-transparent text-[1.35rem] ${PAGE_HEADING_CLASS} outline-none ${sectionTitleClass} ${isLight ? "placeholder:text-slate-400" : "placeholder:text-neutral-600"}`}
-                />
-                <div className={`mt-1.5 text-[10px] ${sectionMetaClass}`}>
-                  {saveStatus}
-                </div>
-              </div>
-
-              <div className={`mb-4 border-b pb-4 ${sidebarDividerClass}`}>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <div className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${sectionLabelClass}`}>
-                    Subscription
-                  </div>
-                  <Link
-                    href="/subscriptions"
-                    className={`${getModeButtonClass(currentModeMeta, {
-                      compact: true,
-                      pill: true,
-                    }, theme)} ${iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : "px-2.5 py-1 text-[10px] uppercase tracking-[0.18em]"}`}
-                    aria-label={iconControls ? "Manage subscription" : undefined}
-                    title={iconControls ? "Manage subscription" : undefined}
-                  >
-                    {iconControls ? (
-                      <MinimalIconLabel icon="manage" label="Manage subscription" />
-                    ) : (
-                      "Manage"
-                    )}
-                  </Link>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className={`text-[13px] ${sectionTitleClass}`}>
-                    {SUBSCRIPTION_META[activeTier].label}
-                  </div>
-                  <div className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] ${isLight ? "border-slate-200 bg-slate-50 text-slate-500" : "border-white/[0.08] bg-white/[0.03] text-neutral-500"}`}>
-                    {getSynthFileLimitLabel(activeTier)} synth
-                  </div>
-                </div>
-                {sessionEmail ? (
-                  <div className={`mt-1.5 truncate text-[10px] ${sectionMetaClass}`}>{sessionEmail}</div>
-                ) : null}
-              </div>
-
               {!minimalist && (
                 <>
-                  <div className={`mb-4 border-b pb-4 ${sidebarDividerClass}`}>
-                    <div className="mb-2.5 flex items-center justify-between">
+                  <div className={`mb-3 border-b pb-3 ${sidebarDividerClass}`}>
+                    <div className="mb-2 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${sectionLabelClass}`}>
+                        <div className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${sectionLabelClass}`}>
                           Explorer
                         </div>
                         <InfoTooltip
@@ -3447,7 +4083,7 @@ function IdePageContent() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <div className="relative" ref={addMenuRef}>
                           <button
                             onClick={(e) => {
@@ -3462,13 +4098,20 @@ function IdePageContent() {
                               setShowTreeMenu(false);
                               setShowAddMenu((prev) => !prev);
                             }}
-                            className={`${ideButtonClass({
-                              compact: true,
-                              pill: true,
-                              active: showAddMenu,
-                            })} font-medium`}
+                            className={joinClasses(
+                              "flex h-7 w-7 items-center justify-center rounded-[0.55rem] border text-[14px] font-semibold transition-colors",
+                              showAddMenu
+                                ? isLight
+                                  ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-slate-950`
+                                  : `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-white`
+                                : isLight
+                                ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950"
+                                : "border-white/[0.08] bg-white/[0.035] text-neutral-300 hover:border-white/[0.14] hover:text-white"
+                            )}
+                            aria-label="Add file or folder"
+                            title="Add file or folder"
                           >
-                            + Add
+                            +
                           </button>
 
                           {showAddMenu && (
@@ -3502,13 +4145,20 @@ function IdePageContent() {
                               setShowAddMenu(false);
                               setShowTreeMenu((prev) => !prev);
                             }}
-                            className={ideButtonClass({
-                              compact: true,
-                              pill: true,
-                              active: showTreeMenu,
-                            })}
+                            className={joinClasses(
+                              "flex h-7 w-7 items-center justify-center rounded-[0.55rem] border transition-colors",
+                              showTreeMenu
+                                ? isLight
+                                  ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-slate-950`
+                                  : `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-white`
+                                : isLight
+                                ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950"
+                                : "border-white/[0.08] bg-white/[0.035] text-neutral-300 hover:border-white/[0.14] hover:text-white"
+                            )}
+                            aria-label="Tree actions"
+                            title="Tree actions"
                           >
-                            Tree
+                            <MinimalControlIcon name="layout" className="h-3.5 w-3.5" />
                           </button>
 
                           {showTreeMenu && (
@@ -3537,12 +4187,12 @@ function IdePageContent() {
                       </div>
                     </div>
 
-                    <div className={`mb-3 flex items-center justify-between border-b pb-3 text-[11px] ${sidebarDividerClass}`}>
+                    <div className={`mb-2 flex items-center justify-between text-[11px] ${sectionMetaClass}`}>
                       <span className={sectionMetaClass}>Synth files</span>
                       <span className={sectionTitleClass}>{currentSynthFileCount} / {getSynthFileLimitLabel(activeTier)}</span>
                     </div>
 
-                    <div className="mb-3">
+                    <div className={`rounded-[0.85rem] border p-1.5 ${isLight ? "border-slate-200/90 bg-white/60" : "border-white/[0.06] bg-black/20"}`}>
                       <ExplorerTree
                         nodes={explorerTree}
                         activeFileId={activeFileId}
@@ -3560,19 +4210,15 @@ function IdePageContent() {
                         modeAccentClass={currentModeMeta.accentSoftBg}
                       />
                     </div>
-
-                    <div className={`text-[11px] leading-5 ${sectionMetaClass}`}>
-                      Active file executes. Everything else stays as reference context.
-                    </div>
                   </div>
 
-                  <div className={`border-t pt-4 ${sidebarDividerClass}`}>
+                  <div className="flex min-h-0 flex-1 flex-col pt-1">
                     <button
                       onClick={() => setShowRunsSection((prev) => !prev)}
                       className="mb-2 flex w-full items-center justify-between text-left"
                     >
                       <span className="flex items-center gap-2">
-                        <span className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${sectionLabelClass}`}>Run History</span>
+                        <span className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${sectionLabelClass}`}>Run History</span>
                         <InfoTooltip
                           label="Run History"
                           description="Restore previous output, diagnostics, artifacts, and generated Python."
@@ -3582,56 +4228,56 @@ function IdePageContent() {
                     </button>
 
                     <div
-                      className={`grid overflow-hidden transition-all duration-300 ${
+                      className={`grid min-h-0 flex-1 overflow-hidden transition-all duration-300 ${
                         showRunsSection ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-70"
                       }`}
                     >
-                      <div className="overflow-hidden">
-                        <div className="max-h-[28vh] overflow-auto pr-1">
+                      <div className="min-h-0 overflow-hidden">
+                        <div className="h-full space-y-1 overflow-auto pr-1">
                           {runs.length === 0 ? (
-                            <div className={`py-2 text-sm ${sectionMetaClass}`}>
+                            <div className={`rounded-[0.8rem] border px-3 py-2 text-[12px] ${isLight ? "border-slate-200 bg-white/60" : "border-white/[0.06] bg-white/[0.025]"} ${sectionMetaClass}`}>
                               No runs yet
                             </div>
                           ) : (
-                            runs.map((run, index) => (
+                            runs.map((run) => (
                               <div
                                 key={run.id}
-                                className={`py-3 ${index === 0 ? "" : `border-t ${sidebarDividerClass}`}`}
+                                className={`rounded-[0.8rem] border px-2.5 py-2 transition-colors ${isLight ? "border-slate-200/80 bg-white/55 hover:bg-white" : "border-white/[0.06] bg-white/[0.025] hover:bg-white/[0.045]"}`}
                               >
-                                <button
-                                  onClick={() => loadRunDetails(run.id)}
-                                  className="block w-full text-left"
-                                >
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className={`text-[13px] font-medium ${sectionTitleClass}`}>
-                                      Run #{run.id.slice(0, 8)}
+                                <div className="flex items-start gap-2">
+                                  <button
+                                    onClick={() => loadRunDetails(run.id)}
+                                    className="min-w-0 flex-1 text-left"
+                                  >
+                                    <div className="flex min-w-0 items-center justify-between gap-2">
+                                      <div className={`truncate text-[12px] font-semibold ${sectionTitleClass}`}>
+                                        Run #{run.id.slice(0, 8)}
+                                      </div>
+                                      {run.mode && (
+                                        <div
+                                          className={`shrink-0 text-[9px] font-semibold uppercase tracking-[0.14em] ${MODE_META[run.mode].badge}`}
+                                        >
+                                          {MODE_META[run.mode].label}
+                                        </div>
+                                      )}
                                     </div>
-                                    {run.mode && (
-                                      <div
-                                        className={`text-[10px] uppercase tracking-[0.2em] ${MODE_META[run.mode].badge}`}
-                                      >
-                                        {MODE_META[run.mode].label}
+                                    <div className={`mt-0.5 truncate text-[10px] ${sectionMetaClass}`}>
+                                      {run.status} | {formatRunTimestamp(run.timestamp)}
+                                    </div>
+                                    {!!run.active_file_path && (
+                                      <div className={`mt-0.5 truncate text-[10px] ${sectionMetaClass}`}>
+                                        {run.active_file_path}
                                       </div>
                                     )}
-                                  </div>
-                                  <div className={`mt-0.5 text-[11px] ${sectionMetaClass}`}>
-                                    {run.status} | {formatRunTimestamp(run.timestamp)}
-                                  </div>
-                                  {!!run.active_file_path && (
-                                    <div className={`mt-0.5 truncate text-[10px] ${sectionMetaClass}`}>
-                                      {run.active_file_path}
-                                    </div>
-                                  )}
-                                </button>
+                                  </button>
 
-                                <div className="mt-2 flex justify-end">
                                   <button
                                     onClick={() => void openRunBugReport(run.id)}
-                                    className={`${getModeButtonClass(currentModeMeta, {
-                                      compact: true,
-                                    }, theme)} rounded-[0.85rem] px-2.5 py-1 text-[10px] uppercase tracking-[0.16em]`}
+                                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[0.55rem] border text-[11px] transition-colors ${isLight ? "border-slate-200 bg-white/80 text-slate-500 hover:border-slate-300 hover:text-slate-900" : "border-white/[0.08] bg-white/[0.035] text-neutral-500 hover:border-white/[0.14] hover:text-white"}`}
+                                    aria-label={`Report run ${run.id.slice(0, 8)}`}
+                                    title="Report run"
                                   >
-                                    Report
+                                    !
                                   </button>
                                 </div>
                               </div>
@@ -3648,7 +4294,7 @@ function IdePageContent() {
 
           <section className={`flex min-w-0 flex-1 flex-col ${workspaceBgClass}`}>
             <header
-              className={`px-4 py-3 backdrop-blur-md ${headerSurfaceClass}`}
+              className={`relative z-[120] overflow-visible px-4 py-3 backdrop-blur-md ${headerSurfaceClass}`}
               style={modeBarGlowStyle}
             >
               <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
@@ -3690,10 +4336,7 @@ function IdePageContent() {
                     </div>
                   </Link>
 
-                  <div className={`hidden min-w-0 items-center gap-3 border-l pl-4 lg:flex ${sidebarDividerClass}`}>
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-full border ${isLight ? "border-slate-200 bg-slate-50" : "border-white/[0.08] bg-[#111111]"}`}>
-                      <div className={`h-2.5 w-2.5 rounded-full ${currentModeMeta.accentEditorBar}`} />
-                    </div>
+                  <div className="hidden min-w-0 items-center gap-3 lg:flex">
                     <div className="min-w-0">
                       <div className={`truncate text-[10px] font-semibold uppercase tracking-[0.22em] ${sectionLabelClass}`}>
                         Workspace
@@ -3712,6 +4355,8 @@ function IdePageContent() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
+                  {minimalist ? (
+                    <>
                   <ThemeToggleButton variant="ide" />
 
                   <button
@@ -3943,6 +4588,140 @@ function IdePageContent() {
                       "Sign Out"
                     )}
                   </button>
+                    </>
+                  ) : (
+                    <>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        onClick={handleRun}
+                        disabled={isRunning || !activeFile}
+                        className={joinClasses(
+                          ideButtonClass({
+                            disabled: isRunning || !activeFile,
+                          }),
+                          "inline-flex items-center gap-2 px-3.5 py-2 text-[12px] font-semibold",
+                          !isRunning &&
+                            activeFile &&
+                            `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} ${isLight ? "text-slate-900" : "text-white"}`
+                        )}
+                      >
+                        <MinimalControlIcon name="run" className="h-4 w-4" />
+                        {isRunning ? "Running" : "Run"}
+                      </button>
+
+                      <button
+                        onClick={handleCheck}
+                        disabled={isChecking || !activeFile}
+                        className={joinClasses(
+                          ideButtonClass({
+                            disabled: isChecking || !activeFile,
+                          }),
+                          "inline-flex items-center gap-2 px-3.5 py-2 text-[12px] font-semibold"
+                        )}
+                      >
+                        <MinimalControlIcon name="check" className="h-4 w-4" />
+                        {isChecking ? "Checking" : "Check"}
+                      </button>
+
+                      {isRunning && (
+                        <button
+                          onClick={handleStopRun}
+                          className={`${ideButtonClass({
+                            danger: true,
+                          })} inline-flex items-center gap-2 px-3.5 py-2 text-[12px] font-semibold`}
+                        >
+                          <MinimalControlIcon name="stop" className="h-4 w-4" />
+                          Stop
+                        </button>
+                      )}
+                    </div>
+
+                    <nav className="flex flex-wrap items-center justify-end gap-1.5" aria-label="IDE menu">
+                      {desktopIdeMenus.map((group) => {
+                        const active = openIdeMenu === group.id;
+
+                        return (
+                          <div key={group.id} className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setOpenIdeMenu((current) => (current === group.id ? null : group.id))}
+                              className={menuButtonClass(active)}
+                              aria-expanded={active}
+                            >
+                              <span className={menuSymbolClass()}>{group.symbol}</span>
+                              <span>{group.label}</span>
+                              <span className={`text-[10px] transition-transform ${active ? "rotate-180" : ""}`}>
+                                v
+                              </span>
+                            </button>
+
+                            {active && (
+                              <div
+                                className={`absolute right-0 top-11 z-[140] w-64 rounded-[1.1rem] border p-1.5 backdrop-blur-xl ${menuPanelClass}`}
+                              >
+                                <div className={`px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${sectionMetaClass}`}>
+                                  {group.symbol} {group.label}
+                                </div>
+                                <div className="space-y-0.5">
+                                  {group.items.map((item) => {
+                                    const content = (
+                                      <>
+                                        {item.icon ? (
+                                          <span className={menuSymbolClass(item)}>
+                                            <MinimalControlIcon name={item.icon} className="h-4 w-4" />
+                                          </span>
+                                        ) : (
+                                          <span className={menuSymbolClass(item)}>{item.symbol}</span>
+                                        )}
+                                        <span className="min-w-0 flex-1">
+                                          <span className="block truncate font-medium">{item.label}</span>
+                                          {item.detail ? (
+                                            <span className={`mt-0.5 block truncate text-[10px] ${item.disabled ? "" : sectionMetaClass}`}>
+                                              {item.detail}
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                      </>
+                                    );
+
+                                    if (item.href) {
+                                      return (
+                                        <Link
+                                          key={item.label}
+                                          href={item.href}
+                                          onClick={() => setOpenIdeMenu(null)}
+                                          className={menuItemClass(item)}
+                                        >
+                                          {content}
+                                        </Link>
+                                      );
+                                    }
+
+                                    return (
+                                      <button
+                                        key={item.label}
+                                        type="button"
+                                        disabled={item.disabled}
+                                        onClick={() => {
+                                          if (item.disabled) return;
+                                          setOpenIdeMenu(null);
+                                          void item.action?.();
+                                        }}
+                                        className={menuItemClass(item)}
+                                      >
+                                        {content}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </nav>
+                    </>
+                  )}
                 </div>
               </div>
             </header>
@@ -3950,82 +4729,9 @@ function IdePageContent() {
             <div className="flex min-h-0 flex-1">
               <div className="flex min-w-0 flex-1 flex-col">
                 <div
-                  className={`relative isolate px-4 py-2.5 ${subsectionSurfaceClass}`}
-                  style={{ ...modeBarGlowStyle, ...protectedDarkSurfaceStyle }}
+                  ref={editorShellRef}
+                  className={`relative z-0 min-h-0 flex-1 overflow-hidden ${workspaceBgClass}`}
                 >
-                  <div className="relative z-10 flex flex-col gap-2.5 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="min-w-0">
-                      <div
-                        className={`mb-1 text-[10px] font-semibold uppercase tracking-[0.24em] ${sectionLabelClass}`}
-                        style={protectedDarkLabelStyle}
-                      >
-                        Current file
-                      </div>
-                      <div
-                        className={`truncate text-[17px] ${PAGE_HEADING_CLASS} ${sectionTitleClass}`}
-                        style={protectedDarkTitleStyle}
-                      >
-                        {currentFilePath}
-                      </div>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        {problemMode && normalizedProblemStatement && (
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] ${getProblemStatusClass(problemPanelStatus, theme)}`}
-                          >
-                            {getProblemStatusLabel(problemPanelStatus)}
-                          </span>
-                        )}
-                        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] ${subtleChipClass}`}>
-                          {referenceFiles.length} reference file{referenceFiles.length === 1 ? "" : "s"} attached
-                        </span>
-                        {problemMode && normalizedProblemStatement ? (
-                          <span className={`rounded-full border px-2.5 py-0.5 text-[10px] ${subtleChipClass}`}>
-                            Problem attached
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {inferredKinds.length > 0 ? (
-                        inferredKinds.map(([kind, count]) => (
-                          <div
-                            key={kind}
-                            className={`rounded-full border px-2.5 py-0.5 text-[10px] ${subtleChipClass}`}
-                          >
-                            {humanizeType(kind)} | {count}
-                          </div>
-                        ))
-                      ) : (
-                        <div className={`text-[11px] ${sectionMetaClass}`} style={protectedDarkMetaStyle}>
-                          No semantic analysis yet
-                        </div>
-                      )}
-
-                      {!minimalist && (
-                        <InfoTooltip
-                          label="Editor Intelligence"
-                          description="This file is the only executable source. Inferred structure, references, and diagnostics appear after Check or Run."
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  {showEditorAnalysisRail && semanticHints.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {semanticHints.map((hint) => (
-                        <div
-                          key={hint.id}
-                          className={`rounded-full border px-2.5 py-0.5 text-[10px] ${subtleChipClass}`}
-                        >
-                          {hint.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className={`relative min-h-0 flex-1 overflow-hidden ${workspaceBgClass}`}>
                   {showEditorInspector && (
                     <div className="absolute right-3 top-3 z-20 hidden xl:block">
                       <button
@@ -4101,9 +4807,9 @@ function IdePageContent() {
                         wordWrap: "on",
                         scrollBeyondLastLine: false,
                         lineNumbers: "on",
-                        glyphMargin: false,
+                        glyphMargin: true,
                         folding: false,
-                        lineDecorationsWidth: 6,
+                        lineDecorationsWidth: 8,
                         padding: {
                           top: minimalist ? 24 : 18,
                           bottom: minimalist ? 24 : 18,
@@ -4112,11 +4818,73 @@ function IdePageContent() {
                         cursorBlinking: "smooth",
                         smoothScrolling: true,
                         overviewRulerBorder: false,
+                        hover: { enabled: false },
                       }}
                     />
                   ) : (
                     <div className={`flex h-full items-center justify-center ${softTextClass}`}>
                       No file selected.
+                    </div>
+                  )}
+
+                  {diagnosticPopup && selectedDiagnostic && (
+                    <div
+                      className={`absolute z-30 w-[min(25rem,calc(100%-2rem))] rounded-[1.4rem] border-2 px-3.5 py-3 text-sm backdrop-blur-xl ${selectedDiagnosticTone.bubble}`}
+                      style={{ top: diagnosticPopup.top, left: diagnosticPopup.left }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${selectedDiagnosticTone.accent}`}>
+                            {selectedDiagnostic.severity === "blocked" ? "Error" : "Warning"} on line{" "}
+                            {diagnosticPopup.lineNumber}
+                          </div>
+                          <div className="mt-1 truncate text-[13px] font-semibold">
+                            {selectedDiagnostic.title}
+                          </div>
+                        </div>
+                        <span
+                          className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${selectedDiagnosticTone.chip}`}
+                        >
+                          {selectedDiagnostic.source === "problem" ? "Problem" : selectedDiagnostic.severity}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 text-[13px] leading-5 opacity-90">
+                        {selectedDiagnostic.message}
+                      </div>
+
+                      <div className="mt-3 space-y-1.5">
+                        <div className={`flex min-w-0 items-center rounded-[1rem] border px-3 py-2 text-[12px] leading-5 ${selectedDiagnosticTone.row}`}>
+                          <span className="shrink-0 font-semibold">Specificity / Mode</span>
+                          <span className="mx-1.5 shrink-0 opacity-50">|</span>
+                          <span
+                            className="min-w-0 truncate"
+                            title={selectedDiagnostic.modeDetail || "Specificity n/a / Mode n/a"}
+                          >
+                            {selectedDiagnostic.modeDetail || "Specificity n/a / Mode n/a"}
+                          </span>
+                        </div>
+                        <div className={`flex min-w-0 items-center rounded-[1rem] border px-3 py-2 text-[12px] leading-5 ${selectedDiagnosticTone.row}`}>
+                          <span className="shrink-0 font-semibold">Structure</span>
+                          <span className="mx-1.5 shrink-0 opacity-50">|</span>
+                          <span
+                            className="min-w-0 truncate"
+                            title={selectedDiagnostic.structureDetail || "Structure details unavailable."}
+                          >
+                            {selectedDiagnostic.structureDetail || "Structure details unavailable."}
+                          </span>
+                        </div>
+                      </div>
+
+                      {selectedDiagnostic.suggestedFix ? (
+                        <div className={`mt-2 rounded-[1rem] border px-3 py-2 text-[12px] leading-5 ${selectedDiagnosticTone.row}`}>
+                          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]">
+                            Suggested Fix
+                          </div>
+                          <div>{selectedDiagnostic.suggestedFix}</div>
+                        </div>
+                      ) : null}
+
                     </div>
                   )}
                 </div>
@@ -4156,12 +4924,7 @@ function IdePageContent() {
                       <div className="flex items-center gap-1.5">
                         {bottomTabs.map((tab) => {
                           const active = activeBottomTab === tab;
-                          const count =
-                            tab === "validation"
-                              ? interpretationLines.length
-                              : tab === "visual"
-                              ? visualArtifacts.length
-                              : 0;
+                          const count = tab === "visual" ? visualArtifacts.length : 0;
 
                           return (
                             <button
@@ -4169,12 +4932,12 @@ function IdePageContent() {
                               onClick={() => setActiveBottomTab(tab)}
                               aria-label={
                                 iconControls
-                                  ? `${tab === "visual" ? "Visual" : tab === "validation" ? "Validation" : "Terminal"}${count > 0 ? ` (${count})` : ""}`
+                                  ? `${tab === "visual" ? "Visual" : "Terminal"}${count > 0 ? ` (${count})` : ""}`
                                   : undefined
                               }
                               title={
                                 iconControls
-                                  ? `${tab === "visual" ? "Visual" : tab === "validation" ? "Validation" : "Terminal"}${count > 0 ? ` (${count})` : ""}`
+                                  ? `${tab === "visual" ? "Visual" : "Terminal"}${count > 0 ? ` (${count})` : ""}`
                                   : undefined
                               }
                               className={`${ideButtonClass({
@@ -4190,15 +4953,11 @@ function IdePageContent() {
                                   icon={
                                     tab === "visual"
                                       ? "visual"
-                                      : tab === "validation"
-                                      ? "check"
                                       : "terminal"
                                   }
                                   label={
                                     tab === "visual"
                                       ? "Visual"
-                                      : tab === "validation"
-                                      ? "Validation"
                                       : "Terminal"
                                   }
                                   count={count}
@@ -4346,137 +5105,6 @@ function IdePageContent() {
                               </div>
                             </div>
                           )}
-                        </div>
-                      )}
-
-                      {activeBottomTab === "validation" && (
-                        <div className="flex h-full flex-col">
-                          {problemMode && normalizedProblemStatement && (
-                            <div className={`border-b px-3 py-2.5 ${panelBorderClass} ${isLight ? "bg-white" : "bg-[#0b0b0b]"}`}>
-                              <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                                <div className="min-w-0">
-                                  <div className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
-                                    Problem Alignment
-                                  </div>
-                                  <div className={`mt-1 text-[13px] ${strongTextAltClass}`}>{problemGoalSummary}</div>
-                                </div>
-                                <div
-                                  className={`inline-flex items-center gap-2 self-start rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getProblemStatusClass(problemPanelStatus, theme)}`}
-                                >
-                                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                                  {getProblemStatusLabel(problemPanelStatus)}
-                                </div>
-                              </div>
-                              {problemIssues.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                  {problemIssues.map((issue, index) => (
-                                    <div
-                                      key={`${issue.kind}-${index}-${issue.message}`}
-                                      className={`rounded-full border px-2.5 py-0.5 text-[10px] ${isLight ? "border-slate-200 bg-slate-50 text-slate-700" : "border-neutral-800 bg-black/20 text-neutral-300"}`}
-                                    >
-                                      {issue.message}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          <div className={`grid grid-cols-3 gap-2 border-b px-3 py-2 ${panelBorderClass} ${isLight ? "bg-white" : "bg-[#0b0b0b]"}`}>
-                            {checkMetrics.map((metric) => (
-                              <div
-                                key={metric.label}
-                                className={`rounded-[0.8rem] border px-2.5 py-2 ${
-                                  isLight
-                                    ? "border-slate-200 bg-slate-50"
-                                    : "border-neutral-800 bg-black/20"
-                                }`}
-                              >
-                                <div className={`text-[9px] font-semibold uppercase tracking-[0.14em] ${softTextClass}`}>
-                                  {metric.label}
-                                </div>
-                                <div className={`mt-1 text-[12px] font-medium ${strongTextAltClass}`}>
-                                  {metric.value}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className={`grid grid-cols-[80px_88px_minmax(0,1fr)] border-b px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] ${panelBorderClass} ${isLight ? "bg-slate-50 text-slate-500" : "bg-[#090909] text-neutral-500"}`}>
-                            <div>Line</div>
-                            <div>Status</div>
-                            <div>Diagnostic</div>
-                          </div>
-
-                          <div className="h-full overflow-y-auto overflow-x-hidden">
-                            {resolvedInterpretationLines.length === 0 ? (
-                              <div className="p-3">
-                                <div className={`rounded-[1rem] border px-3 py-2.5 text-sm ${isLight ? "border-slate-200 bg-white text-slate-500" : "border-neutral-900 bg-[#0d0d0d] text-neutral-600"}`}>
-                                  No interpretation results yet. Click Check or Run.
-                                </div>
-                              </div>
-                            ) : (
-                              <div className={isLight ? "divide-y divide-slate-200" : "divide-y divide-neutral-900"}>
-                                {resolvedInterpretationLines.map((line, index) => {
-                                  const severity = getSeverity(line);
-                                  const lineLabel = line.resolvedLineNumber || index + 1;
-
-                                  return (
-                                    <div
-                                      key={`${index}-${line.raw}`}
-                                      className="grid grid-cols-[80px_88px_minmax(0,1fr)] items-start px-3 py-2.5 text-[13px]"
-                                    >
-                                      <div className={`pr-3 ${softTextClass}`}>Line {lineLabel}</div>
-
-                                      <div className="pr-3">
-                                        <div
-                                          className={`inline-flex items-center gap-2 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${validationSeverityClass(
-                                            severity,
-                                          )}`}
-                                        >
-                                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                                          {severity}
-                                        </div>
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <div className={`truncate ${strongTextAltClass}`}>{line.raw}</div>
-                                        <div className={`mt-0.5 text-[11px] leading-5 ${softTextClass}`}>
-                                          <span className={`mr-2 uppercase tracking-[0.12em] ${isLight ? "text-slate-400" : "text-neutral-600"}`}>
-                                            {humanizeType(line.type)}
-                                          </span>
-                                          {line.message}
-                                        </div>
-                                        {(line.ai_message || line.logic_risk || line.suggested_fix) && (
-                                          <div
-                                            className={`mt-2 rounded-[0.8rem] border px-2.5 py-2 text-[11px] leading-5 ${
-                                              line.logic_risk
-                                                ? isLight
-                                                  ? "border-amber-200 bg-amber-50 text-amber-800"
-                                                  : "border-amber-500/20 bg-amber-500/[0.06] text-amber-100"
-                                                : isLight
-                                                ? "border-slate-200 bg-slate-50 text-slate-600"
-                                                : "border-neutral-800 bg-[#0a0a0a] text-neutral-300"
-                                            }`}
-                                          >
-                                            {line.ai_message && <div>{line.ai_message}</div>}
-                                            {line.logic_risk && (
-                                              <div className="mt-1">
-                                                Logic risk: {line.logic_risk}
-                                              </div>
-                                            )}
-                                            {line.suggested_fix && (
-                                              <div className="mt-1">Fix: {line.suggested_fix}</div>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
                         </div>
                       )}
 
@@ -4694,6 +5322,11 @@ function IdePageContent() {
                                     >
                                       {issue.line_number ? `Line ${issue.line_number}: ` : ""}
                                       {issue.message}
+                                      {issue.suggested_fix ? (
+                                        <div className={`mt-1 text-[12px] ${isLight ? "text-slate-500" : "text-neutral-400"}`}>
+                                          Fix: {issue.suggested_fix}
+                                        </div>
+                                      ) : null}
                                     </div>
                                   ))}
                                 </div>

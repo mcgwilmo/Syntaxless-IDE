@@ -27,6 +27,93 @@ type CircleProps = {
   style?: CSSProperties;
 };
 
+const NODE_TONES = [
+  {
+    light: {
+      icon: "border-cyan-300 bg-cyan-50 text-cyan-700 shadow-cyan-200/70",
+      glow: "bg-cyan-300/30",
+      label: "text-cyan-800",
+      hover:
+        "group-hover:border-cyan-500 group-hover:text-cyan-900 group-hover:shadow-[0_18px_38px_rgba(8,145,178,0.22)]",
+    },
+    dark: {
+      icon: "border-cyan-400/45 bg-cyan-400/10 text-cyan-200 shadow-cyan-950/40",
+      glow: "bg-cyan-400/18",
+      label: "text-cyan-200",
+      hover:
+        "group-hover:border-cyan-300/80 group-hover:text-cyan-100 group-hover:shadow-[0_18px_38px_rgba(34,211,238,0.2)]",
+    },
+  },
+  {
+    light: {
+      icon: "border-violet-300 bg-violet-50 text-violet-700 shadow-violet-200/70",
+      glow: "bg-violet-300/28",
+      label: "text-violet-800",
+      hover:
+        "group-hover:border-violet-500 group-hover:text-violet-900 group-hover:shadow-[0_18px_38px_rgba(124,58,237,0.2)]",
+    },
+    dark: {
+      icon: "border-violet-400/45 bg-violet-400/10 text-violet-200 shadow-violet-950/40",
+      glow: "bg-violet-400/18",
+      label: "text-violet-200",
+      hover:
+        "group-hover:border-violet-300/80 group-hover:text-violet-100 group-hover:shadow-[0_18px_38px_rgba(167,139,250,0.18)]",
+    },
+  },
+  {
+    light: {
+      icon: "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-emerald-200/70",
+      glow: "bg-emerald-300/28",
+      label: "text-emerald-800",
+      hover:
+        "group-hover:border-emerald-500 group-hover:text-emerald-900 group-hover:shadow-[0_18px_38px_rgba(5,150,105,0.2)]",
+    },
+    dark: {
+      icon: "border-emerald-400/45 bg-emerald-400/10 text-emerald-200 shadow-emerald-950/40",
+      glow: "bg-emerald-400/16",
+      label: "text-emerald-200",
+      hover:
+        "group-hover:border-emerald-300/80 group-hover:text-emerald-100 group-hover:shadow-[0_18px_38px_rgba(52,211,153,0.17)]",
+    },
+  },
+  {
+    light: {
+      icon: "border-amber-300 bg-amber-50 text-amber-700 shadow-amber-200/70",
+      glow: "bg-amber-300/28",
+      label: "text-amber-800",
+      hover:
+        "group-hover:border-amber-500 group-hover:text-amber-900 group-hover:shadow-[0_18px_38px_rgba(217,119,6,0.2)]",
+    },
+    dark: {
+      icon: "border-amber-400/45 bg-amber-400/10 text-amber-200 shadow-amber-950/40",
+      glow: "bg-amber-400/16",
+      label: "text-amber-200",
+      hover:
+        "group-hover:border-amber-300/80 group-hover:text-amber-100 group-hover:shadow-[0_18px_38px_rgba(251,191,36,0.17)]",
+    },
+  },
+  {
+    light: {
+      icon: "border-rose-300 bg-rose-50 text-rose-700 shadow-rose-200/70",
+      glow: "bg-rose-300/26",
+      label: "text-rose-800",
+      hover:
+        "group-hover:border-rose-500 group-hover:text-rose-900 group-hover:shadow-[0_18px_38px_rgba(225,29,72,0.18)]",
+    },
+    dark: {
+      icon: "border-rose-400/45 bg-rose-400/10 text-rose-200 shadow-rose-950/40",
+      glow: "bg-rose-400/16",
+      label: "text-rose-200",
+      hover:
+        "group-hover:border-rose-300/80 group-hover:text-rose-100 group-hover:shadow-[0_18px_38px_rgba(251,113,133,0.16)]",
+    },
+  },
+] as const;
+
+function getNodeTone(item: OrbitalItem, isLight: boolean) {
+  return NODE_TONES[(item.id - 1) % NODE_TONES.length][isLight ? "light" : "dark"];
+}
+
 function Circle({ className, idx, style }: CircleProps) {
   return (
     <div
@@ -131,6 +218,7 @@ function IconContainer({
   const Icon = item.icon;
   const isLesson = item.kind === "lesson" && Boolean(item.href);
   const label = isLesson ? item.title : "Coming Soon";
+  const tone = getNodeTone(item, isLight);
 
   return (
     <NodeShell item={item}>
@@ -142,15 +230,19 @@ function IconContainer({
         style={{ animationDelay: `${delay}s` }}
       >
         <div
+          aria-hidden="true"
           className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-2xl border shadow-inner transition-all duration-300",
-            isLight
-              ? "border-slate-300 bg-white text-slate-700 shadow-slate-200/70"
-              : "border-slate-700 bg-slate-900 text-slate-400 shadow-black/30",
-            isLesson &&
-              (isLight
-                ? "group-hover:border-slate-950 group-hover:text-slate-950 group-hover:shadow-[0_18px_36px_rgba(15,23,42,0.16)]"
-                : "group-hover:border-sky-400/70 group-hover:text-sky-200 group-hover:shadow-[0_18px_36px_rgba(14,165,233,0.16)]")
+            "absolute top-1 h-16 w-16 rounded-full blur-xl transition-opacity duration-300",
+            tone.glow,
+            isLesson ? "opacity-80 group-hover:opacity-100" : "opacity-45"
+          )}
+        />
+
+        <div
+          className={cn(
+            "relative flex h-12 w-12 items-center justify-center rounded-2xl border shadow-inner transition-all duration-300",
+            tone.icon,
+            isLesson && tone.hover
           )}
         >
           <Icon className="h-7 w-7" />
@@ -159,7 +251,8 @@ function IconContainer({
         <div
           className={cn(
             "hidden max-w-[10rem] rounded-md px-2 py-1 text-center text-xs font-bold leading-4 md:block",
-            isLight ? "text-slate-700" : "text-slate-400"
+            tone.label,
+            !isLesson && (isLight ? "opacity-70" : "opacity-65")
           )}
         >
           {label}
