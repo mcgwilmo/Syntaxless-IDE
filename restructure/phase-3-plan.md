@@ -187,20 +187,80 @@ artifacts.
 The interpreter went **1,916 → 1,575 lines**: 13 pure expression helpers extracted, the shared
 mutable state named as `InterpreterState`, and the first 5 of 45 rules moved into a real table.
 
-## Not done — 40 rules remain
+## Rule table: complete (43 of 43)
 
-The pattern is proven and the infrastructure is in place; the remaining 40 rules are the same
-mechanical shape. Two hard-won constraints for whoever continues:
+`_heuristic_interpret_document` is gone as a branch chain. The dispatcher walks one ordered list:
 
-1. **Extract only contiguous runs.** Order is semantically load-bearing — `if m: ... continue` is
-   first-match-wins. `break` was left inline precisely because a `call` rule sits between it and
-   `function_def`; taking it would have reordered it.
-2. **Diff every rule against the branch it replaces.** I wrote `rule_break` from memory and got the
-   kind and confidence wrong. The stress suite would probably have caught it; nothing guarantees
-   that for a rarer construct.
+| module | lines | holds |
+|---|---|---|
+| `rule_table.py` | 49 | the ordered table — order **is** semantics |
+| `structure_rules.py` | 114 | classes, functions, conditional keywords, block closers |
+| `declaration_rules.py` | 306 | bringing values into existence |
+| `control_flow_rules.py` | 203 | loops, conditionals, sorting |
+| `data_rules.py` | 203 | accumulation, tables, HTML, charts |
+| `print_rules.py` | 192 | print/show/output — 7 sub-branches |
+| `assignment_rules.py` | 273 | functions, returns, 5 assignment phrasings |
+| `expressions.py` | 301 | pure text → Python helpers |
+| `references.py` | 75 | resolving "it", "the list", "the number" |
+| `rules.py` | 165 | `InterpreterState`, `LineContext` |
+| `interpreter.py` | **771** | was 1,916 |
 
-3c (orchestrator split, routes split, moving `validate_generated_python` into `guards.py`) is
-untouched, as planned.
+Adding a construct is now: write a rule, insert it in the table. No other change.
+
+Four order dependencies are pinned **by test**, not by comment, because a comment does not fail a
+build. Every rule is asserted to carry a docstring.
+
+### Bugs found, preserved, and flagged
+
+Per the phase rules I fixed none of these — noting them so a later change is attributable.
+
+1. **`rule_while_true` is unreachable, and always was.** `^while (.+)$` sat at original line 1022,
+   `while true` at 1456, so the general rule always won. "while true" has always reported
+   `while_loop`/0.92 rather than `while_true`/0.97. Runtime behavior is identical and stress T28
+   passes either way — but `_should_dedent_for_line` *does* branch on `while_true`, so the fix may
+   be to reorder rather than delete. **Needs a decision.**
+2. **`rule_sum` registers `total` before checking whether its source resolved**, so "sum the
+   mystery" defines `total` on a flagged line.
+3. **`rule_for_each` opens its block even when the loop source does not resolve** — deliberate;
+   dropping the indent would misparse the entire body.
+
+### What transcription caught that reconstruction would not
+
+Three silent behavior changes, all from writing a rule from the pattern rather than the source:
+`rule_break`'s kind and confidence; `sort_ascending` scoring 0.94 where `sort_the` scores 0.95; and
+the print rule's function branch, which must **fall through** on an unknown function so
+"print mystery of 8" stays text instead of being rejected.
+
+## Not done
+
+The rule table is complete, but seven modules are still over the ~400-line target:
+
+| module | lines |
+|---|---|
+| `pipeline/orchestrator.py` | 1,260 |
+| `execution/executor.py` | 813 |
+| `stage_02_interpret/interpreter.py` | 771 |
+| `stage_04_align/alignment.py` | 605 |
+| `stage_03_govern/specificity.py` | 588 |
+| `stage_01_intent/detector.py` | 450 |
+| `stage_05_codegen/generator.py` | 442 |
+
+`interpreter.py`'s remaining 771 lines are the LLM path, caching, and the intent→IR conversion —
+a different concern from the rule table, and a separate split.
+
+**3c is untouched, as planned**: splitting `orchestrator.py` into `pipeline.py` + `stage_05` +
+`stage_06` + `vibe.py`, splitting `routes.py`, and moving `validate_generated_python` into
+`guards.py`. That last one is the riskiest single move in the phase — the blocked-response shape is
+built four times in the route and any drift between those copies becomes a behavior change.
+
+### Method notes for whoever continues
+
+1. **Extract only contiguous runs.** Order is first-match-wins. `break` was deferred one batch
+   because a `call` rule sat between it and `function_def`.
+2. **Diff every rule against the branch it replaces.** Reconstructing from the pattern produced
+   three silent behavior changes; all three were caught by reading the source, not by tests.
+3. **The stress suite is the real check here**, not pytest. It exercises 33 programs end to end;
+   the unit tests barely touch the interpreter.
 
 ## Behavior left alone
 
