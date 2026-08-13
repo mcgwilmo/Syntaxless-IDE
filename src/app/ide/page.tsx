@@ -1,98 +1,48 @@
 "use client";
 
 import Image from "next/image";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import Editor, { type Monaco } from "@monaco-editor/react";
-import type { editor as MonacoEditor } from "monaco-editor";
+import Editor from "@monaco-editor/react";
 import { createPortal } from "react-dom";
 import {
-  getSupabaseBrowserClient,
-  getSupabaseSession,
 } from "@/lib/supabase/client";
 import { ThemeToggleButton, useTheme } from "@/components/theme-provider";
-import { STORAGE_KEYS } from "@/config/brand";
+import { IdeProvider } from "@/features/ide/state/ide-context";
+import { useIdeState } from "@/features/ide/state/use-ide-state";
 import type {
-  ActionableDiagnostic,
-  BackendArtifact,
-  BottomTab,
   BugReportCategory,
   BugReportFormValues,
   BugReportTargetKind,
-  ContextMenuState,
-  DevMetrics,
-  DiagnosticAction,
-  DiagnosticPopupState,
   ExplorerNode,
-  FileNode,
-  FolderNode,
-  IdeMenuGroup,
-  IdeMenuId,
-  IdeMenuItem,
   IdeMode,
-  InterpretationLine,
   LayoutMode,
-  ProblemAlignment,
-  RunHistoryItem,
-  TerminalEntry,
-  ToastState,
-  UpgradeModalState,
   VisualArtifact,
 } from "@/features/ide/types";
 import {
-  DEV_VISION_PASSWORD,
   LAYOUT_META,
   MODE_META,
   PAGE_HEADING_CLASS,
 } from "@/features/ide/types";
 import {
-  buildActionableDiagnostics,
-  convertArtifactsToVisuals,
-  countSynthFiles,
-  countSynthFilesInNode,
-  createStarterTree,
-  deriveProblemPreview,
-  describeBackendConnectionError,
   ensureMonacoThemes,
   formatDurationMs,
   formatIntentLabel,
   formatRunTimestamp,
   formatScore,
   getCompatibilityClass,
-  getDefaultLayoutForTier,
-  getDefaultModeForTier,
   getDevStepStatusClass,
-  getDiagnosticToneClasses,
-  getLockedLayoutReason,
-  getLockedModeReason,
-  getModeBarGlowStyle,
   getModeButtonClass,
-  getProblemNoticeSeverity,
   getProblemStatusClass,
   getProblemStatusLabel,
-  getProtectedDarkSurfaceStyle,
-  getProtectedDarkTextStyle,
   getSeverity,
-  isBackendConnectionError,
-  isSynthFileName,
   joinClasses,
-  normalizeLineNumber,
-  normalizeProblemStatement,
-  parseRequestedMode,
-  resolveInterpretationLines,
-  resolveModeForTier,
   terminalStreamLabel,
-  toWsUrl,
-  uid,
+  setAllFoldersOpen,
 } from "@/features/ide/lib";
 import { MinimalControlIcon, MinimalIconLabel } from "@/features/ide/components/icons";
 import {
-  SubscriptionRecord,
-  SubscriptionTier,
   SUBSCRIPTION_META,
-  getOrCreateSubscription,
-  getSynthFileLimit,
   getSynthFileLimitLabel,
   tierAllowsLayout,
   tierAllowsMode,
@@ -167,168 +117,6 @@ function InfoTooltip({
         )}
     </>
   );
-}
-
-function findNodeById(nodes: ExplorerNode[], targetId: string): ExplorerNode | null {
-  for (const node of nodes) {
-    if (node.id === targetId) return node;
-    if (node.type === "folder") {
-      const found = findNodeById(node.children, targetId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-function findFirstFileId(nodes: ExplorerNode[]): string | null {
-  for (const node of nodes) {
-    if (node.type === "file") return node.id;
-    if (node.type === "folder") {
-      const nested = findFirstFileId(node.children);
-      if (nested) return nested;
-    }
-  }
-  return null;
-}
-
-function updateNodeById(
-  nodes: ExplorerNode[],
-  targetId: string,
-  updater: (node: ExplorerNode) => ExplorerNode
-): ExplorerNode[] {
-  return nodes.map((node) => {
-    if (node.id === targetId) return updater(node);
-    if (node.type === "folder") {
-      return {
-        ...node,
-        children: updateNodeById(node.children, targetId, updater),
-      };
-    }
-    return node;
-  });
-}
-
-function removeNodeById(nodes: ExplorerNode[], targetId: string): ExplorerNode[] {
-  const result: ExplorerNode[] = [];
-  for (const node of nodes) {
-    if (node.id === targetId) continue;
-    if (node.type === "folder") {
-      result.push({
-        ...node,
-        children: removeNodeById(node.children, targetId),
-      });
-    } else {
-      result.push(node);
-    }
-  }
-  return result;
-}
-
-function duplicateNode(node: ExplorerNode): ExplorerNode {
-  if (node.type === "file") {
-    const parts = node.name.split(".");
-    const extension = parts.length > 1 ? `.${parts.pop()}` : "";
-    const base = parts.join(".") || node.name;
-    return {
-      ...node,
-      id: uid("file"),
-      name: `${base}_copy${extension}`,
-    };
-  }
-  return {
-    ...node,
-    id: uid("folder"),
-    name: `${node.name}_copy`,
-    children: node.children.map((child) => duplicateNode(child)),
-  };
-}
-
-function insertSiblingAfterId(
-  nodes: ExplorerNode[],
-  targetId: string,
-  newNode: ExplorerNode
-): ExplorerNode[] {
-  const output: ExplorerNode[] = [];
-  for (const node of nodes) {
-    output.push(
-      node.type === "folder"
-        ? { ...node, children: insertSiblingAfterId(node.children, targetId, newNode) }
-        : node
-    );
-    if (node.id === targetId) output.push(newNode);
-  }
-  return output;
-}
-
-function addChildToFolder(
-  nodes: ExplorerNode[],
-  folderId: string,
-  child: ExplorerNode
-): ExplorerNode[] {
-  return nodes.map((node) => {
-    if (node.id === folderId && node.type === "folder") {
-      return {
-        ...node,
-        isOpen: true,
-        children: [...node.children, child],
-      };
-    }
-    if (node.type === "folder") {
-      return {
-        ...node,
-        children: addChildToFolder(node.children, folderId, child),
-      };
-    }
-    return node;
-  });
-}
-
-function setAllFoldersOpen(nodes: ExplorerNode[], isOpen: boolean): ExplorerNode[] {
-  return nodes.map((node) => {
-    if (node.type === "folder") {
-      return {
-        ...node,
-        isOpen,
-        children: setAllFoldersOpen(node.children, isOpen),
-      };
-    }
-    return node;
-  });
-}
-
-function collectReferenceFiles(
-  nodes: ExplorerNode[],
-  activeFileId: string | null,
-  parentPath = ""
-): Array<{ path: string; content: string }> {
-  const files: Array<{ path: string; content: string }> = [];
-  for (const node of nodes) {
-    const nextPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-    if (node.type === "file") {
-      if (node.id !== activeFileId) {
-        files.push({ path: nextPath, content: node.content });
-      }
-    } else {
-      files.push(...collectReferenceFiles(node.children, activeFileId, nextPath));
-    }
-  }
-  return files;
-}
-
-function findFilePathById(
-  nodes: ExplorerNode[],
-  targetId: string,
-  parentPath = ""
-): string | null {
-  for (const node of nodes) {
-    const nextPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-    if (node.id === targetId && node.type === "file") return nextPath;
-    if (node.type === "folder") {
-      const found = findFilePathById(node.children, targetId, nextPath);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 
 function ExplorerTree({
@@ -690,1778 +478,177 @@ function ArtifactPreview({
 }
 
 function IdePageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const { isLight, theme, toggleTheme } = useTheme();
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
-  const wsBaseUrl = useMemo(() => toWsUrl(backendUrl), [backendUrl]);
-
-  const contextMenuRef = useRef<HTMLDivElement | null>(null);
-  const terminalScrollRef = useRef<HTMLDivElement | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const addMenuRef = useRef<HTMLDivElement | null>(null);
-  const treeMenuRef = useRef<HTMLDivElement | null>(null);
-  const editorShellRef = useRef<HTMLDivElement | null>(null);
-  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
-  const monacoRef = useRef<Monaco | null>(null);
-  const editorDecorationIdsRef = useRef<string[]>([]);
-
-  const projectId = searchParams.get("project") || "local-project";
-
-  const [showPython, setShowPython] = useState(false);
-  const [showBottomPanel, setShowBottomPanel] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [showModeOverlay, setShowModeOverlay] = useState(false);
-  const [showLayoutOverlay, setShowLayoutOverlay] = useState(false);
-  const [showDevVisionPrompt, setShowDevVisionPrompt] = useState(false);
-  const [showRunsSection, setShowRunsSection] = useState(true);
-
-  const [showAddMenu, setShowAddMenu] = useState(false);
-  const [showTreeMenu, setShowTreeMenu] = useState(false);
-  const [openIdeMenu, setOpenIdeMenu] = useState<IdeMenuId | null>(null);
-  const [analysisOpen, setAnalysisOpen] = useState(true);
-
-  const [mode, setMode] = useState<IdeMode>("standard");
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("normal");
-  const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>("terminal");
-  const [problemStatement, setProblemStatement] = useState("");
-  const [problemPanelOpen, setProblemPanelOpen] = useState(true);
-  const [problemAlignment, setProblemAlignment] = useState<ProblemAlignment | null>(null);
-
-  const [projectName, setProjectName] = useState("Untitled Project");
-  const [projectLoaded, setProjectLoaded] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("Loading project...");
-
-  const [explorerTree, setExplorerTree] = useState<ExplorerNode[]>([]);
-  const [activeFileId, setActiveFileId] = useState<string | null>(null);
-
-  const [generatedPython, setGeneratedPython] = useState("");
-  const [terminalOutput, setTerminalOutput] = useState("Terminal output will appear here.\n");
-  const [terminalEntries, setTerminalEntries] = useState<TerminalEntry[]>([
-    {
-      id: "initial",
-      stream: "system",
-      text: "Terminal output will appear here.",
-    },
-  ]);
-  const [terminalInput, setTerminalInput] = useState("");
-  const [inputPrompt, setInputPrompt] = useState<string | null>(null);
-
-  const [isRunning, setIsRunning] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("Ready.");
-
-  const [interpretationLines, setInterpretationLines] = useState<InterpretationLine[]>([]);
-  const [interpretationSourceFilePath, setInterpretationSourceFilePath] = useState<string | null>(
-    null
-  );
-  const [interpretationSourceDocument, setInterpretationSourceDocument] = useState("");
-  const [visualArtifacts, setVisualArtifacts] = useState<VisualArtifact[]>([]);
-  const [artifactErrors, setArtifactErrors] = useState<Record<string, boolean>>({});
-  const [runs, setRuns] = useState<RunHistoryItem[]>([]);
-  const [activeRunId, setActiveRunId] = useState<string | null>(null);
-  const [devVisionEnabled, setDevVisionEnabled] = useState(false);
-  const [devVisionPassword, setDevVisionPassword] = useState("");
-  const [devVisionError, setDevVisionError] = useState("");
-  const [devMetrics, setDevMetrics] = useState<DevMetrics | null>(null);
-
-  const [showBugModal, setShowBugModal] = useState(false);
-  const [bugSubmitting, setBugSubmitting] = useState(false);
-  const [bugTargetKind, setBugTargetKind] = useState<BugReportTargetKind>("ui");
-  const [bugTargetRunId, setBugTargetRunId] = useState<string | null>(null);
-
-  const [terminalHeight, setTerminalHeight] = useState(236);
-  const [isResizingTerminal, setIsResizingTerminal] = useState(false);
-  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
-  const [diagnosticPopup, setDiagnosticPopup] = useState<DiagnosticPopupState | null>(null);
-  const [toast, setToast] = useState<ToastState>({ text: "", visible: false });
-
-  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
-  const [sessionEmail, setSessionEmail] = useState("");
-  const [upgradeModal, setUpgradeModal] = useState<UpgradeModalState>({
-    open: false,
-    title: "",
-    message: "",
-  });
-
-  const activeTier: SubscriptionTier = subscription?.tier ?? "free";
-  const studentModeLocked = activeTier === "student";
-  const currentModeMeta = MODE_META[mode];
-  const currentLayoutMeta = LAYOUT_META[layoutMode];
-
-  const getDiagnosticPopupPosition = useCallback((lineNumber: number) => {
-    const editor = editorRef.current;
-    const monaco = monacoRef.current;
-    const shell = editorShellRef.current;
-    const editorNode = editor?.getDomNode();
-
-    if (!editor || !shell || !editorNode || !monaco) return { top: 12, left: 12 };
-
-    const editorRect = editorNode.getBoundingClientRect();
-    const shellRect = shell.getBoundingClientRect();
-    const layout = editor.getLayoutInfo();
-    const lineHeight = editor.getOption(monaco.editor.EditorOption.lineHeight);
-    const lineTop = editor.getTopForLineNumber(lineNumber) - editor.getScrollTop();
-    const top = editorRect.top - shellRect.top + lineTop + lineHeight + 6;
-    const left = editorRect.left - shellRect.left + layout.contentLeft;
-    const maxTop = Math.max(12, shell.clientHeight - 230);
-    const maxLeft = Math.max(12, shell.clientWidth - 416);
-
-    return {
-      top: Math.min(Math.max(top, 12), maxTop),
-      left: Math.min(Math.max(left, 12), maxLeft),
-    };
-  }, []);
-  const synthFileLimit = getSynthFileLimit(activeTier);
-  const currentSynthFileCount = useMemo(() => countSynthFiles(explorerTree), [explorerTree]);
-  const problemStorageKey = useMemo(() => STORAGE_KEYS.problem(projectId), [projectId]);
-
-  const sidebarContainerClass = useMemo(
-    () => (sidebarOpen ? "w-[17rem] opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-6"),
-    [sidebarOpen]
-  );
-
-  const activeFile = useMemo(() => {
-    if (!activeFileId) return null;
-    const found = findNodeById(explorerTree, activeFileId);
-    return found && found.type === "file" ? found : null;
-  }, [explorerTree, activeFileId]);
-
-  const currentFilePath = useMemo(() => {
-    if (!activeFileId) return "No file selected";
-    return findFilePathById(explorerTree, activeFileId) || "No file selected";
-  }, [explorerTree, activeFileId]);
-
-  const referenceFiles = useMemo(
-    () => collectReferenceFiles(explorerTree, activeFileId),
-    [explorerTree, activeFileId]
-  );
-
-  const diagnosticsSummary = useMemo(() => {
-    const blocked = interpretationLines.filter((line) => getSeverity(line) === "blocked").length;
-    const warnings = interpretationLines.filter((line) => getSeverity(line) === "warning").length;
-    const ok = interpretationLines.filter((line) => getSeverity(line) === "ok").length;
-    return { blocked, warnings, ok };
-  }, [interpretationLines]);
-
-  const derivedAverageSpecificity = useMemo(() => {
-    const scores = interpretationLines
-      .map((line) =>
-        typeof line.specificity_score === "number" && Number.isFinite(line.specificity_score)
-          ? line.specificity_score
-          : null
-      )
-      .filter((score): score is number => score !== null);
-    if (scores.length === 0) return null;
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  }, [interpretationLines]);
-
-  const derivedAverageStructurePenalty = useMemo(() => {
-    const scores = interpretationLines
-      .map((line) =>
-        typeof line.structure_penalty === "number" && Number.isFinite(line.structure_penalty)
-          ? line.structure_penalty
-          : null
-      )
-      .filter((score): score is number => score !== null);
-    if (scores.length === 0) return null;
-    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  }, [interpretationLines]);
-
-  const resolvedInterpretationLines = useMemo(
-    () => resolveInterpretationLines(interpretationSourceDocument, interpretationLines),
-    [interpretationLines, interpretationSourceDocument]
-  );
-
-  const generatedPythonAllowed = SUBSCRIPTION_META[activeTier].generatedPython;
-  const problemMode = mode === "problem_solving";
-  const normalizedProblemStatement = useMemo(
-    () => normalizeProblemStatement(problemStatement),
-    [problemStatement]
-  );
-  const problemPanelStatus = useMemo(
-    () => problemAlignment?.status ?? ("awaiting_check" as const),
-    [problemAlignment]
-  );
-  const problemGoalSummary = useMemo(
-    () => problemAlignment?.goal_summary || deriveProblemPreview(problemStatement),
-    [problemAlignment, problemStatement]
-  );
-  const problemIssues = useMemo(
-    () => (problemAlignment?.issues || []).slice(0, 3),
-    [problemAlignment]
-  );
-  const problemLineNotices = useMemo(
-    () => problemAlignment?.line_notices || [],
-    [problemAlignment]
-  );
-  const actionableDiagnostics = useMemo(
-    () =>
-      buildActionableDiagnostics({
-        activeTier,
-        currentFilePath,
-        mode,
-        problemIssues,
-        problemLineNotices,
-        resolvedInterpretationLines,
-      }),
-    [activeTier, currentFilePath, mode, problemIssues, problemLineNotices, resolvedInterpretationLines]
-  );
-  const selectedDiagnostic = useMemo(() => {
-    if (!diagnosticPopup) return null;
-
-    const lineCount = activeFile?.content.split("\n").length || 0;
-
-    return (
-      actionableDiagnostics.find((diagnostic) => {
-        if (diagnostic.severity === "ok") return false;
-        return normalizeLineNumber(diagnostic.lineNumber, lineCount) === diagnosticPopup.lineNumber;
-      }) || null
-    );
-  }, [actionableDiagnostics, activeFile?.content, diagnosticPopup]);
-  const diagnosticPopupLineNumber = diagnosticPopup?.lineNumber ?? null;
-  const selectedDiagnosticTone = getDiagnosticToneClasses(selectedDiagnostic?.severity ?? "warning", isLight);
-
-  useEffect(() => {
-    if (diagnosticPopup && !selectedDiagnostic) {
-      setDiagnosticPopup(null);
-    }
-  }, [diagnosticPopup, selectedDiagnostic]);
-
-  useEffect(() => {
-    const editor = editorRef.current;
-
-    if (!editor || !diagnosticPopupLineNumber) return;
-
-    const scrollDisposable = editor.onDidScrollChange(() => {
-      setDiagnosticPopup((current) =>
-        current
-          ? {
-              ...current,
-              ...getDiagnosticPopupPosition(current.lineNumber),
-            }
-          : current
-      );
-    });
-
-    return () => scrollDisposable.dispose();
-  }, [diagnosticPopupLineNumber, getDiagnosticPopupPosition]);
-  const outputSummaryLabel = useMemo(() => {
-    const parts: string[] = [];
-    if (problemMode && normalizedProblemStatement) {
-      parts.push(getProblemStatusLabel(problemAlignment?.status || "partial"));
-    }
-    if (diagnosticsSummary.blocked > 0) parts.push(`${diagnosticsSummary.blocked} blocked`);
-    else if (diagnosticsSummary.warnings > 0) parts.push(`${diagnosticsSummary.warnings} warning`);
-    else if (diagnosticsSummary.ok > 0) parts.push(`${diagnosticsSummary.ok} clear`);
-    if (visualArtifacts.length > 0) parts.push(`${visualArtifacts.length} visual`);
-    return parts.length > 0 ? parts.join(" · ") : "Run or check to populate results";
-  }, [diagnosticsSummary, normalizedProblemStatement, problemAlignment?.status, problemMode, visualArtifacts.length]);
-
-  const checkMetrics = useMemo(
-    () => [
-      {
-        label: "Time",
-        value: formatDurationMs(devMetrics?.total_duration_ms),
-      },
-      {
-        label: "Specificity",
-        value: formatScore(devMetrics?.average_specificity ?? derivedAverageSpecificity),
-      },
-      {
-        label: "Struct Penalty",
-        value: formatScore(devMetrics?.average_structure_penalty ?? derivedAverageStructurePenalty),
-      },
-    ],
-    [
-      devMetrics,
-      derivedAverageSpecificity,
-      derivedAverageStructurePenalty,
-    ]
-  );
-
-  function showToast(text: string) {
-    setToast({ text, visible: true });
-  }
-
-  function handleDiagnosticAction(action: DiagnosticAction, diagnostic: ActionableDiagnostic) {
-    const editor = editorRef.current;
-    const monaco = monacoRef.current;
-
-    if (action.kind === "go_to_line") {
-      editor?.focus();
-      editor?.setPosition({ lineNumber: action.lineNumber, column: 1 });
-      editor?.revealLineInCenterIfOutsideViewport(action.lineNumber);
-      setStatusMessage(`Focused line ${action.lineNumber}.`);
-      setDiagnosticPopup(null);
-      return;
-    }
-
-    if (action.kind === "replace_line") {
-      const model = editor?.getModel();
-
-      if (!editor || !monaco || !model) return;
-
-      const maxColumn = model.getLineMaxColumn(action.lineNumber);
-      editor.executeEdits("diagnostic-fix", [
-        {
-          range: new monaco.Range(action.lineNumber, 1, action.lineNumber, maxColumn),
-          text: action.nextText,
-          forceMoveMarkers: true,
-        },
-      ]);
-      updateActiveFileContent(model.getValue());
-      editor.focus();
-      setStatusMessage(`Applied suggested fix on line ${action.lineNumber}.`);
-      showToast("Suggested fix applied.");
-      setDiagnosticPopup(null);
-      return;
-    }
-
-    if (action.kind === "switch_mode") {
-      handleSelectMode(action.mode);
-      setDiagnosticPopup(null);
-      return;
-    }
-
-    setProblemPanelOpen(true);
-    setStatusMessage(diagnostic.source === "problem" ? "Opened problem guidance." : diagnostic.title);
-    setDiagnosticPopup(null);
-  }
-
-  function handleApplySelectedDiagnostic(diagnostic: ActionableDiagnostic) {
-    const applyAction = diagnostic.actions.find((action) => action.kind === "replace_line");
-
-    if (!applyAction) return;
-
-    handleDiagnosticAction(applyAction, diagnostic);
-  }
-
-  function handleJumpToSelectedDiagnostic(diagnostic: ActionableDiagnostic) {
-    const jumpAction = diagnostic.actions.find((action) => action.kind === "go_to_line");
-
-    if (jumpAction) {
-      handleDiagnosticAction(jumpAction, diagnostic);
-    }
-  }
-
-  function openDevVisionPrompt() {
-    setDevVisionPassword("");
-    setDevVisionError("");
-    setShowDevVisionPrompt(true);
-  }
-
-  function handleDevVisionUnlock() {
-    if (devVisionPassword !== DEV_VISION_PASSWORD) {
-      setDevVisionError("Incorrect password.");
-      return;
-    }
-
-    setDevVisionEnabled(true);
-    setShowDevVisionPrompt(false);
-    setDevVisionPassword("");
-    setDevVisionError("");
-    setStatusMessage("Dev Vision enabled.");
-  }
-
-  function exitDevVision() {
-    setDevVisionEnabled(false);
-    setShowDevVisionPrompt(false);
-    setDevVisionPassword("");
-    setDevVisionError("");
-    setStatusMessage("Dev Vision exited.");
-  }
-
-  function applyInterpretationState(
-    nextLines: InterpretationLine[],
-    sourceFilePath: string,
-    sourceDocument: string
-  ) {
-    setInterpretationLines(nextLines);
-    setInterpretationSourceFilePath(sourceFilePath);
-    setInterpretationSourceDocument(sourceDocument);
-  }
-
-  function applyProblemAlignmentState(nextAlignment: ProblemAlignment | null) {
-    setProblemAlignment(nextAlignment);
-  }
-
-  function openUpgradeModal(title: string, message: string) {
-    setUpgradeModal({
-      open: true,
-      title,
-      message,
-    });
-  }
-
-  function buildBugSnapshot() {
-    const selectedRun =
-      runs.find((item) => item.id === (bugTargetRunId || activeRunId)) || null;
-
-    return {
-      bug_target_kind: bugTargetKind,
-      captured_at: new Date().toISOString(),
-      project_name: projectName,
-      project_id: projectId,
-      active_file_path: currentFilePath,
-      active_document: activeFile?.content ?? "",
-      problem_statement: normalizedProblemStatement || null,
-      problem_alignment: problemAlignment,
-      mode,
-      layout_mode: layoutMode,
-      subscription_tier: activeTier,
-      status_message: statusMessage,
-      dev_vision_enabled: devVisionEnabled,
-      dev_metrics: devMetrics,
-      terminal_output: terminalOutput,
-      generated_python: generatedPython,
-      interpretation_lines: interpretationLines,
-      visual_artifacts: visualArtifacts.map((artifact) => ({
-        name: artifact.name,
-        artifact_type: artifact.artifact_type,
-        label: artifact.label,
-        source: artifact.source,
-        url: artifact.url,
-      })),
-      selected_run: selectedRun,
-      target_run_id: bugTargetRunId,
-      browser:
-        typeof window !== "undefined"
-          ? {
-              href: window.location.href,
-              user_agent: window.navigator.userAgent,
-            }
-          : null,
-    };
-  }
-
-  function openUiBugReport() {
-    setBugTargetKind("ui");
-    setBugTargetRunId(activeRunId);
-    setShowBugModal(true);
-  }
-
-  function openTutorialPlaceholder() {
-    setStatusMessage("Tutorials placeholder selected.");
-    showToast("Tutorials window coming soon.");
-  }
-
-  async function openRunBugReport(runId: string) {
-    if (activeRunId !== runId) {
-      await loadRunDetails(runId);
-    }
-    setBugTargetKind("run");
-    setBugTargetRunId(runId);
-    setShowBugModal(true);
-  }
-
-  async function handleSubmitBugReport(values: BugReportFormValues) {
-    const session = await getSupabaseSession(supabase);
-
-    if (!session?.user?.id) {
-      showToast("You must be signed in to report a bug.");
-      return;
-    }
-
-    setBugSubmitting(true);
-
-    try {
-      const response = await fetch(`${backendUrl}/bugs/report`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          owner_id: session.user.id,
-          project_id: projectId,
-          run_id: bugTargetKind === "run" ? bugTargetRunId : null,
-          active_file_path: currentFilePath,
-          mode,
-          category: values.category,
-          title: values.title,
-          description: values.description,
-          expected_behavior: values.expectedBehavior || null,
-          reproducible: values.reproducible,
-          snapshot: buildBugSnapshot(),
-        }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Failed to submit bug report.");
-      }
-
-      setShowBugModal(false);
-      setBugTargetKind("ui");
-      setBugTargetRunId(null);
-      showToast("Bug report submitted.");
-    } catch (error) {
-      console.error(error);
-      showToast("Could not submit bug report.");
-    } finally {
-      setBugSubmitting(false);
-    }
-  }
-
-  function enforceTierGuardrails(tier: SubscriptionTier) {
-    const allowedMode = tierAllowsMode(tier, mode);
-    const allowedLayout = tierAllowsLayout(tier, layoutMode);
-
-    if (!allowedMode) {
-      const nextMode = getDefaultModeForTier(tier);
-      setMode(nextMode);
-      if (nextMode === "problem_solving" && layoutMode !== "minimalist") {
-        setProblemPanelOpen(true);
-      }
-      setShowModeOverlay(false);
-      setStatusMessage(`${MODE_META[nextMode].label} mode selected for your plan.`);
-      showToast(`${MODE_META[nextMode].label} mode selected for your plan.`);
-    }
-
-    if (!allowedLayout) {
-      applyLayoutMode(getDefaultLayoutForTier(tier), true);
-    }
-
-    if (!SUBSCRIPTION_META[tier].generatedPython) {
-      setShowPython(false);
-    }
-  }
-
-  function applyLayoutMode(next: LayoutMode, silent = false) {
-    setLayoutMode(next);
-
-    if (next === "minimalist") {
-      setSidebarOpen(false);
-      setShowPython(false);
-      setShowRunsSection(false);
-      setShowBottomPanel(false);
-      setActiveBottomTab("terminal");
-      setAnalysisOpen(false);
-      if (mode === "problem_solving") {
-        setProblemPanelOpen(false);
-      }
-    } else if (next === "normal") {
-      setSidebarOpen(true);
-      setShowPython(false);
-      setShowRunsSection(true);
-      setShowBottomPanel(true);
-      setActiveBottomTab("terminal");
-      setAnalysisOpen(true);
-      if (mode === "problem_solving") {
-        setProblemPanelOpen(true);
-      }
-    } else {
-      setSidebarOpen(true);
-      if (generatedPythonAllowed) {
-        setShowPython(true);
-      }
-      setShowRunsSection(true);
-      setShowBottomPanel(true);
-      setActiveBottomTab("terminal");
-      setAnalysisOpen(true);
-      if (mode === "problem_solving") {
-        setProblemPanelOpen(true);
-      }
-    }
-
-    if (!silent) {
-      showToast(`${LAYOUT_META[next].label} layout selected.`);
-    }
-  }
-
-  function appendTerminal(text: string, stream: TerminalEntry["stream"] = "system") {
-    setTerminalOutput((prev) => prev + text);
-    if (!text) return;
-    setTerminalEntries((prev) => {
-      const base = prev.length === 1 && prev[0]?.id === "initial" ? [] : prev;
-      return [
-        ...base,
-        {
-          id: uid("terminal"),
-          stream,
-          text,
-        },
-      ];
-    });
-  }
-
-  function appendRuntimeIndicator(symbol: string) {
-    setTerminalOutput((prev) => prev + `[${symbol}]\n`);
-    setTerminalEntries((prev) => {
-      const base = prev.length === 1 && prev[0]?.id === "initial" ? [] : prev;
-      return [
-        ...base,
-        {
-          id: uid("terminal"),
-          stream: "runtime",
-          text: "",
-          symbol,
-        },
-      ];
-    });
-  }
-
-  function replaceTerminalEntries(entries: TerminalEntry[]) {
-    setTerminalEntries(
-      entries.length > 0
-        ? entries
-        : [
-            {
-              id: uid("terminal"),
-              stream: "system",
-              text: "Program finished with no output.",
-            },
-          ]
-    );
-  }
-
-  function replaceVisualArtifacts(
-    runId: string,
-    artifacts: BackendArtifact[],
-    source: "live" | "persisted"
-  ) {
-    const cacheKey = `${Date.now()}`;
-    setArtifactErrors({});
-    setVisualArtifacts(
-      convertArtifactsToVisuals(backendUrl, projectId, runId, artifacts, source, cacheKey)
-    );
-  }
-
-  function addLiveArtifact(runId: string, artifact: BackendArtifact) {
-    const cacheKey = `${Date.now()}`;
-    setVisualArtifacts((prev) => {
-      if (prev.some((item) => item.name === artifact.name)) {
-        return prev;
-      }
-      return [
-        ...prev,
-        ...convertArtifactsToVisuals(backendUrl, projectId, runId, [artifact], "live", cacheKey),
-      ];
-    });
-  }
-
-  function canAddMoreSynthFiles(extra = 1) {
-    if (synthFileLimit === null) return true;
-    return currentSynthFileCount + extra <= synthFileLimit;
-  }
-
-  function requireStructureUpgradeIfFree(actionLabel: string) {
-    if (activeTier === "free") {
-      openUpgradeModal(
-        "Upgrade required",
-        `The Free plan is limited to a single-file minimalist workflow. Upgrade your subscription to ${actionLabel}.`
-      );
-      return true;
-    }
-
-    return false;
-  }
-
-  async function loadRuns() {
-    try {
-      const response = await fetch(`${backendUrl}/runs?project_id=${encodeURIComponent(projectId)}`);
-      if (!response.ok) throw new Error("Failed to load runs");
-      const data = await response.json();
-      setRuns(data.runs || []);
-    } catch (error) {
-      if (isBackendConnectionError(error)) {
-        setRuns([]);
-        setStatusMessage(`Run history unavailable. Backend is not reachable at ${backendUrl}.`);
-        return;
-      }
-
-      console.error(error);
-      setStatusMessage("Failed to load run history.");
-    }
-  }
-
-  async function loadRunDetails(runId: string) {
-    try {
-      const response = await fetch(
-        `${backendUrl}/runs/${encodeURIComponent(runId)}?project_id=${encodeURIComponent(projectId)}`
-      );
-      if (!response.ok) throw new Error("Failed to load run");
-      const data = await response.json();
-
-      setActiveRunId(runId);
-      setGeneratedPython(data.generated_python || "");
-      setProblemStatement(data.problem_statement || "");
-      applyProblemAlignmentState(data.problem_alignment || null);
-      setDevMetrics(data.dev_metrics || null);
-      applyInterpretationState(
-        data.interpretation_lines || [],
-        data.active_file_path || "",
-        data.document || ""
-      );
-
-      const stdout = data.stdout || "";
-      const stderr = data.stderr || "";
-
-      if (stderr.trim()) {
-        setTerminalOutput(`STDERR:\n${stderr}\n\nSTDOUT:\n${stdout}`);
-      } else {
-        setTerminalOutput(stdout || "Program finished with no output.");
-      }
-      replaceTerminalEntries([
-        ...(stderr.trim()
-          ? [
-              {
-                id: uid("terminal"),
-                stream: "stderr" as const,
-                text: stderr,
-              },
-            ]
-          : []),
-        ...(stdout.trim()
-          ? [
-              {
-                id: uid("terminal"),
-                stream: "stdout" as const,
-                text: stdout,
-              },
-            ]
-          : []),
-      ]);
-
-      replaceVisualArtifacts(data.id, data.artifacts || [], "persisted");
-      setMode(resolveModeForTier(activeTier, data.mode || null));
-      setShowBottomPanel(true);
-      setActiveBottomTab((data.artifacts || []).length > 0 ? "visual" : "terminal");
-      setStatusMessage(`Loaded run ${data.id}.`);
-    } catch (error) {
-      console.error(error);
-      setStatusMessage("Failed to load run.");
-    }
-  }
-
-  useEffect(() => {
-    void loadRuns();
-  }, [backendUrl, projectId]);
-
-  useEffect(() => {
-    if (terminalScrollRef.current) {
-      terminalScrollRef.current.scrollTop = terminalScrollRef.current.scrollHeight;
-    }
-  }, [terminalOutput]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setProblemStatement(window.localStorage.getItem(problemStorageKey) || "");
-  }, [problemStorageKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (normalizedProblemStatement) {
-      window.localStorage.setItem(problemStorageKey, problemStatement);
-    } else {
-      window.localStorage.removeItem(problemStorageKey);
-    }
-  }, [normalizedProblemStatement, problemStatement, problemStorageKey]);
-
-  useEffect(() => {
-    async function bootstrap() {
-      const session = await getSupabaseSession(supabase);
-
-      if (!session) {
-        router.replace("/login");
-        return;
-      }
-
-      setSessionEmail(session.user.email ?? "");
-
-      try {
-        const subscriptionRecord = await getOrCreateSubscription(
-          supabase,
-          session.user.id,
-          session.user.email ?? ""
-        );
-        setSubscription(subscriptionRecord);
-
-        const nextMode = resolveModeForTier(
-          subscriptionRecord.tier,
-          parseRequestedMode(searchParams.get("mode"))
-        );
-        setMode(nextMode);
-        if (nextMode === "problem_solving") {
-          setProblemPanelOpen(true);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-
-      if (!searchParams.get("project")) {
-        router.replace("/dashboard");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, name, tree_json")
-        .eq("id", projectId)
-        .single();
-
-      if (error || !data) {
-        setSaveStatus(error?.message || "Project not found.");
-        return;
-      }
-
-      const loadedTree = Array.isArray(data.tree_json)
-        ? (data.tree_json as ExplorerNode[])
-        : createStarterTree();
-
-      setProjectName(data.name || "Untitled Project");
-      setExplorerTree(loadedTree);
-      setActiveFileId(findFirstFileId(loadedTree));
-      setProjectLoaded(true);
-      setSaveStatus("Saved.");
-      setStatusMessage("Project loaded.");
-    }
-
-    void bootstrap();
-  }, [projectId, router, searchParams, supabase]);
-
-  useEffect(() => {
-    if (!subscription) return;
-    enforceTierGuardrails(subscription.tier);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subscription?.tier]);
-
-  useEffect(() => {
-    if (!projectLoaded || !projectId) return;
-
-    const handle = setTimeout(async () => {
-      setSaveStatus("Saving...");
-      const { error } = await supabase
-        .from("projects")
-        .update({
-          name: projectName,
-          tree_json: explorerTree,
-        })
-        .eq("id", projectId);
-
-      setSaveStatus(error ? error.message : "Saved.");
-    }, 700);
-
-    return () => clearTimeout(handle);
-  }, [explorerTree, projectId, projectLoaded, projectName, supabase]);
-
-  useEffect(() => {
-    if (!toast.visible) return;
-    const timeout = setTimeout(() => {
-      setToast((prev) => ({ ...prev, visible: false }));
-    }, 2200);
-    return () => clearTimeout(timeout);
-  }, [toast.visible, toast.text]);
-
-  useEffect(() => {
-    function handleMouseMove(e: MouseEvent) {
-      if (!isResizingTerminal) return;
-      const newHeight = window.innerHeight - e.clientY - 16;
-      const clampedHeight = Math.max(170, Math.min(540, newHeight));
-      setTerminalHeight(clampedHeight);
-    }
-
-    function handleMouseUp() {
-      setIsResizingTerminal(false);
-    }
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setShowModeOverlay(false);
-        setShowLayoutOverlay(false);
-        setContextMenu(null);
-        setShowAddMenu(false);
-        setShowTreeMenu(false);
-        setUpgradeModal((prev) => ({ ...prev, open: false }));
-        setShowBugModal(false);
-      }
-    }
-
-    function handleWindowClick(event: MouseEvent) {
-      if (
-        contextMenuRef.current &&
-        event.target instanceof Node &&
-        contextMenuRef.current.contains(event.target)
-      ) {
-        return;
-      }
-
-      if (
-        addMenuRef.current &&
-        event.target instanceof Node &&
-        addMenuRef.current.contains(event.target)
-      ) {
-        return;
-      }
-
-      if (
-        treeMenuRef.current &&
-        event.target instanceof Node &&
-        treeMenuRef.current.contains(event.target)
-      ) {
-        return;
-      }
-
-      setContextMenu(null);
-      setShowAddMenu(false);
-      setShowTreeMenu(false);
-    }
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("click", handleWindowClick);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("click", handleWindowClick);
-    };
-  }, [isResizingTerminal]);
-
-  useEffect(() => {
-    return () => {
-      wsRef.current?.close();
-    };
-  }, []);
-
-  function updateActiveFileContent(nextContent: string) {
-    if (!activeFileId) return;
-    setExplorerTree((prev) =>
-      updateNodeById(prev, activeFileId, (node) =>
-        node.type === "file" ? { ...node, content: nextContent } : node
-      )
-    );
-  }
-
-  function toggleFolder(folderId: string) {
-    setExplorerTree((prev) =>
-      updateNodeById(prev, folderId, (node) =>
-        node.type === "folder" ? { ...node, isOpen: !node.isOpen } : node
-      )
-    );
-  }
-
-  function createFile(parentFolderId?: string) {
-    if (requireStructureUpgradeIfFree("create additional files")) return;
-
-    if (!canAddMoreSynthFiles(1)) {
-      openUpgradeModal(
-        "Synth file limit reached",
-        `Your ${SUBSCRIPTION_META[activeTier].label} plan allows ${getSynthFileLimitLabel(
-          activeTier
-        )} synth file(s) per project. Upgrade your subscription to add more.`
-      );
-      return;
-    }
-
-    const name = window.prompt("New file name", "new_file.synth");
-    if (!name) return;
-
-    const newFile: FileNode = {
-      id: uid("file"),
-      type: "file",
-      name,
-      content: "",
-    };
-
-    if (isSynthFileName(name) && !canAddMoreSynthFiles(1)) {
-      openUpgradeModal(
-        "Synth file limit reached",
-        `Your ${SUBSCRIPTION_META[activeTier].label} plan allows ${getSynthFileLimitLabel(
-          activeTier
-        )} synth file(s) per project. Upgrade your subscription to add more.`
-      );
-      return;
-    }
-
-    setExplorerTree((prev) => {
-      if (parentFolderId) return addChildToFolder(prev, parentFolderId, newFile);
-      return [...prev, newFile];
-    });
-    setActiveFileId(newFile.id);
-    setStatusMessage(`Created file ${name}.`);
-  }
-
-  function createFolder(parentFolderId?: string) {
-    if (requireStructureUpgradeIfFree("create folders")) return;
-
-    const name = window.prompt("New folder name", "new_folder");
-    if (!name) return;
-
-    const newFolder: FolderNode = {
-      id: uid("folder"),
-      type: "folder",
-      name,
-      isOpen: true,
-      children: [],
-    };
-
-    setExplorerTree((prev) => {
-      if (parentFolderId) return addChildToFolder(prev, parentFolderId, newFolder);
-      return [...prev, newFolder];
-    });
-    setStatusMessage(`Created folder ${name}.`);
-  }
-
-  function renameNode(nodeId: string) {
-    const node = findNodeById(explorerTree, nodeId);
-    if (!node) return;
-
-    const nextName = window.prompt("Rename", node.name);
-    if (!nextName || nextName === node.name) return;
-
-    const renamedWasNonSynth = node.type === "file" && !isSynthFileName(node.name);
-    const renamedBecomesSynth = node.type === "file" && isSynthFileName(nextName);
-
-    if (
-      node.type === "file" &&
-      renamedWasNonSynth &&
-      renamedBecomesSynth &&
-      !canAddMoreSynthFiles(1)
-    ) {
-      openUpgradeModal(
-        "Synth file limit reached",
-        `Your ${SUBSCRIPTION_META[activeTier].label} plan allows ${getSynthFileLimitLabel(
-          activeTier
-        )} synth file(s) per project. Upgrade your subscription to add more.`
-      );
-      return;
-    }
-
-    setExplorerTree((prev) =>
-      updateNodeById(prev, nodeId, (current) => ({ ...current, name: nextName }))
-    );
-    setStatusMessage(`Renamed to ${nextName}.`);
-  }
-
-  function duplicateById(nodeId: string) {
-    if (requireStructureUpgradeIfFree("duplicate files or folders")) return;
-
-    const node = findNodeById(explorerTree, nodeId);
-    if (!node) return;
-
-    const synthsAdded = countSynthFilesInNode(node);
-    if (!canAddMoreSynthFiles(synthsAdded)) {
-      openUpgradeModal(
-        "Synth file limit reached",
-        `Duplicating this item would exceed your ${SUBSCRIPTION_META[activeTier].label} plan limit of ${getSynthFileLimitLabel(
-          activeTier
-        )} synth file(s) per project. Upgrade your subscription to continue.`
-      );
-      return;
-    }
-
-    const cloned = duplicateNode(node);
-    setExplorerTree((prev) => insertSiblingAfterId(prev, nodeId, cloned));
-
-    if (cloned.type === "file") {
-      setActiveFileId(cloned.id);
-    } else {
-      const firstFile = findFirstFileId([cloned]);
-      if (firstFile) setActiveFileId(firstFile);
-    }
-
-    setStatusMessage(`Duplicated ${node.name}.`);
-  }
-
-  function deleteById(nodeId: string) {
-    const node = findNodeById(explorerTree, nodeId);
-    if (!node) return;
-
-    const confirmed = window.confirm(`Delete "${node.name}"?`);
-    if (!confirmed) return;
-
-    const nextTree = removeNodeById(explorerTree, nodeId);
-    setExplorerTree(nextTree);
-
-    if (activeFileId === nodeId || (node.type === "folder" && activeFileId)) {
-      const nextActive = findFirstFileId(nextTree);
-      setActiveFileId(nextActive);
-    }
-
-    setStatusMessage(`Deleted ${node.name}.`);
-  }
-
-  async function handleCheck() {
-    if (!activeFile) return;
-
-    if (!tierAllowsMode(activeTier, mode)) {
-      openUpgradeModal("Mode locked", getLockedModeReason(activeTier, mode));
-      return;
-    }
-
-    try {
-      setIsChecking(true);
-      setStatusMessage(`Checking in ${MODE_META[mode].label} mode...`);
-      setShowBottomPanel(true);
-      setActiveBottomTab("terminal");
-      applyProblemAlignmentState(null);
-
-      const response = await fetch(`${backendUrl}/interpret`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          project_id: projectId,
-          active_document: activeFile.content,
-          active_file_path: currentFilePath,
-          problem_statement: normalizedProblemStatement || null,
-          project_context: referenceFiles,
-          mode,
-          subscription_tier: activeTier,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backend returned status ${response.status}`);
-      }
-
-      const data = await response.json();
-      applyInterpretationState(data.lines || [], currentFilePath, activeFile.content);
-      applyProblemAlignmentState(data.problem_alignment || null);
-      setDevMetrics(data.dev_metrics || null);
-      setStatusMessage("Check complete.");
-    } catch (error) {
-      console.error(error);
-      applyProblemAlignmentState(null);
-      setDevMetrics(null);
-      applyInterpretationState(
-        [
-          {
-            raw: "System error",
-            type: "error",
-            valid: false,
-            message: describeBackendConnectionError(error, backendUrl).trim(),
-          },
-        ],
-        currentFilePath,
-        activeFile.content
-      );
-      setStatusMessage("Check failed.");
-    } finally {
-      setIsChecking(false);
-    }
-  }
-
-  function connectRunStream(runId: string) {
-    wsRef.current?.close();
-
-    const ws = new WebSocket(`${wsBaseUrl}/run/${runId}/stream`);
-    wsRef.current = ws;
-
-    ws.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-
-      if (payload.type === "run_started") {
-        setStatusMessage("Execution started.");
-        if (payload.executor_mode === "subprocess") {
-          appendRuntimeIndicator("SP");
-          setShowBottomPanel(true);
-          setActiveBottomTab("terminal");
-        }
-        return;
-      }
-
-      if (payload.type === "stdout") {
-        appendTerminal(payload.text || "", "stdout");
-        return;
-      }
-
-      if (payload.type === "stderr") {
-        appendTerminal(payload.text || "", "stderr");
-        return;
-      }
-
-      if (payload.type === "input_requested") {
-        setInputPrompt(payload.prompt || "Input:");
-        setShowBottomPanel(true);
-        setActiveBottomTab("terminal");
-        if (payload.prompt) {
-          appendTerminal(payload.prompt, "system");
-        }
-        return;
-      }
-
-      if (payload.type === "artifact_created") {
-        addLiveArtifact(runId, {
-          name: payload.name,
-          artifact_type: payload.artifact_type || "file",
-          label: payload.label || payload.name,
-        });
-        setShowBottomPanel(true);
-        setActiveBottomTab("visual");
-        return;
-      }
-
-      if (payload.type === "completed") {
-        setIsRunning(false);
-        setInputPrompt(null);
-        setActiveRunId(payload.run_id || runId);
-
-        const persistedRun = payload.persisted_run;
-        if (persistedRun?.dev_metrics) {
-          setDevMetrics(persistedRun.dev_metrics);
-        }
-        if (persistedRun?.artifacts) {
-          replaceVisualArtifacts(persistedRun.id || runId, persistedRun.artifacts, "persisted");
-          if (persistedRun.artifacts.length > 0) {
-            setShowBottomPanel(true);
-            setActiveBottomTab("visual");
-          }
-        }
-
-        setStatusMessage(`Run ${payload.status}.`);
-        void loadRuns();
-        return;
-      }
-
-      if (payload.type === "error") {
-        appendTerminal((payload.message || "Run stream error.") + "\n", "system");
-        setIsRunning(false);
-        setInputPrompt(null);
-        setStatusMessage("Run failed.");
-      }
-    };
-
-    ws.onclose = () => {
-      wsRef.current = null;
-    };
-
-    ws.onerror = () => {
-      appendTerminal("WebSocket stream error.\n", "system");
-      setIsRunning(false);
-      setInputPrompt(null);
-      setStatusMessage("Run stream failed.");
-    };
-  }
-
-  async function handleRun() {
-    if (!activeFile) return;
-
-    if (!tierAllowsMode(activeTier, mode)) {
-      openUpgradeModal("Mode locked", getLockedModeReason(activeTier, mode));
-      return;
-    }
-
-    try {
-      setIsRunning(true);
-      setShowBottomPanel(true);
-      setActiveBottomTab("terminal");
-      setStatusMessage(`Starting ${MODE_META[mode].label} run...`);
-      setTerminalOutput("");
-      setTerminalEntries([]);
-      applyProblemAlignmentState(null);
-      applyInterpretationState([], currentFilePath, activeFile.content);
-      setVisualArtifacts([]);
-      setArtifactErrors({});
-      setInputPrompt(null);
-      setTerminalInput("");
-      setGeneratedPython("");
-      setDevMetrics(null);
-
-      const response = await fetch(`${backendUrl}/run/start`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          project_id: projectId,
-          active_document: activeFile.content,
-          active_file_path: currentFilePath,
-          problem_statement: normalizedProblemStatement || null,
-          project_context: referenceFiles,
-          mode,
-          subscription_tier: activeTier,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backend returned status ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      setGeneratedPython(data.generated_python || "");
-      applyProblemAlignmentState(data.problem_alignment || null);
-      setDevMetrics(data.dev_metrics || null);
-      if (data.interpretation?.lines) {
-        applyInterpretationState(data.interpretation.lines, currentFilePath, activeFile.content);
-      }
-
-      if (data.status === "blocked") {
-        setIsRunning(false);
-        setStatusMessage("Blocked.");
-        appendTerminal((data.stderr || "Execution blocked.") + "\n", "stderr");
-        setShowBottomPanel(true);
-        setActiveBottomTab("terminal");
-        if (data.run?.id) {
-          setActiveRunId(data.run.id);
-        }
-        await loadRuns();
-        return;
-      }
-
-      const runId = data.run_id;
-      setActiveRunId(runId);
-      connectRunStream(runId);
-    } catch (error) {
-      console.error(error);
-      applyProblemAlignmentState(null);
-      setDevMetrics(null);
-      appendTerminal(describeBackendConnectionError(error, backendUrl));
-      setIsRunning(false);
-      setStatusMessage("Run failed.");
-    }
-  }
-
-  function handleSendTerminalInput() {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !inputPrompt) return;
-    wsRef.current.send(
-      JSON.stringify({
-        type: "input",
-        value: terminalInput,
-      })
-    );
-    appendTerminal(terminalInput + "\n", "input");
-    setTerminalInput("");
-    setInputPrompt(null);
-  }
-
-  function handleStopRun() {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "stop" }));
-      setStatusMessage("Stopping run...");
-    }
-  }
-
-  useEffect(() => {
-    const editor = editorRef.current;
-    const monaco = monacoRef.current;
-
-    if (!editor || !monaco) return;
-
-    const model = editor.getModel();
-    const maxLineNumber = model?.getLineCount() || 0;
-    const showHighlights =
-      !!activeFile && interpretationSourceFilePath === currentFilePath && maxLineNumber > 0;
-    const diagnosticsByLine = new Map<number, ActionableDiagnostic[]>();
-
-    if (showHighlights) {
-      actionableDiagnostics.forEach((diagnostic) => {
-        if (diagnostic.severity === "ok") return;
-        const lineNumber = normalizeLineNumber(diagnostic.lineNumber, maxLineNumber);
-        if (!lineNumber) return;
-        const current = diagnosticsByLine.get(lineNumber) || [];
-        current.push(diagnostic);
-        diagnosticsByLine.set(lineNumber, current);
-      });
-    }
-    const semanticDecorations = showHighlights
-      ? resolvedInterpretationLines.flatMap((line) => {
-          const severity = getSeverity(line);
-          const lineNumber = normalizeLineNumber(line.resolvedLineNumber, maxLineNumber);
-
-          if (!lineNumber || severity === "ok") return [];
-
-          return [
-            {
-              range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-              options: {
-                isWholeLine: true,
-                className:
-                  severity === "blocked"
-                    ? "ide-validation-line--blocked"
-                    : "ide-validation-line--warning",
-                glyphMarginClassName:
-                  severity === "blocked"
-                    ? "ide-diagnostic-glyph--blocked"
-                    : "ide-diagnostic-glyph--warning",
-                stickiness:
-                  monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-              },
-            },
-          ];
-        })
-      : [];
-
-    const problemDecorations =
-      showHighlights && problemMode
-        ? problemLineNotices.flatMap((notice) => {
-            const severity = getProblemNoticeSeverity(notice);
-            const lineNumber = normalizeLineNumber(notice.line_number, maxLineNumber);
-
-            if (!lineNumber) return [];
-
-            return [
-              {
-                range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-                options: {
-                  isWholeLine: true,
-                  className:
-                    severity === "blocked"
-                      ? "ide-validation-line--blocked"
-                      : "ide-problem-line--warning",
-                  glyphMarginClassName:
-                    severity === "blocked"
-                      ? "ide-diagnostic-glyph--blocked"
-                      : "ide-diagnostic-glyph--problem",
-                  stickiness:
-                    monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-                },
-              },
-            ];
-          })
-        : [];
-
-    const decorations = [...semanticDecorations, ...problemDecorations];
-
-    editorDecorationIdsRef.current = editor.deltaDecorations(
-      editorDecorationIdsRef.current,
-      decorations
-    );
-
-    const mouseDownDisposable = editor.onMouseDown((event) => {
-      const lineNumber = event.target.position?.lineNumber ?? event.target.range?.startLineNumber;
-      const isDiagnosticGutter =
-        event.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
-        event.target.type === monaco.editor.MouseTargetType.GUTTER_LINE_DECORATIONS;
-
-      if (!lineNumber || !diagnosticsByLine.has(lineNumber)) {
-        setDiagnosticPopup(null);
-        return;
-      }
-
-      if (!isDiagnosticGutter) return;
-
-      event.event.preventDefault();
-      event.event.stopPropagation();
-      setDiagnosticPopup({
-        lineNumber,
-        ...getDiagnosticPopupPosition(lineNumber),
-      });
-    });
-
-    const mouseMoveDisposable = editor.onMouseMove((event) => {
-      const lineNumber = event.target.position?.lineNumber ?? event.target.range?.startLineNumber;
-
-      if (!lineNumber || !diagnosticsByLine.has(lineNumber)) {
-        setDiagnosticPopup((current) => (current ? null : current));
-        return;
-      }
-
-      const position = getDiagnosticPopupPosition(lineNumber);
-      setDiagnosticPopup((current) =>
-        current?.lineNumber === lineNumber &&
-        current.top === position.top &&
-        current.left === position.left
-          ? current
-          : {
-              lineNumber,
-              ...position,
-            }
-      );
-    });
-
-    return () => {
-      mouseDownDisposable.dispose();
-      mouseMoveDisposable.dispose();
-    };
-  }, [
-    actionableDiagnostics,
+  const ide = useIdeState();
+  const {
+    activeTier,
+    desktopIdeMenus,
+    activeBottomTab,
     activeFile,
+    activeFileId,
+    activeRunId,
+    addMenuRef,
+    analysisOpen,
+    artifactErrors,
+    bottomTabs,
+    bugSubmitting,
+    bugTargetKind,
+    bugTargetRunId,
+    checkButtonLabel,
+    checkMetrics,
+    contextMenu,
+    contextMenuRef,
+    createFile,
+    createFolder,
     currentFilePath,
-    getDiagnosticPopupPosition,
-    interpretationSourceFilePath,
-    problemLineNotices,
-    problemMode,
+    currentLayoutMeta,
+    currentModeMeta,
+    currentSynthFileCount,
+    deleteById,
+    devMetrics,
+    devVisionButtonLabel,
+    devVisionEnabled,
+    devVisionError,
+    devVisionPassword,
+    developerExpanded,
+    diagnosticPopup,
+    diagnosticsSummary,
+    duplicateById,
+    editableLineCount,
+    editorRef,
+    editorShellRef,
+    exitDevVision,
+    explorerTree,
+    generatedPython,
+    generatedPythonAllowed,
+    handleCheck,
+    handleDevVisionUnlock,
+    handleRun,
+    handleSelectLayout,
+    handleSelectMode,
+    handleSendTerminalInput,
+    handleSignOut,
+    handleStopRun,
+    handleSubmitBugReport,
+    handleTogglePython,
+    headerSurfaceClass,
+    iconControls,
+    ideButtonClass,
+    inputPrompt,
+    inputSurfaceClass,
+    interpretationLines,
+    isChecking,
+    isLight,
+    isRunning,
+    layoutMode,
+    loadRunDetails,
+    menuButtonClass,
+    menuItemClass,
+    menuPanelClass,
+    menuSymbolClass,
+    minimalist,
+    mode,
+    modeBarGlowStyle,
+    modePanelGlowStyle,
+    monacoRef,
+    mutedTextClass,
+    normalizedProblemStatement,
+    openDevVisionPrompt,
+    openIdeMenu,
+    openRunBugReport,
+    openTutorialPlaceholder,
+    openUiBugReport,
+    openUpgradeModal,
+    outputSummaryLabel,
+    panelBgClass,
+    panelBorderClass,
+    pricingCardClass,
+    pricingCardHoverClass,
+    problemAlignment,
+    problemGoalSummary,
+    problemIssues,
+    problemPanelOpen,
+    problemPanelStatus,
+    problemStatement,
+    projectId,
+    projectName,
+    protectedDarkLabelStyle,
+    protectedDarkMetaStyle,
+    protectedDarkSurfaceStyle,
+    protectedDarkTerminalTextStyle,
+    protectedDarkTitleStyle,
+    pythonButtonLabel,
+    renameNode,
     resolvedInterpretationLines,
-  ]);
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.push("/");
-  }
-
-  function handleSelectMode(nextMode: IdeMode) {
-    if (!tierAllowsMode(activeTier, nextMode)) {
-      openUpgradeModal("Mode locked", getLockedModeReason(activeTier, nextMode));
-      return;
-    }
-
-    setOpenIdeMenu(null);
-    setMode(nextMode);
-    if (nextMode === "problem_solving" && layoutMode !== "minimalist") {
-      setProblemPanelOpen(true);
-    }
-    setShowModeOverlay(false);
-    setStatusMessage(`${MODE_META[nextMode].label} mode selected.`);
-    showToast(`${MODE_META[nextMode].label} mode selected.`);
-  }
-
-  function handleSelectLayout(nextLayout: LayoutMode) {
-    if (!tierAllowsLayout(activeTier, nextLayout)) {
-      openUpgradeModal("Layout locked", getLockedLayoutReason(activeTier, nextLayout));
-      return;
-    }
-
-    setOpenIdeMenu(null);
-    applyLayoutMode(nextLayout);
-    setShowLayoutOverlay(false);
-    setStatusMessage(`${LAYOUT_META[nextLayout].label} layout selected.`);
-  }
-
-  function handleTogglePython() {
-    if (!generatedPythonAllowed) {
-      openUpgradeModal(
-        "Python view locked",
-        "Viewing the generated Python is not available on the Free plan. Upgrade your subscription to unlock it."
-      );
-      return;
-    }
-
-    setShowPython((prev) => !prev);
-  }
-
-  const developerExpanded = layoutMode === "developer";
-  const minimalist = layoutMode === "minimalist";
-  const iconControls = minimalist;
-  const bottomTabs = ["terminal", "visual"] as BottomTab[];
-  const showEditorInspector = !minimalist && !problemMode;
-  const showProblemPanel = problemMode;
-  const editableLineCount =
-    activeFile?.content.split("\n").filter((line) => line.trim().length > 0).length || 0;
-  const runButtonLabel = isRunning ? "Running" : "Run";
-  const checkButtonLabel = isChecking ? "Checking" : "Check";
-  const devVisionButtonLabel = devVisionEnabled ? "Exit Dev Vision" : "Dev Vision";
-  const pythonButtonLabel = !generatedPythonAllowed
-    ? "Python Locked"
-    : showPython
-    ? "Hide Python"
-    : "Show Python";
-  const resultsButtonLabel = showBottomPanel ? "Hide Results" : "Show Results";
-  const ideButtonClass = (options?: {
-    active?: boolean;
-    disabled?: boolean;
-    compact?: boolean;
-    pill?: boolean;
-    danger?: boolean;
-  }) => getModeButtonClass(currentModeMeta, options, theme);
-  const shellSurfaceClass = isLight
-    ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.94))] shadow-[0_32px_100px_rgba(15,23,42,0.10)]"
-    : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,10,10,0.985),rgba(5,5,5,0.985))] shadow-[0_24px_90px_rgba(0,0,0,0.42),0_0_0_1px_rgba(255,255,255,0.02)]";
-  const sidebarSurfaceClass = isLight
-    ? "border-r border-slate-200/90 bg-[#f6f9fc]"
-    : "border-r border-white/[0.08] bg-[#090909]";
-  const sidebarCardClass = isLight
-    ? "mb-3 rounded-[1.2rem] border border-slate-200/90 bg-white/92 px-3.5 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.05)]"
-    : "mb-3 rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.01))] px-4 py-3.5 shadow-[0_0_0_1px_rgba(255,255,255,0.01)]";
-  const headerSurfaceClass = isLight
-    ? "border-b border-slate-200/90 bg-white/92"
-    : "border-b border-white/[0.08] bg-[#090909]/96";
-  const subsectionSurfaceClass = isLight
-    ? "border-b border-slate-200/90 bg-white/88"
-    : "border-b border-white/[0.08] bg-[#0b0b0b]";
-  const workspaceBgClass = isLight ? "bg-[#f4f8fc]" : "bg-[#050505]";
-  const panelBgClass = isLight ? "bg-white/96" : "bg-[#070707]";
-  const panelBorderClass = isLight ? "border-slate-200/90" : "border-white/[0.08]";
-  const softTextClass = isLight ? "text-slate-500" : "!text-neutral-400";
-  const mutedTextClass = isLight ? "text-slate-600" : "!text-neutral-300";
-  const strongTextClass = isLight ? "text-slate-900" : "!text-white";
-  const strongTextAltClass = isLight ? "text-slate-800" : "!text-neutral-100";
-  const sectionLabelClass = isLight ? "text-slate-500" : "!text-neutral-400";
-  const sectionMetaClass = isLight ? "text-slate-500" : "!text-neutral-300";
-  const sectionTitleClass = isLight ? "text-slate-900" : "!text-white";
-  const sidebarDividerClass = isLight ? "border-slate-200/90" : "border-white/[0.08]";
-  const terminalTextClass = isLight ? currentModeMeta.terminalText : "!text-sky-300";
-  const validationSeverityClass = (severity: "ok" | "warning" | "blocked") =>
-    severity === "blocked"
-      ? "border-red-500/30 bg-red-500/10 text-red-300"
-      : severity === "warning"
-      ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
-      : "border-green-500/30 bg-green-500/10 text-green-300";
-  const protectedDarkSurfaceStyle = getProtectedDarkSurfaceStyle(theme);
-  const protectedDarkLabelStyle = getProtectedDarkTextStyle(theme, "#a3a3a3");
-  const protectedDarkMetaStyle = getProtectedDarkTextStyle(theme, "#d4d4d8");
-  const protectedDarkTitleStyle = getProtectedDarkTextStyle(theme, "#ffffff");
-  const protectedDarkTerminalTextStyle = getProtectedDarkTextStyle(theme, "#7dd3fc");
-  const modeBarGlowStyle = getModeBarGlowStyle(theme, mode, "soft");
-  const modePanelGlowStyle = getModeBarGlowStyle(theme, mode, "medium");
-  const inputSurfaceClass = isLight
-    ? "border border-slate-200/90 bg-white/96 text-slate-900 placeholder:text-slate-400"
-    : "border border-white/[0.08] bg-[#0b0b0b] text-white placeholder:text-neutral-500";
-  const subtleChipClass = isLight
-    ? "border-slate-200/90 bg-white/90 text-slate-500"
-    : "border-white/[0.08] bg-white/[0.04] text-neutral-400";
-  const pricingCardClass = isLight
-    ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
-    : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.01))] shadow-[0_0_0_1px_rgba(255,255,255,0.01)]";
-  const pricingCardHoverClass = isLight
-    ? "hover:border-slate-300 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(241,245,249,0.96))]"
-    : "hover:border-white/[0.14] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))]";
-  const menuButtonClass = (active: boolean) =>
-    joinClasses(
-      "inline-flex h-9 items-center gap-2 rounded-[0.85rem] border px-3 text-[12px] font-semibold transition-all duration-200",
-      active
-        ? isLight
-          ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)]`
-          : `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]`
-        : isLight
-        ? "border-slate-200/90 bg-white/80 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-950"
-        : "border-white/[0.08] bg-white/[0.035] text-neutral-300 hover:border-white/[0.15] hover:bg-white/[0.065] hover:text-white"
-    );
-  const menuPanelClass = isLight
-    ? "border-slate-200 bg-white/98 text-slate-800 shadow-[0_20px_60px_rgba(15,23,42,0.14)]"
-    : "border-white/[0.1] bg-[#080808]/98 text-neutral-200 shadow-[0_24px_70px_rgba(0,0,0,0.48)]";
-  const menuItemBaseClass =
-    "flex w-full items-center gap-2.5 rounded-[0.75rem] px-2.5 py-2 text-left text-[12px] transition-colors duration-150";
-  const menuItemClass = (item: IdeMenuItem) =>
-    joinClasses(
-      menuItemBaseClass,
-      item.disabled
-        ? isLight
-          ? "cursor-not-allowed text-slate-400"
-          : "cursor-not-allowed text-neutral-600"
-        : item.danger
-        ? isLight
-          ? "text-rose-700 hover:bg-rose-50"
-          : "text-rose-200 hover:bg-rose-500/[0.12]"
-        : item.active
-        ? isLight
-          ? `${currentModeMeta.accentBg} text-slate-950`
-          : `${currentModeMeta.accentBg} text-white`
-        : isLight
-        ? "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-        : "text-neutral-300 hover:bg-white/[0.06] hover:text-white"
-    );
-  const menuSymbolClass = (item?: IdeMenuItem) =>
-    joinClasses(
-      "flex h-6 w-6 shrink-0 items-center justify-center rounded-[0.6rem] border text-[12px] font-semibold",
-      item?.danger
-        ? isLight
-          ? "border-rose-200 bg-rose-50 text-rose-700"
-          : "border-rose-400/25 bg-rose-500/[0.1] text-rose-200"
-        : isLight
-        ? "border-slate-200 bg-white text-slate-600"
-        : "border-white/[0.08] bg-white/[0.04] text-neutral-300"
-    );
-  const desktopIdeMenus: IdeMenuGroup[] = [
-    {
-      id: "file",
-      label: "File",
-      symbol: "▣",
-      items: [
-        {
-          label: "Dashboard",
-          symbol: "⌂",
-          href: "/dashboard",
-          detail: "Return to projects",
-        },
-      ],
-    },
-    {
-      id: "edit",
-      label: "Edit",
-      symbol: "✎",
-      items: [
-        {
-          label: pythonButtonLabel,
-          icon: "python",
-          action: handleTogglePython,
-          disabled: !generatedPythonAllowed,
-          active: generatedPythonAllowed && showPython,
-          detail: generatedPythonAllowed ? "Generated Python panel" : "Upgrade required",
-        },
-        {
-          label: resultsButtonLabel,
-          icon: "results",
-          action: () => setShowBottomPanel((prev) => !prev),
-          active: showBottomPanel,
-          detail: "Terminal and visual output",
-        },
-        {
-          label: devVisionButtonLabel,
-          icon: "vision",
-          action: devVisionEnabled ? exitDevVision : openDevVisionPrompt,
-          active: devVisionEnabled,
-          detail: "Developer diagnostics",
-        },
-      ],
-    },
-    {
-      id: "view",
-      label: "View",
-      symbol: "◫",
-      items: [
-        {
-          label: isLight ? "Dark Theme" : "Light Theme",
-          symbol: isLight ? "☾" : "☀",
-          action: toggleTheme,
-          detail: "Switch editor theme",
-        },
-        {
-          label: "Mode",
-          icon: "mode",
-          action: () => {
-            if (!studentModeLocked) setShowModeOverlay(true);
-          },
-          disabled: studentModeLocked,
-          detail: studentModeLocked ? "Student plan is locked" : currentModeMeta.label,
-        },
-        {
-          label: "Layout",
-          icon: "layout",
-          action: () => setShowLayoutOverlay(true),
-          detail: currentLayoutMeta.label,
-        },
-      ],
-    },
-    {
-      id: "help",
-      label: "Help",
-      symbol: "?",
-      items: [
-        {
-          label: "Tutorials",
-          icon: "tutorial",
-          action: openTutorialPlaceholder,
-          detail: "Learning resources",
-        },
-        {
-          label: "Report Bug",
-          icon: "bug",
-          action: openUiBugReport,
-          detail: "Tell us what went wrong",
-        },
-      ],
-    },
-    {
-      id: "account",
-      label: "Account",
-      symbol: "@",
-      items: [
-        {
-          label: "Manage Subscription",
-          icon: "subscriptions",
-          href: "/subscriptions",
-          detail: activeTier.toUpperCase(),
-        },
-        {
-          label: "Sign Out",
-          icon: "signout",
-          action: handleSignOut,
-          danger: true,
-          detail: sessionEmail || "Current session",
-        },
-      ],
-    },
-  ];
+    resultsButtonLabel,
+    runButtonLabel,
+    runs,
+    sectionLabelClass,
+    sectionMetaClass,
+    sectionTitleClass,
+    selectedDiagnostic,
+    selectedDiagnosticTone,
+    setActiveBottomTab,
+    setActiveFileId,
+    setAnalysisOpen,
+    setArtifactErrors,
+    setContextMenu,
+    setDevVisionError,
+    setDevVisionPassword,
+    setExplorerTree,
+    setIsResizingTerminal,
+    setOpenIdeMenu,
+    setProblemAlignment,
+    setProblemPanelOpen,
+    setProblemStatement,
+    setShowAddMenu,
+    setShowBottomPanel,
+    setShowBugModal,
+    setShowDevVisionPrompt,
+    setShowLayoutOverlay,
+    setShowModeOverlay,
+    setShowRunsSection,
+    setShowTreeMenu,
+    setSidebarOpen,
+    setTerminalInput,
+    setUpgradeModal,
+    shellSurfaceClass,
+    showAddMenu,
+    showBottomPanel,
+    showBugModal,
+    showDevVisionPrompt,
+    showEditorInspector,
+    showLayoutOverlay,
+    showModeOverlay,
+    showProblemPanel,
+    showPython,
+    showRunsSection,
+    showTreeMenu,
+    sidebarContainerClass,
+    sidebarDividerClass,
+    sidebarOpen,
+    sidebarSurfaceClass,
+    softTextClass,
+    strongTextAltClass,
+    strongTextClass,
+    studentModeLocked,
+    terminalEntries,
+    terminalHeight,
+    terminalInput,
+    terminalScrollRef,
+    terminalTextClass,
+    theme,
+    toast,
+    toggleFolder,
+    treeMenuRef,
+    updateActiveFileContent,
+    upgradeModal,
+    validationSeverityClass,
+    visualArtifacts,
+    workspaceBgClass,
+  } = ide;
 
   return (
+    <IdeProvider value={ide}>
     <main
       className={`relative h-screen w-screen overflow-hidden ${
         isLight ? "bg-[#eef3f9] text-slate-900" : "bg-[#020202] text-white"
@@ -4674,6 +2861,7 @@ function IdePageContent() {
         }
       `}</style>
     </main>
+    </IdeProvider>
   );
 }
 

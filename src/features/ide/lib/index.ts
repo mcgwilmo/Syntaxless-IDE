@@ -887,3 +887,168 @@ export function getLockedLayoutReason(tier: SubscriptionTier, layout: LayoutMode
 
   return `${LAYOUT_META[layout].label} layout is not available on your current subscription plan.`;
 }
+
+
+/* ---- explorer tree operations ---------------------------------------- */
+
+export function findNodeById(nodes: ExplorerNode[], targetId: string): ExplorerNode | null {
+  for (const node of nodes) {
+    if (node.id === targetId) return node;
+    if (node.type === "folder") {
+      const found = findNodeById(node.children, targetId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export function findFirstFileId(nodes: ExplorerNode[]): string | null {
+  for (const node of nodes) {
+    if (node.type === "file") return node.id;
+    if (node.type === "folder") {
+      const nested = findFirstFileId(node.children);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+export function updateNodeById(
+  nodes: ExplorerNode[],
+  targetId: string,
+  updater: (node: ExplorerNode) => ExplorerNode
+): ExplorerNode[] {
+  return nodes.map((node) => {
+    if (node.id === targetId) return updater(node);
+    if (node.type === "folder") {
+      return {
+        ...node,
+        children: updateNodeById(node.children, targetId, updater),
+      };
+    }
+    return node;
+  });
+}
+
+export function removeNodeById(nodes: ExplorerNode[], targetId: string): ExplorerNode[] {
+  const result: ExplorerNode[] = [];
+  for (const node of nodes) {
+    if (node.id === targetId) continue;
+    if (node.type === "folder") {
+      result.push({
+        ...node,
+        children: removeNodeById(node.children, targetId),
+      });
+    } else {
+      result.push(node);
+    }
+  }
+  return result;
+}
+
+export function duplicateNode(node: ExplorerNode): ExplorerNode {
+  if (node.type === "file") {
+    const parts = node.name.split(".");
+    const extension = parts.length > 1 ? `.${parts.pop()}` : "";
+    const base = parts.join(".") || node.name;
+    return {
+      ...node,
+      id: uid("file"),
+      name: `${base}_copy${extension}`,
+    };
+  }
+  return {
+    ...node,
+    id: uid("folder"),
+    name: `${node.name}_copy`,
+    children: node.children.map((child) => duplicateNode(child)),
+  };
+}
+
+export function insertSiblingAfterId(
+  nodes: ExplorerNode[],
+  targetId: string,
+  newNode: ExplorerNode
+): ExplorerNode[] {
+  const output: ExplorerNode[] = [];
+  for (const node of nodes) {
+    output.push(
+      node.type === "folder"
+        ? { ...node, children: insertSiblingAfterId(node.children, targetId, newNode) }
+        : node
+    );
+    if (node.id === targetId) output.push(newNode);
+  }
+  return output;
+}
+
+export function addChildToFolder(
+  nodes: ExplorerNode[],
+  folderId: string,
+  child: ExplorerNode
+): ExplorerNode[] {
+  return nodes.map((node) => {
+    if (node.id === folderId && node.type === "folder") {
+      return {
+        ...node,
+        isOpen: true,
+        children: [...node.children, child],
+      };
+    }
+    if (node.type === "folder") {
+      return {
+        ...node,
+        children: addChildToFolder(node.children, folderId, child),
+      };
+    }
+    return node;
+  });
+}
+
+export function setAllFoldersOpen(nodes: ExplorerNode[], isOpen: boolean): ExplorerNode[] {
+  return nodes.map((node) => {
+    if (node.type === "folder") {
+      return {
+        ...node,
+        isOpen,
+        children: setAllFoldersOpen(node.children, isOpen),
+      };
+    }
+    return node;
+  });
+}
+
+export function collectReferenceFiles(
+  nodes: ExplorerNode[],
+  activeFileId: string | null,
+  parentPath = ""
+): Array<{ path: string; content: string }> {
+  const files: Array<{ path: string; content: string }> = [];
+  for (const node of nodes) {
+    const nextPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+    if (node.type === "file") {
+      if (node.id !== activeFileId) {
+        files.push({ path: nextPath, content: node.content });
+      }
+    } else {
+      files.push(...collectReferenceFiles(node.children, activeFileId, nextPath));
+    }
+  }
+  return files;
+}
+
+export function findFilePathById(
+  nodes: ExplorerNode[],
+  targetId: string,
+  parentPath = ""
+): string | null {
+  for (const node of nodes) {
+    const nextPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+    if (node.id === targetId && node.type === "file") return nextPath;
+    if (node.type === "folder") {
+      const found = findFilePathById(node.children, targetId, nextPath);
+      if (found) return found;
+    }
+  }
+  return null;
+}
