@@ -6,7 +6,7 @@ A natural-language programming environment for **students learning to program**.
 English; the backend detects intent, generates governed Python, validates it against safety policy,
 and runs it in a Docker sandbox.
 
-- `/Users/danielleknutson/Syntaxless-IDE-Backend` — FastAPI / Pydantic v2 / OpenAI / Docker sandbox. ~8.9k lines, pytest green.
+- `/Users/danielleknutson/Syntaxless-IDE-Backend` — FastAPI / Pydantic v2 / OpenAI / Docker sandbox. ~8.9k lines. Baseline: 26 pytest passed / 3 failed, 32 of 33 stress fixtures -- these fail on a clean checkout, see the backend README.
 - `/Users/danielleknutson/Syntaxless-IDE` — Next.js frontend (not restructured this phase, but it
   calls this API — contracts must not change).
 

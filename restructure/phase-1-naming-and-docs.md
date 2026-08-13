@@ -7,7 +7,7 @@ classroom. Students write plain English; the backend detects intent, generates g
 validates it against safety policy, and runs it in a Docker sandbox.
 
 - `/Users/danielleknutson/Syntaxless-IDE` — Next.js 16 / React 19 / TS / Tailwind v4 / Supabase / Monaco. ~20.5k lines.
-- `/Users/danielleknutson/Syntaxless-IDE-Backend` — FastAPI / Pydantic v2 / OpenAI / Docker sandbox. ~8.9k lines, pytest green.
+- `/Users/danielleknutson/Syntaxless-IDE-Backend` — FastAPI / Pydantic v2 / OpenAI / Docker sandbox. ~8.9k lines. Baseline: 26 pytest passed / 3 failed, 32 of 33 stress fixtures -- these fail on a clean checkout, see the backend README.
 
 This is phase 1 of 6 in a restructure. **Restructuring, not rewriting** — behavior, routes, API
 contracts, and pipeline semantics stay identical unless I explicitly approve a change.
@@ -33,7 +33,7 @@ Measured 2026-08-12. Re-measure before acting; correct me if they've drifted.
 
 Names in play: **"Syntaxless IDE"** (repo names, frontend README), **"TRACE"** = Thinking and
 Reasoning Assisted Coding Environment (backend README, `public/brand/trace logo*.png`), and
-**"codeless"** (33 env vars, Docker image `codeless-python-sandbox`, `public/logo/codeless-mark.png`).
+**"codeless"** (28 env vars, Docker image `codeless-python-sandbox`, `public/logo/codeless-mark.png`).
 
 ## Scope
 
@@ -84,7 +84,7 @@ Confirm with me if unsure.
 - **Frontend README** still has create-next-app boilerplate ("your feedback and contributions are
   welcome", Vercel template links).
 - Both should get a new contributor from clone to running app in under ten minutes.
-- Backend `docs/` has 11 overlapping files: onboarding readme, onboarding lead checklist, development
+- Backend `docs/` has 10 overlapping Markdown files: onboarding readme, onboarding lead checklist, development
   workflow, backend architecture, testing, deployment, troubleshooting, improvement plan, stress
   feasibility, stress results ×2. Consolidate. **Ask me before touching
   `trace-backend-improvement-plan.md`** — it may be a live planning doc.

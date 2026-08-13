@@ -102,7 +102,7 @@ Syntaxless IDE, does the word survive as vocabulary? That's a copy decision, not
 
 ### 1. `src/config/brand.ts` and `app/platform/branding.py`
 `BRAND.name`, `.shortName`, `.tagline`, `.domain`, logo paths. Backend equivalent plus a single
-`ENV_PREFIX` constant that all 31 env-var lookups route through (**values unchanged**).
+`ENV_PREFIX` constant that all 28 env-var lookups route through (**values unchanged**).
 
 ### 2. Shared event sentinel
 Define `__CODELESS_EVENT__` in one module imported by both `executor.py` and `sandbox/runner.py`,

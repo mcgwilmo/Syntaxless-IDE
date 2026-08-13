@@ -47,7 +47,12 @@ These block specific phases. Decide before starting them, or the session will st
 
 ## Measured baseline (2026-08-12)
 
-Frontend ~20.5k lines, backend ~8.9k lines, pytest green.
+Frontend ~20.5k lines, backend ~8.9k lines.
+
+**The backend test suite is not green on a clean checkout**: 3 unit tests and stress fixture
+`T27_vibe` fail before any of this work starts. Baseline is 26 passed / 3 failed and 32 of 33
+stress fixtures. The frontend lint baseline is 10 warnings, 0 errors. Treat anything beyond those
+as a regression.
 
 | | |
 |---|---|
@@ -60,5 +65,5 @@ Frontend ~20.5k lines, backend ~8.9k lines, pytest green.
 | `codeless` hits | 270 backend / 2 frontend |
 | `trace` hits | 101 backend / 101 frontend (only ~5 are `traceback`) |
 | `syntaxless` hits | 8 backend / 18 frontend |
-| distinct `CODELESS_*` env vars | 33 |
+| distinct `CODELESS_*` env vars | 28 |
 | frontend tests | 0 |
