@@ -26,6 +26,7 @@ import { InteractiveImageAccordion } from "@/components/ui/interactive-image-acc
 import { SiteFooter } from "@/components/site-footer";
 import { AppPageBackground, SiteHeader } from "@/components/site-shell";
 import { useTheme } from "@/components/theme-provider";
+import { BRAND } from "@/config/brand";
 
 const HERO_WINDOW_SCALE_PERCENT = 75;
 const HERO_WINDOW_X_SHIFT_PERCENT = 25;
@@ -33,7 +34,7 @@ const REVEAL_ROOT_MARGIN = "0px 0px -12% 0px";
 
 const testimonials: Testimonial[] = [
   {
-    text: "Trace helped our students focus on the logic behind simple programs first, then read the generated Python to understand how each step was expressed in code.",
+    text: `${BRAND.name} helped our students focus on the logic behind simple programs first, then read the generated Python to understand how each step was expressed in code.`,
     image: "https://randomuser.me/api/portraits/women/1.jpg",
     name: "Briana Patton",
     role: "Programming Instructor",
@@ -51,13 +52,13 @@ const testimonials: Testimonial[] = [
     role: "Curriculum Designer",
   },
   {
-    text: "Most coding tools push people toward fast output. Trace feels better for learning because it keeps the focus on reasoning, checking steps, and understanding the result.",
+    text: `Most coding tools push people toward fast output. ${BRAND.name} feels better for learning because it keeps the focus on reasoning, checking steps, and understanding the result.`,
     image: "https://randomuser.me/api/portraits/men/4.jpg",
     name: "Omar Raza",
     role: "Algorithms Tutor",
   },
   {
-    text: "We used Trace during a workshop and students were solving small problem sets within minutes. Writing the instructions in plain English made the jump into coding feel much less intimidating.",
+    text: `We used ${BRAND.name} during a workshop and students were solving small problem sets within minutes. Writing the instructions in plain English made the jump into coding feel much less intimidating.`,
     image: "https://randomuser.me/api/portraits/women/5.jpg",
     name: "Zainab Hussain",
     role: "STEM Workshop Facilitator",
@@ -69,7 +70,7 @@ const testimonials: Testimonial[] = [
     role: "Learning Experience Researcher",
   },
   {
-    text: "Trace works well for demos because people can follow the reasoning behind each simple program. It makes the process feel teachable instead of opaque.",
+    text: `${BRAND.name} works well for demos because people can follow the reasoning behind each simple program. It makes the process feel teachable instead of opaque.`,
     image: "https://randomuser.me/api/portraits/men/7.jpg",
     name: "Farhan Siddiqui",
     role: "Intro CS Lecturer",
@@ -81,7 +82,7 @@ const testimonials: Testimonial[] = [
     role: "Beginner Coding Coach",
   },
   {
-    text: "For algorithm drills and small programming exercises, Trace sits in a really useful space between pseudocode and actual code. It helps learners practice thinking like programmers.",
+    text: `For algorithm drills and small programming exercises, ${BRAND.name} sits in a really useful space between pseudocode and actual code. It helps learners practice thinking like programmers.`,
     image: "https://randomuser.me/api/portraits/men/9.jpg",
     name: "Hassan Ali",
     role: "Problem-Solving Mentor",
@@ -91,7 +92,7 @@ const testimonials: Testimonial[] = [
 const firstTestimonialColumn = testimonials.slice(0, 3);
 const secondTestimonialColumn = testimonials.slice(3, 6);
 const thirdTestimonialColumn = testimonials.slice(6, 9);
-const traceLearningSettings = [
+const learningSettings = [
   {
     title: "Classrooms",
     subtitle: "Intro CS and early programming lessons",
@@ -105,13 +106,13 @@ const traceLearningSettings = [
     subtitle: "Smaller guided problem-solving practice",
   },
 ];
-const traceWorkflowStages = [
+const workflowStages = [
   {
     title: "Describe",
     value: "Plain-English prompt",
   },
   {
-    title: "Trace",
+    title: BRAND.name,
     value: "Logic and structure first",
   },
   {
@@ -119,14 +120,14 @@ const traceWorkflowStages = [
     value: "Generated Python output",
   },
 ];
-const traceFocusAreas = [
+const focusAreas = [
   "Loops",
   "Conditions",
   "Lists",
   "Algorithms",
   "Beginner exercises",
 ];
-const traceProjectSignals = [
+const projectSignals = [
   {
     label: "Founder",
     value: "Matthew Wilmot",
@@ -148,22 +149,22 @@ const creatorAccordionItems = [
   {
     id: 1,
     title: "Simple Program Creation",
-    imageSrc: "/content/program creation.png",
+    imageSrc: "/content/program-creation.png",
   },
   {
     id: 2,
     title: "Intuitive Interface",
-    imageSrc: "/content/algorithmic thinking.png",
+    imageSrc: "/content/algorithmic-thinking.png",
   },
   {
     id: 3,
     title: "AI Assisted Problem Solving",
-    imageSrc: "/content/problem solving.png",
+    imageSrc: "/content/problem-solving.png",
   },
   {
     id: 4,
     title: "Plot and Image Creation",
-    imageSrc: "/content/plot creation.png",
+    imageSrc: "/content/plot-creation.png",
   },
   {
     id: 5,
@@ -175,7 +176,7 @@ const learningCenterTopics = [
   {
     id: 1,
     title: "Primirives and Logic",
-    imageSrc: "/content/learn%201.png",
+    imageSrc: "/content/learn-1.png",
     description:
       "Build intuition for variables, conditions, and the step-by-step reasoning that sits underneath beginner programming.",
     actionLabel: "Open Learning Center",
@@ -184,7 +185,7 @@ const learningCenterTopics = [
   {
     id: 2,
     title: "Data Structures and Algorithms",
-    imageSrc: "/content/learn%202.png",
+    imageSrc: "/content/learn-2.png",
     description:
       "Move into lists, patterns, and core algorithmic thinking with guided material designed for early computer science learners.",
     actionLabel: "Explore Lessons",
@@ -193,9 +194,9 @@ const learningCenterTopics = [
   {
     id: 3,
     title: "Start Coding Right Away",
-    imageSrc: "/content/learn%203.png",
+    imageSrc: "/content/learn-3.png",
     description:
-      "Jump from concepts into creation inside TRACE and turn plain-English ideas into working programs without syntax getting in the way first.",
+      `Jump from concepts into creation inside ${BRAND.name} and turn plain-English ideas into working programs without syntax getting in the way first.`,
     actionLabel: "Open Dashboard",
     destination: "dashboard" as const,
   },
@@ -371,7 +372,7 @@ function ReviewCard({
   );
 }
 
-function TraceHeroStage({
+function HeroStage({
   isLight,
   inView,
 }: {
@@ -460,10 +461,10 @@ function TraceHeroStage({
                         <Image
                           src={
                             isLight
-                              ? "/brand/ide%20window%20light.png"
-                              : "/brand/ide%20window.png"
+                              ? "/brand/ide-window-light.png"
+                              : "/brand/ide-window.png"
                           }
-                          alt="TRACE IDE window interface"
+                          alt={`${BRAND.name} IDE window interface`}
                           fill
                           priority
                           sizes="(min-width: 1280px) 1500px, 100vw"
@@ -535,18 +536,18 @@ export default function HomePage() {
     creatorInView,
     50
   );
-  const traceCardClass = isLight
+  const cardClass = isLight
     ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
     : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.032),rgba(255,255,255,0.012))]";
-  const traceTitleClass = isLight ? "text-slate-900" : "text-white";
-  const traceBodyClass = isLight ? "text-slate-600" : "text-neutral-400";
-  const traceLabelClass = isLight ? "text-slate-500" : "text-neutral-500";
-  const tracePanelClass = isLight
+  const titleClass = isLight ? "text-slate-900" : "text-white";
+  const bodyClass = isLight ? "text-slate-600" : "text-neutral-400";
+  const labelClass = isLight ? "text-slate-500" : "text-neutral-500";
+  const panelClass = isLight
     ? "border-slate-200/80 bg-white/88"
     : "border-white/[0.08] bg-black/20";
-  const traceAccentLineClass = isLight ? "bg-slate-300/70" : "bg-white/10";
-  const traceAccentFillClass = isLight ? "bg-cyan-500/12" : "bg-cyan-400/12";
-  const traceAccentTextClass = isLight ? "text-cyan-700" : "text-cyan-200";
+  const accentLineClass = isLight ? "bg-slate-300/70" : "bg-white/10";
+  const accentFillClass = isLight ? "bg-cyan-500/12" : "bg-cyan-400/12";
+  const accentTextClass = isLight ? "text-cyan-700" : "text-cyan-200";
 
   function handleGetStarted() {
     setIsLeaving(true);
@@ -631,7 +632,7 @@ export default function HomePage() {
                   isLight ? "text-slate-600" : "text-neutral-400"
                 }`}
               >
-                With the new age of AI-coding tools, TRACE helps non-coders gain confidence in core programming concepts and build algorithmic thinking without needing to know any structured coding language.
+                With the new age of AI-coding tools, {BRAND.name} helps non-coders gain confidence in core programming concepts and build algorithmic thinking without needing to know any structured coding language.
               </p>
 
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
@@ -664,7 +665,7 @@ export default function HomePage() {
             </div>
           </Reveal>
 
-          <TraceHeroStage isLight={isLight} inView={heroInView} />
+          <HeroStage isLight={isLight} inView={heroInView} />
         </div>
 
         <div
@@ -758,7 +759,7 @@ export default function HomePage() {
               <InteractiveImageAccordion
                 isLight={isLight}
                 title="Create any Program Without the Syntax"
-                description="With TRACE’s intuitive interface and powerful AI assistance, you can turn plain-English mock-ups into actual working programs without needing to write a single line of code. Focus on the logic and creativity of programming while TRACE handles the syntax and structure for you."
+                description={`With ${BRAND.name}’s intuitive interface and powerful AI assistance, you can turn plain-English mock-ups into actual working programs without needing to write a single line of code. Focus on the logic and creativity of programming while ${BRAND.name} handles the syntax and structure for you.`}
                 ctaLabel={isAuthed ? "Open Dashboard" : "Get Started"}
                 onCtaClick={handleGetStarted}
                 items={creatorAccordionItems}
@@ -766,10 +767,10 @@ export default function HomePage() {
             </Reveal>
 
             <Reveal inView={creatorRevealInView} className="hidden">
-              <div className={`mb-3 text-[11px] uppercase tracking-[0.28em] ${traceLabelClass}`}>
+              <div className={`mb-3 text-[11px] uppercase tracking-[0.28em] ${labelClass}`}>
                 Snapshot
               </div>
-              <h2 className={`text-3xl font-bold md:text-4xl ${traceTitleClass}`}>
+              <h2 className={`text-3xl font-bold md:text-4xl ${titleClass}`}>
                 {typedCreatorHeading}
                 <span
                   className={`ml-1 inline-block h-[0.88em] w-[2px] bg-[#73cfff]/90 align-[-0.08em] shadow-[0_0_10px_rgba(82,183,255,0.28)] ${
@@ -780,8 +781,8 @@ export default function HomePage() {
                   aria-hidden="true"
                 />
               </h2>
-              <p className={`mx-auto mt-4 max-w-2xl text-sm leading-6 md:text-[15px] ${traceBodyClass}`}>
-                A quick read on what Trace is designed to do, where early feedback is
+              <p className={`mx-auto mt-4 max-w-2xl text-sm leading-6 md:text-[15px] ${bodyClass}`}>
+                A quick read on what {BRAND.name} is designed to do, where early feedback is
                 coming from, and which parts of programming it is helping learners
                 approach with more confidence.
               </p>
@@ -799,27 +800,27 @@ export default function HomePage() {
 
                 <div className="relative grid grid-cols-6 items-stretch gap-3 lg:gap-4">
                   <CardEntrance inView={creatorRevealInView} delay={180} className="col-span-full lg:col-span-2">
-                    <div className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] border p-5 ${traceCardClass}`}>
-                      <div className={`absolute inset-x-8 top-0 h-16 rounded-b-full blur-2xl ${traceAccentFillClass}`} />
-                      <div className={`mb-4 text-[10px] uppercase tracking-[0.22em] ${traceLabelClass}`}>
+                    <div className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] border p-5 ${cardClass}`}>
+                      <div className={`absolute inset-x-8 top-0 h-16 rounded-b-full blur-2xl ${accentFillClass}`} />
+                      <div className={`mb-4 text-[10px] uppercase tracking-[0.22em] ${labelClass}`}>
                         Early signal
                       </div>
                       <div className="relative mx-auto flex h-20 w-full max-w-[12rem] items-center justify-center">
                         <div className={`absolute inset-0 rounded-[999px] border ${isLight ? "border-slate-300/90" : "border-white/8"}`} />
                         <div className={`absolute inset-[8px] rounded-[999px] border ${isLight ? "border-cyan-300/55" : "border-cyan-300/20"}`} />
                         <div className="text-center">
-                          <div className={`text-4xl font-semibold tracking-[-0.06em] ${traceTitleClass}`}>
+                          <div className={`text-4xl font-semibold tracking-[-0.06em] ${titleClass}`}>
                             9
                           </div>
-                          <div className={`mt-1 text-[10px] uppercase tracking-[0.18em] ${traceAccentTextClass}`}>
+                          <div className={`mt-1 text-[10px] uppercase tracking-[0.18em] ${accentTextClass}`}>
                             educator perspectives
                           </div>
                         </div>
                       </div>
-                      <h3 className={`mt-5 text-center text-2xl font-semibold tracking-[-0.04em] ${traceTitleClass}`}>
+                      <h3 className={`mt-5 text-center text-2xl font-semibold tracking-[-0.04em] ${titleClass}`}>
                         Learning-first feedback
                       </h3>
-                      <p className={`mx-auto mt-3 max-w-sm text-center text-sm leading-6 ${traceBodyClass}`}>
+                      <p className={`mx-auto mt-3 max-w-sm text-center text-sm leading-6 ${bodyClass}`}>
                         Nine educator voices point to clearer teaching, easier setup,
                         and better beginner comprehension.
                       </p>
@@ -831,27 +832,27 @@ export default function HomePage() {
                     delay={260}
                     className="col-span-full sm:col-span-3 lg:col-span-2"
                   >
-                    <div className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] border p-5 ${traceCardClass}`}>
-                      <div className={`mb-4 text-[10px] uppercase tracking-[0.22em] ${traceLabelClass}`}>
+                    <div className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] border p-5 ${cardClass}`}>
+                      <div className={`mb-4 text-[10px] uppercase tracking-[0.22em] ${labelClass}`}>
                         Workflow
                       </div>
-                      <div className={`relative mx-auto flex aspect-square size-28 items-center justify-center rounded-full border ${tracePanelClass}`}>
-                        <div className={`absolute h-px w-20 ${traceAccentLineClass}`} />
+                      <div className={`relative mx-auto flex aspect-square size-28 items-center justify-center rounded-full border ${panelClass}`}>
+                        <div className={`absolute h-px w-20 ${accentLineClass}`} />
                         <div className={`absolute left-5 top-1/2 size-2.5 -translate-y-1/2 rounded-full ${isLight ? "bg-slate-700" : "bg-white"}`} />
                         <div className={`absolute left-1/2 top-5 size-2.5 -translate-x-1/2 rounded-full ${isLight ? "bg-cyan-600" : "bg-cyan-300"}`} />
                         <div className={`absolute bottom-5 left-1/2 size-2.5 -translate-x-1/2 rounded-full ${isLight ? "bg-sky-500" : "bg-sky-300"}`} />
                         <div className={`absolute right-5 top-1/2 size-2.5 -translate-y-1/2 rounded-full ${isLight ? "bg-slate-700" : "bg-white"}`} />
                         <div className={`absolute inset-5 rounded-full border ${isLight ? "border-slate-300/70" : "border-white/8"}`} />
                         <div className={`absolute inset-9 rounded-full border ${isLight ? "border-cyan-300/40" : "border-cyan-400/14"}`} />
-                        <div className={`rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] ${traceAccentTextClass} ${traceAccentFillClass}`}>
+                        <div className={`rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] ${accentTextClass} ${accentFillClass}`}>
                           logic first
                         </div>
                       </div>
                       <div className="mt-5 space-y-2 text-center">
-                        <h3 className={`text-lg font-semibold ${traceTitleClass}`}>
+                        <h3 className={`text-lg font-semibold ${titleClass}`}>
                           Structure before syntax
                         </h3>
-                        <p className={`text-sm leading-6 ${traceBodyClass}`}>
+                        <p className={`text-sm leading-6 ${bodyClass}`}>
                           Describe intent, inspect structure, then read Python output.
                         </p>
                       </div>
@@ -863,15 +864,15 @@ export default function HomePage() {
                     delay={340}
                     className="col-span-full sm:col-span-3 lg:col-span-2"
                   >
-                    <div className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] border p-5 ${traceCardClass}`}>
-                      <div className={`mb-4 text-[10px] uppercase tracking-[0.22em] ${traceLabelClass}`}>
+                    <div className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] border p-5 ${cardClass}`}>
+                      <div className={`mb-4 text-[10px] uppercase tracking-[0.22em] ${labelClass}`}>
                         Settings
                       </div>
                       <div className="space-y-2.5">
-                        {traceLearningSettings.map((setting, index) => (
+                        {learningSettings.map((setting, index) => (
                           <div
                             key={setting.title}
-                            className={`relative overflow-hidden rounded-[1.1rem] border px-3.5 py-3 ${tracePanelClass}`}
+                            className={`relative overflow-hidden rounded-[1.1rem] border px-3.5 py-3 ${panelClass}`}
                           >
                             <div
                               className={`absolute inset-y-0 left-0 w-1 ${
@@ -888,20 +889,20 @@ export default function HomePage() {
                                       : "bg-blue-300/55"
                               }`}
                             />
-                            <div className={`text-sm font-semibold ${traceTitleClass}`}>
+                            <div className={`text-sm font-semibold ${titleClass}`}>
                               {setting.title}
                             </div>
-                            <div className={`mt-1 text-[13px] leading-5 ${traceBodyClass}`}>
+                            <div className={`mt-1 text-[13px] leading-5 ${bodyClass}`}>
                               {setting.subtitle}
                             </div>
                           </div>
                         ))}
                       </div>
                       <div className="mt-4 text-center">
-                        <div className={`text-xl font-semibold tracking-[-0.04em] ${traceTitleClass}`}>
+                        <div className={`text-xl font-semibold tracking-[-0.04em] ${titleClass}`}>
                           3 learning contexts
                         </div>
-                        <p className={`mt-2 text-sm leading-6 ${traceBodyClass}`}>
+                        <p className={`mt-2 text-sm leading-6 ${bodyClass}`}>
                           Used across classrooms, workshops, and tutoring.
                         </p>
                       </div>
@@ -909,46 +910,46 @@ export default function HomePage() {
                   </CardEntrance>
 
                   <CardEntrance inView={creatorRevealInView} delay={420} className="col-span-full lg:col-span-3">
-                    <div className={`relative h-full overflow-hidden rounded-[2rem] border ${traceCardClass}`}>
+                    <div className={`relative h-full overflow-hidden rounded-[2rem] border ${cardClass}`}>
                       <div className="grid h-full gap-4 p-5 sm:grid-cols-[0.95fr_1.05fr]">
                         <div className="flex flex-col justify-between space-y-5">
-                          <div className={`relative flex size-11 items-center justify-center rounded-full border ${tracePanelClass}`}>
+                          <div className={`relative flex size-11 items-center justify-center rounded-full border ${panelClass}`}>
                             <div className={`absolute inset-[-8px] rounded-full border ${isLight ? "border-slate-300/60" : "border-white/6"}`} />
                             <div className={`h-4 w-6 rounded-md border ${isLight ? "border-slate-700" : "border-white"}`} />
                           </div>
                           <div className="space-y-3">
-                            <h3 className={`text-xl font-semibold tracking-[-0.03em] ${traceTitleClass}`}>
+                            <h3 className={`text-xl font-semibold tracking-[-0.03em] ${titleClass}`}>
                               Browser-based from the first session
                             </h3>
-                            <p className={`text-sm leading-6 ${traceBodyClass}`}>
+                            <p className={`text-sm leading-6 ${bodyClass}`}>
                               Browser-based onboarding keeps the focus on reasoning,
                               examples, and review instead of setup.
                             </p>
                           </div>
                         </div>
 
-                        <div className={`relative rounded-[1.35rem] border p-4 sm:ml-2 ${tracePanelClass}`}>
+                        <div className={`relative rounded-[1.35rem] border p-4 sm:ml-2 ${panelClass}`}>
                           <div className="absolute left-4 top-3 flex gap-2">
                             <span className={`block size-2.5 rounded-full ${isLight ? "bg-slate-300" : "bg-white/12"}`} />
                             <span className={`block size-2.5 rounded-full ${isLight ? "bg-slate-300" : "bg-white/12"}`} />
                             <span className={`block size-2.5 rounded-full ${isLight ? "bg-slate-300" : "bg-white/12"}`} />
                           </div>
                           <div className="mt-4 grid gap-2">
-                            {traceWorkflowStages.map((stage, index) => (
+                            {workflowStages.map((stage, index) => (
                               <div
                                 key={stage.title}
-                                className={`relative overflow-hidden rounded-[1rem] border px-3 py-2.5 ${tracePanelClass}`}
+                                className={`relative overflow-hidden rounded-[1rem] border px-3 py-2.5 ${panelClass}`}
                               >
                                 <div className="flex items-center justify-between gap-4">
                                   <div>
-                                    <div className={`text-[10px] uppercase tracking-[0.18em] ${traceLabelClass}`}>
+                                    <div className={`text-[10px] uppercase tracking-[0.18em] ${labelClass}`}>
                                       Step {index + 1}
                                     </div>
-                                    <div className={`mt-1 text-sm font-semibold ${traceTitleClass}`}>
+                                    <div className={`mt-1 text-sm font-semibold ${titleClass}`}>
                                       {stage.title}
                                     </div>
                                   </div>
-                                  <div className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${traceAccentTextClass} ${traceAccentFillClass}`}>
+                                  <div className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${accentTextClass} ${accentFillClass}`}>
                                     {stage.value}
                                   </div>
                                 </div>
@@ -961,10 +962,10 @@ export default function HomePage() {
                   </CardEntrance>
 
                   <CardEntrance inView={creatorRevealInView} delay={500} className="col-span-full lg:col-span-3">
-                    <div className={`relative h-full overflow-hidden rounded-[2rem] border ${traceCardClass}`}>
+                    <div className={`relative h-full overflow-hidden rounded-[2rem] border ${cardClass}`}>
                       <div className="grid h-full gap-4 p-5 sm:grid-cols-[0.9fr_1.1fr]">
                         <div className="flex flex-col justify-between space-y-5">
-                          <div className={`relative flex size-11 items-center justify-center rounded-full border ${tracePanelClass}`}>
+                          <div className={`relative flex size-11 items-center justify-center rounded-full border ${panelClass}`}>
                             <div className={`absolute inset-[-8px] rounded-full border ${isLight ? "border-slate-300/60" : "border-white/6"}`} />
                             <div className="flex items-center gap-1">
                               <span className={`block size-1.5 rounded-full ${isLight ? "bg-slate-700" : "bg-white"}`} />
@@ -973,11 +974,11 @@ export default function HomePage() {
                             </div>
                           </div>
                           <div className="space-y-3">
-                            <h3 className={`text-xl font-semibold tracking-[-0.03em] ${traceTitleClass}`}>
+                            <h3 className={`text-xl font-semibold tracking-[-0.03em] ${titleClass}`}>
                               Built around early programming confidence
                             </h3>
-                            <p className={`text-sm leading-6 ${traceBodyClass}`}>
-                              Trace is tuned for beginner-friendly concepts and
+                            <p className={`text-sm leading-6 ${bodyClass}`}>
+                              {BRAND.name} is tuned for beginner-friendly concepts and
                               guided instruction.
                             </p>
                           </div>
@@ -985,11 +986,11 @@ export default function HomePage() {
 
                         <div className="flex flex-col justify-center gap-3 sm:pl-2">
                           <div className="flex flex-wrap gap-2">
-                            {traceFocusAreas.map((area, index) => (
+                            {focusAreas.map((area, index) => (
                               <div
                                 key={area}
-                                className={`rounded-full border px-3 py-1.5 text-[13px] ${tracePanelClass} ${
-                                  index === 0 ? traceAccentTextClass : traceBodyClass
+                                className={`rounded-full border px-3 py-1.5 text-[13px] ${panelClass} ${
+                                  index === 0 ? accentTextClass : bodyClass
                                 }`}
                               >
                                 {area}
@@ -998,15 +999,15 @@ export default function HomePage() {
                           </div>
 
                           <div className="grid gap-2 sm:grid-cols-2">
-                            {traceProjectSignals.map((signal) => (
+                            {projectSignals.map((signal) => (
                               <div
                                 key={signal.label}
-                                className={`rounded-[1rem] border px-3 py-3 ${tracePanelClass}`}
+                                className={`rounded-[1rem] border px-3 py-3 ${panelClass}`}
                               >
-                                <div className={`text-[10px] uppercase tracking-[0.18em] ${traceLabelClass}`}>
+                                <div className={`text-[10px] uppercase tracking-[0.18em] ${labelClass}`}>
                                   {signal.label}
                                 </div>
-                                <div className={`mt-1.5 text-[13px] leading-5 ${traceTitleClass}`}>
+                                <div className={`mt-1.5 text-[13px] leading-5 ${titleClass}`}>
                                   {signal.value}
                                 </div>
                               </div>
@@ -1104,19 +1105,19 @@ export default function HomePage() {
 
               <div className="relative z-10 mx-auto max-w-6xl">
                 <div
-                  className={`mb-4 text-center text-[10px] uppercase tracking-[0.26em] ${traceLabelClass}`}
+                  className={`mb-4 text-center text-[10px] uppercase tracking-[0.26em] ${labelClass}`}
                 >
                   Learning Center
                 </div>
                 <h2
-                  className={`mx-auto max-w-3xl text-center text-4xl font-bold leading-[0.95] tracking-[-0.045em] md:text-5xl ${traceTitleClass}`}
+                  className={`mx-auto max-w-3xl text-center text-4xl font-bold leading-[0.95] tracking-[-0.045em] md:text-5xl ${titleClass}`}
                 >
                   Learn Computer Science Concepts Like Never Before
                 </h2>
                 <p
-                  className={`mx-auto mt-5 max-w-2xl text-center text-sm leading-7 md:text-[15px] ${traceBodyClass}`}
+                  className={`mx-auto mt-5 max-w-2xl text-center text-sm leading-7 md:text-[15px] ${bodyClass}`}
                 >
-                  Explore guided computer science pathways built for the TRACE
+                  Explore guided computer science pathways built for the {BRAND.name}
                   workflow. Learn the concepts first, then move into real
                   building with less friction and more clarity.
                 </p>

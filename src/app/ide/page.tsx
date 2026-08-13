@@ -12,6 +12,7 @@ import {
   getSupabaseSession,
 } from "@/lib/supabase/client";
 import { ThemeToggleButton, type Theme, useTheme } from "@/components/theme-provider";
+import { BRAND, STORAGE_KEYS } from "@/config/brand";
 import {
   SubscriptionRecord,
   SubscriptionTier,
@@ -182,7 +183,7 @@ type DiagnosticAction =
 
 type ActionableDiagnostic = {
   id: string;
-  source: "syntaxless" | "problem";
+  source: "language" | "problem";
   severity: "ok" | "warning" | "blocked";
   filePath: string;
   lineNumber: number | null;
@@ -620,7 +621,7 @@ function getModeButtonClass(
 }
 
 function ensureMonacoThemes(monaco: Monaco) {
-  monaco.editor.defineTheme("trace-dark", {
+  monaco.editor.defineTheme("ide-dark", {
     base: "vs-dark",
     inherit: true,
     rules: [],
@@ -636,7 +637,7 @@ function ensureMonacoThemes(monaco: Monaco) {
     },
   });
 
-  monaco.editor.defineTheme("trace-light", {
+  monaco.editor.defineTheme("ide-light", {
     base: "vs",
     inherit: true,
     rules: [],
@@ -1471,13 +1472,13 @@ function buildActionableDiagnostics({
     }
 
     return {
-      id: `syntaxless-${index}-${lineNumber || "unmapped"}`,
-      source: "syntaxless" as const,
+      id: `language-${index}-${lineNumber || "unmapped"}`,
+      source: "language" as const,
       severity,
       filePath: currentFilePath,
       lineNumber,
-      title: getDiagnosticTitle(severity, "syntaxless"),
-      message: line.message || "TRACE interpreted this line.",
+      title: getDiagnosticTitle(severity, "language"),
+      message: line.message || `${BRAND.name} interpreted this line.`,
       explanation: detailParts.join(" "),
       modeDetail: getSyntaxModeDetail(line, mode),
       structureDetail: getSyntaxStructureDetail(line),
@@ -2390,7 +2391,7 @@ function IdePageContent() {
   }, []);
   const synthFileLimit = getSynthFileLimit(activeTier);
   const currentSynthFileCount = useMemo(() => countSynthFiles(explorerTree), [explorerTree]);
-  const problemStorageKey = useMemo(() => `codeless:problem:${projectId}`, [projectId]);
+  const problemStorageKey = useMemo(() => STORAGE_KEYS.problem(projectId), [projectId]);
 
   const sidebarContainerClass = useMemo(
     () => (sidebarOpen ? "w-[17rem] opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-6"),
@@ -4326,7 +4327,7 @@ function IdePageContent() {
                   >
                     <div className="relative h-5 w-5">
                       <Image
-                        src="/brand/trace%20logo%20graphic.png"
+                        src="/brand/logo-mark.png"
                         alt="T.R.A.C.E."
                         fill
                         sizes="20px"
@@ -4799,7 +4800,7 @@ function IdePageContent() {
                       value={activeFile.content}
                       onChange={(value) => updateActiveFileContent(value || "")}
                       beforeMount={ensureMonacoThemes}
-                      theme={isLight ? "trace-light" : "trace-dark"}
+                      theme={isLight ? "ide-light" : "ide-dark"}
                       options={{
                         minimap: { enabled: false },
                         fontSize: minimalist ? 17 : 15,
@@ -5419,7 +5420,7 @@ function IdePageContent() {
                     height="100%"
                     language="python"
                     value={generatedPython}
-                    theme={isLight ? "trace-light" : "trace-dark"}
+                    theme={isLight ? "ide-light" : "ide-dark"}
                     options={{
                       readOnly: true,
                       minimap: { enabled: false },

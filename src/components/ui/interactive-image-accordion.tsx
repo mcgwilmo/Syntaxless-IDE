@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { BRAND } from "@/config/brand";
 
 type InteractiveAccordionItem = {
   id: number;
@@ -82,7 +83,7 @@ export function InteractiveImageAccordion({
           <div
             className="flex items-stretch justify-start gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             role="tablist"
-            aria-label="Trace feature previews"
+            aria-label={`${BRAND.name} feature previews`}
           >
             {items.map((item, index) => {
               const isActive = index === activeIndex;

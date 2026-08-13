@@ -14,6 +14,7 @@ import { BeamsBackground } from "@/components/beams-background";
 import { cn } from "@/lib/cn";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ThemeToggleButton, useTheme } from "@/components/theme-provider";
+import { BRAND } from "@/config/brand";
 
 type SiteHeaderProps = {
   tierLabel?: string;
@@ -336,7 +337,7 @@ export function SiteHeader({
             >
               <div className="relative h-7 w-7">
                 <Image
-                  src="/brand/trace%20logo%20graphic.png"
+                  src="/brand/logo-mark.png"
                   alt="T.R.A.C.E."
                   fill
                   sizes="28px"
@@ -350,7 +351,7 @@ export function SiteHeader({
                   isLight ? "text-slate-800" : "text-neutral-100"
                 )}
               >
-                trace
+                {BRAND.name.toLowerCase()}
               </span>
             </Link>
 
@@ -671,8 +672,8 @@ export function AuthPanel({
           )}
         >
           <Image
-            src="/brand/trace%20logo.png"
-            alt="T.R.A.C.E. logo"
+            src="/brand/logo.png"
+            alt={`${BRAND.displayName} logo`}
             fill
             sizes="44px"
             className="object-contain p-[4px]"

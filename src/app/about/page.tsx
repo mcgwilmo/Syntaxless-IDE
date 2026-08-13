@@ -248,7 +248,7 @@ export default function AboutPage() {
               >
                 <div className="relative h-full w-full overflow-hidden rounded-full">
                   <Image
-                    src="/brand/profile%20photo.png"
+                    src="/brand/profile-photo.png"
                     alt="Matthew Wilmot"
                     fill
                     sizes="(min-width: 768px) 288px, 224px"

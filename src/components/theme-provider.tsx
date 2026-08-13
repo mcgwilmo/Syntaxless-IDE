@@ -8,11 +8,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { STORAGE_KEYS } from "@/config/brand";
 import { cn } from "@/lib/cn";
 
 export type Theme = "dark" | "light";
 
-const THEME_STORAGE_KEY = "trace-ui-theme";
+const THEME_STORAGE_KEY = STORAGE_KEYS.theme;
 
 type ThemeContextValue = {
   theme: Theme;

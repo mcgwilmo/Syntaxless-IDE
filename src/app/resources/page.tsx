@@ -13,6 +13,7 @@ import { SUBSCRIPTION_META } from "@/lib/subscriptions";
 import { LEARNING_CENTER_TAB_ROUTES } from "./resource-routes";
 import RadialOrbitalTimeline from "./radial-orbital-timeline";
 import { useLearningCenterAccess } from "./use-learning-center-access";
+import { BRAND } from "@/config/brand";
 
 function OperatorsIcon({ className }: { className?: string }) {
   return (
@@ -199,7 +200,7 @@ export default function ResourcesPage() {
                 isLight ? "text-slate-600" : "text-neutral-400"
               }`}
             >
-              Foundations first, deeper structures next, and more SyntaxLess
+              Foundations first, deeper structures next, and more {BRAND.name}
               lessons on deck.
             </p>
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "@/components/theme-provider";
+import { BRAND } from "@/config/brand";
 
 export type BugReportCategory =
   | "incorrect_validation"
@@ -105,7 +106,7 @@ export default function BugReportModal({
     <div className={`fixed inset-0 z-[500] flex items-center justify-center px-4 backdrop-blur-sm ${isLight ? "bg-slate-200/70" : "bg-black/70"}`}>
       <div className={`w-full max-w-2xl rounded-[1.75rem] border p-6 ${isLight ? "border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)]" : "border-neutral-800 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] shadow-[0_20px_80px_rgba(0,0,0,0.45)]"}`}>
         <div className={`mb-2 text-[11px] uppercase tracking-[0.26em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
-          CodeLess
+          {BRAND.name}
         </div>
 
         <div className="mb-2 flex items-start justify-between gap-4">

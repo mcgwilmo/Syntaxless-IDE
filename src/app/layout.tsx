@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ScrollRevealManager } from "@/components/scroll-reveal-manager";
 import { ThemeProvider, ThemeScript } from "@/components/theme-provider";
+import { BRAND } from "@/config/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,11 +17,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "T.R.A.C.E.",
-    template: "%s | T.R.A.C.E.",
+    default: BRAND.displayName,
+    template: `%s | ${BRAND.displayName}`,
   },
-  description:
-    "T.R.A.C.E. is a browser-based syntaxless IDE for building programs from ideas, logic, and natural language.",
+  description: `${BRAND.displayName} is ${BRAND.description.charAt(0).toLowerCase()}${BRAND.description.slice(1)}`,
 };
 
 export default function RootLayout({
