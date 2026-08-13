@@ -1,47 +1,35 @@
 @import "tailwindcss";
+@import "../design/tokens.css";
 
+/*
+ * Legacy variable names, aliased onto the design tokens.
+ *
+ * 16 screens still reference these (directly, and through the .theme-* classes
+ * below). Aliasing rather than deleting means they inherit the warmer palette
+ * for free while their hardcoded Tailwind classes are migrated in phase 4.
+ *
+ * Do not use these in new code -- use the tokens in design/tokens.css.
+ */
 :root {
-  --background: #050505;
-  --foreground: #f5f5f5;
-  --muted-foreground: #a3a3a3;
-  --soft-foreground: #737373;
-  --surface: rgba(255, 255, 255, 0.03);
-  --surface-strong: rgba(255, 255, 255, 0.045);
-  --surface-elevated: rgba(8, 8, 8, 0.94);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.01);
-  --input-background: rgba(13, 13, 13, 0.92);
-  --input-border: rgba(255, 255, 255, 0.08);
-  --overlay: rgba(0, 0, 0, 0.7);
-  --page-backdrop: #0f0f10;
-  --header-surface: rgba(0, 0, 0, 0.75);
-  --selection: rgba(59, 130, 246, 0.35);
-  --scrollbar-track: rgba(255, 255, 255, 0.03);
-  --scrollbar-thumb: rgba(136, 136, 136, 0.72);
-  --scrollbar-thumb-hover: rgba(172, 172, 172, 0.82);
-  --scrollbar-thumb-border: rgba(0, 0, 0, 0.35);
-}
-
-:root[data-theme="light"] {
-  --background: #eef3f9;
-  --foreground: #0f172a;
-  --muted-foreground: #475569;
-  --soft-foreground: #64748b;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-strong: rgba(255, 255, 255, 0.94);
-  --surface-elevated: rgba(255, 255, 255, 0.98);
-  --card-border: rgba(148, 163, 184, 0.22);
-  --card-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
-  --input-background: rgba(255, 255, 255, 0.96);
-  --input-border: rgba(148, 163, 184, 0.28);
-  --overlay: rgba(236, 242, 248, 0.8);
-  --page-backdrop: #f4f7fb;
-  --header-surface: rgba(255, 255, 255, 0.86);
-  --selection: rgba(37, 99, 235, 0.18);
-  --scrollbar-track: rgba(148, 163, 184, 0.12);
-  --scrollbar-thumb: rgba(100, 116, 139, 0.42);
-  --scrollbar-thumb-hover: rgba(71, 85, 105, 0.55);
-  --scrollbar-thumb-border: rgba(255, 255, 255, 0.55);
+  --background: var(--surface-page);
+  --foreground: var(--text-primary);
+  --muted-foreground: var(--text-muted);
+  --soft-foreground: var(--text-soft);
+  --surface: var(--surface-raised);
+  --surface-strong: var(--surface-raised);
+  --surface-elevated: var(--surface-raised);
+  --card-border: var(--border-subtle);
+  --card-shadow: var(--shadow-md);
+  --input-background: var(--surface-raised);
+  --input-border: var(--border-subtle);
+  --overlay: var(--surface-overlay);
+  --page-backdrop: var(--surface-sunken);
+  --header-surface: var(--surface-raised);
+  --selection: var(--accent-subtle);
+  --scrollbar-track: var(--surface-sunken);
+  --scrollbar-thumb: var(--border-strong);
+  --scrollbar-thumb-hover: var(--text-soft);
+  --scrollbar-thumb-border: transparent;
 }
 
 @theme inline {
@@ -52,6 +40,11 @@
 }
 
 html {
+  /* Paint the root, not just the body. Without this, any area the body box does
+     not cover falls through to the browser's default canvas -- which is black on
+     a machine set to prefers-color-scheme: dark, regardless of our theme.
+     ThemeProvider sets color-scheme inline on this element. */
+  background: var(--surface-page);
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
@@ -59,12 +52,14 @@ html {
 
 body {
   min-height: 100%;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
   transition:
-    background-color 220ms ease,
-    color 220ms ease;
+    background-color var(--duration-base) ease,
+    color var(--duration-base) ease;
 }
 
 * {
@@ -80,17 +75,19 @@ body {
 
 *::-webkit-scrollbar-track {
   background: var(--scrollbar-track);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 *::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 999px;
-  border: 2px solid var(--scrollbar-thumb-border);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-corner {
@@ -98,8 +95,14 @@ body {
 }
 
 ::selection {
-  background: var(--selection);
-  color: #ffffff;
+  background: var(--accent-subtle);
+  color: var(--text-primary);
+}
+
+/* A visible, consistent focus ring. Keyboard users are not second-class. */
+:focus-visible {
+  outline: 2px solid var(--accent-solid);
+  outline-offset: 2px;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -135,7 +138,7 @@ body {
 .page-enter-soft[data-reveal-state="visible"],
 .subscription-card-in[data-reveal-state="visible"],
 [data-scroll-reveal][data-reveal-state="visible"] {
-  animation: pageReveal 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pageReveal var(--duration-slow) var(--ease-out) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -149,53 +152,54 @@ body {
   }
 }
 
+/* Legacy surface helpers. Superseded by design/primitives -- do not extend. */
 .theme-page-surface {
-  border: 1px solid var(--card-border);
-  background: linear-gradient(180deg, var(--surface-strong), var(--surface));
-  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-md);
 }
 
 .theme-panel {
-  border: 1px solid var(--card-border);
-  background: var(--surface-strong);
-  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-md);
 }
 
 .theme-input {
-  border: 1px solid var(--input-border);
-  background: var(--input-background);
-  color: var(--foreground);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-primary);
 }
 
 .theme-input::placeholder {
-  color: var(--soft-foreground);
+  color: var(--text-soft);
 }
 
 .theme-ghost-button {
-  border: 1px solid var(--card-border);
-  background: var(--surface);
-  color: var(--muted-foreground);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-muted);
 }
 
 .theme-ghost-button:hover {
-  background: var(--surface-strong);
-  color: var(--foreground);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
 }
 
 .theme-overlay {
-  background: var(--overlay);
+  background: var(--surface-overlay);
 }
 
-.ide-validation-line--warning {
-  background: linear-gradient(90deg, rgba(250, 204, 21, 0.075), rgba(250, 204, 21, 0.018));
+/* ---- IDE diagnostics -------------------------------------------------- */
+/* Semantic state colors only: amber means look at this, rose means blocked. */
+
+.ide-validation-line--warning,
+.ide-problem-line--warning {
+  background: linear-gradient(90deg, var(--state-warning-subtle), transparent);
 }
 
 .ide-validation-line--blocked {
-  background: linear-gradient(90deg, rgba(244, 63, 94, 0.095), rgba(244, 63, 94, 0.024));
-}
-
-.ide-problem-line--warning {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.02));
+  background: linear-gradient(90deg, var(--state-blocked-subtle), transparent);
 }
 
 .monaco-editor .glyph-margin .ide-diagnostic-glyph--warning,
@@ -209,7 +213,7 @@ body {
 .monaco-editor .glyph-margin .ide-diagnostic-glyph--blocked::before,
 .monaco-editor .glyph-margin .ide-diagnostic-glyph--problem::before {
   align-items: center;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   display: flex;
   font-size: 10px;
   font-weight: 700;
@@ -225,17 +229,15 @@ body {
 
 .monaco-editor .glyph-margin .ide-diagnostic-glyph--warning::before,
 .monaco-editor .glyph-margin .ide-diagnostic-glyph--problem::before {
-  background: rgba(245, 158, 11, 0.14);
-  border: 1px solid rgba(251, 191, 36, 0.72);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.08);
-  color: rgb(251, 191, 36);
+  background: var(--state-warning-subtle);
+  border: 1px solid var(--state-warning);
+  color: var(--state-warning);
   content: "!";
 }
 
 .monaco-editor .glyph-margin .ide-diagnostic-glyph--blocked::before {
-  background: rgba(244, 63, 94, 0.14);
-  border: 1px solid rgba(251, 113, 133, 0.76);
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.08);
-  color: rgb(251, 113, 133);
+  background: var(--state-blocked-subtle);
+  border: 1px solid var(--state-blocked);
+  color: var(--state-blocked);
   content: "!";
 }

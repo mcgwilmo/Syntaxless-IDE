@@ -4,20 +4,22 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthPageShell, AuthPanel } from "@/components/site-shell";
-import { useTheme } from "@/components/theme-provider";
+import { Button, Callout, Field } from "@/design/primitives";
 import {
   getSupabaseBrowserClient,
   getSupabaseSession,
 } from "@/lib/supabase/client";
 
+const RESTING_MESSAGE = "Sign in to open your dashboard.";
+
 export default function LoginPage() {
   const router = useRouter();
   const supabase = getSupabaseBrowserClient();
-  const { isLight } = useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("Sign in to open your dashboard.");
+  const [status, setStatus] = useState(RESTING_MESSAGE);
+  const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -29,7 +31,8 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setIsLoading(true);
-    setStatus("Signing in...");
+    setHasError(false);
+    setStatus("Signing you in…");
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -38,6 +41,7 @@ export default function LoginPage() {
 
     if (error) {
       setStatus(error.message);
+      setHasError(true);
       setIsLoading(false);
       return;
     }
@@ -50,54 +54,51 @@ export default function LoginPage() {
     <AuthPageShell>
       <AuthPanel
         title="Welcome back"
-        description={status}
         className="page-enter"
         footer={
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-neutral-500">
-            <span>No account?</span>
-            <Link href="/signup" className={isLight ? "text-slate-700 hover:text-slate-900" : "text-neutral-300 hover:text-white"}>
+          <div className="flex flex-wrap items-center gap-x-[var(--space-3)] gap-y-[var(--space-2)] text-[length:var(--text-sm)] text-[var(--text-soft)]">
+            <span>No account yet?</span>
+            <Link
+              href="/signup"
+              className="text-[var(--accent-text)] underline-offset-4 hover:underline"
+            >
               Create one
             </Link>
-            <span className="text-neutral-700">.</span>
-            <Link href="/subscriptions" className={isLight ? "text-slate-700 hover:text-slate-900" : "text-neutral-300 hover:text-white"}>
+            <span aria-hidden="true">·</span>
+            <Link
+              href="/subscriptions"
+              className="text-[var(--accent-text)] underline-offset-4 hover:underline"
+            >
               View pricing
             </Link>
           </div>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            className={`w-full rounded-[1.5rem] border px-4 py-3 text-sm outline-none transition-colors ${
-              isLight
-                ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400/60"
-                : "border-white/[0.08] bg-[#0d0d0d]/90 placeholder:text-neutral-600 focus:border-blue-400/40"
-            }`}
-            placeholder="Email"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-[var(--space-4)]">
+          <Callout tone={hasError ? "blocked" : "neutral"}>{status}</Callout>
+
+          <Field
+            label="Email"
             type="email"
+            autoComplete="email"
+            placeholder="you@school.edu"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <input
-            className={`w-full rounded-[1.5rem] border px-4 py-3 text-sm outline-none transition-colors ${
-              isLight
-                ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400/60"
-                : "border-white/[0.08] bg-[#0d0d0d]/90 placeholder:text-neutral-600 focus:border-blue-400/40"
-            }`}
-            placeholder="Password"
+
+          <Field
+            label="Password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded-[1.5rem] border border-blue-400/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-300 transition-all duration-300 hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-white disabled:opacity-50"
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </button>
+          <Button type="submit" disabled={isLoading} fullWidth size="lg">
+            {isLoading ? "Signing in…" : "Sign in"}
+          </Button>
         </form>
       </AuthPanel>
     </AuthPageShell>

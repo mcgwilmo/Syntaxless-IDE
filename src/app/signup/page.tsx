@@ -4,22 +4,23 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthPageShell, AuthPanel } from "@/components/site-shell";
-import { useTheme } from "@/components/theme-provider";
+import { Button, Callout, Field } from "@/design/primitives";
 import {
   getSupabaseBrowserClient,
   getSupabaseSession,
 } from "@/lib/supabase/client";
 
+const RESTING_MESSAGE =
+  "Create an account to save your projects. Every new account starts on Free.";
+
 export default function SignupPage() {
   const router = useRouter();
   const supabase = getSupabaseBrowserClient();
-  const { isLight } = useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState(
-    "Create an account to save projects. Every new account starts on Free."
-  );
+  const [status, setStatus] = useState(RESTING_MESSAGE);
+  const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -31,15 +32,14 @@ export default function SignupPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setIsLoading(true);
-    setStatus("Creating account...");
+    setHasError(false);
+    setStatus("Creating your account…");
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
       setStatus(error.message);
+      setHasError(true);
       setIsLoading(false);
       return;
     }
@@ -53,55 +53,53 @@ export default function SignupPage() {
     <AuthPageShell>
       <AuthPanel
         title="Create account"
-        description={status}
         className="page-enter"
         footer={
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-neutral-500">
+          <div className="flex flex-wrap items-center gap-x-[var(--space-3)] gap-y-[var(--space-2)] text-[length:var(--text-sm)] text-[var(--text-soft)]">
             <span>Already have an account?</span>
-            <Link href="/login" className={isLight ? "text-slate-700 hover:text-slate-900" : "text-neutral-300 hover:text-white"}>
+            <Link
+              href="/login"
+              className="text-[var(--accent-text)] underline-offset-4 hover:underline"
+            >
               Sign in
             </Link>
-            <span className="text-neutral-700">.</span>
-            <Link href="/subscriptions" className={isLight ? "text-slate-700 hover:text-slate-900" : "text-neutral-300 hover:text-white"}>
+            <span aria-hidden="true">·</span>
+            <Link
+              href="/subscriptions"
+              className="text-[var(--accent-text)] underline-offset-4 hover:underline"
+            >
               View pricing
             </Link>
           </div>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            className={`w-full rounded-[1.5rem] border px-4 py-3 text-sm outline-none transition-colors ${
-              isLight
-                ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400/60"
-                : "border-white/[0.08] bg-[#0d0d0d]/90 placeholder:text-neutral-600 focus:border-blue-400/40"
-            }`}
-            placeholder="Email"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-[var(--space-4)]">
+          <Callout tone={hasError ? "blocked" : "neutral"}>{status}</Callout>
+
+          <Field
+            label="Email"
             type="email"
+            autoComplete="email"
+            placeholder="you@school.edu"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <input
-            className={`w-full rounded-[1.5rem] border px-4 py-3 text-sm outline-none transition-colors ${
-              isLight
-                ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400/60"
-                : "border-white/[0.08] bg-[#0d0d0d]/90 placeholder:text-neutral-600 focus:border-blue-400/40"
-            }`}
-            placeholder="Password"
+
+          <Field
+            label="Password"
             type="password"
+            autoComplete="new-password"
+            hint="At least 6 characters."
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
           />
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded-[1.5rem] border border-blue-400/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-300 transition-all duration-300 hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-white disabled:opacity-50"
-          >
-            {isLoading ? "Creating..." : "Create Account"}
-          </button>
+          <Button type="submit" disabled={isLoading} fullWidth size="lg">
+            {isLoading ? "Creating account…" : "Create account"}
+          </Button>
         </form>
       </AuthPanel>
     </AuthPageShell>

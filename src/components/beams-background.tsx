@@ -35,7 +35,12 @@ export function BeamsBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", { alpha: false });
+    // The display canvas must keep its alpha channel. With { alpha: false } the
+    // backing store is opaque BLACK, so any moment it is not painted -- before
+    // the first frame, in a background tab, or if the loop never starts -- shows
+    // as a full-bleed black rectangle over the page background. The buffer below
+    // is still opaque, since it is fully repainted every frame.
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const bufferCanvas = document.createElement("canvas");

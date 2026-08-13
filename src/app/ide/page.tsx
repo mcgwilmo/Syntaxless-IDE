@@ -1018,7 +1018,7 @@ function describeBackendConnectionError(error: unknown, backendUrl: string) {
     return `${error.message}\n`;
   }
 
-  return "Error talking to backend.\n";
+  return "Could not reach the server. Check that the backend is running, then try again.\n";
 }
 
 function isBackendConnectionError(error: unknown) {
@@ -1281,11 +1281,13 @@ function getProblemNoticeSeverity(
 
 function getDiagnosticTitle(severity: ActionableDiagnostic["severity"], source: ActionableDiagnostic["source"]) {
   if (source === "problem") {
-    return severity === "blocked" ? "Problem mismatch" : "Problem alignment hint";
+    return severity === "blocked"
+      ? "This does not match the problem yet"
+      : "A thought about the problem";
   }
-  if (severity === "blocked") return "Line blocked";
-  if (severity === "warning") return "Line needs attention";
-  return "Line understood";
+  if (severity === "blocked") return "This line cannot run yet";
+  if (severity === "warning") return "This line might not do what you expect";
+  return "This line makes sense";
 }
 
 function cleanDiagnosticText(value?: string | null) {
@@ -1301,7 +1303,7 @@ function getSyntaxModeDetail(line: ResolvedInterpretationLine, mode: IdeMode) {
         line.strict_specificity_reasoning ||
         line.raw_specificity_reasoning ||
         line.ai_message
-    ) || "No mode-specific note returned.";
+    ) || "Nothing to flag for this mode.";
   const status = line.strict_specificity_status
     ? ` Status ${humanizeType(line.strict_specificity_status)}.`
     : "";
@@ -1318,7 +1320,7 @@ function getSyntaxStructureDetail(line: ResolvedInterpretationLine) {
       : `Score ${formatScore(structureScore)}`;
   const structureReason =
     cleanDiagnosticText(line.structure_reasoning || line.logic_risk || line.message) ||
-    "No structure-specific note returned.";
+    "Nothing to flag about the structure.";
 
   return `${scoreLabel}: ${structureReason}`;
 }
@@ -1652,11 +1654,11 @@ function getLockedModeReason(tier: SubscriptionTier, mode: IdeMode) {
   }
 
   if (tier === "student") {
-    return "Student accounts are limited to Problem Solving mode.";
+    return "Student accounts use Problem Solving mode, which checks your work against the prompt as you go.";
   }
 
   if (tier === "plus" && mode === "vibe") {
-    return "Vibe mode is only available on the Pro plan. Upgrade your subscription to unlock it.";
+    return "Vibe mode comes with the Pro plan. Your work is safe -- switching plans will not change it.";
   }
 
   return `${MODE_META[mode].label} mode is not available on your current subscription plan.`;
@@ -1668,7 +1670,7 @@ function getLockedLayoutReason(tier: SubscriptionTier, layout: LayoutMode) {
   }
 
   if ((tier === "plus" || tier === "student") && layout === "developer") {
-    return "Developer layout is only available on the Pro plan. Upgrade your subscription to unlock it.";
+    return "Developer layout comes with the Pro plan. Everything you can do today stays available.";
   }
 
   return `${LAYOUT_META[layout].label} layout is not available on your current subscription plan.`;
@@ -4870,9 +4872,9 @@ function IdePageContent() {
                           <span className="mx-1.5 shrink-0 opacity-50">|</span>
                           <span
                             className="min-w-0 truncate"
-                            title={selectedDiagnostic.structureDetail || "Structure details unavailable."}
+                            title={selectedDiagnostic.structureDetail || "No structure notes for this line."}
                           >
-                            {selectedDiagnostic.structureDetail || "Structure details unavailable."}
+                            {selectedDiagnostic.structureDetail || "No structure notes for this line."}
                           </span>
                         </div>
                       </div>
@@ -5337,7 +5339,7 @@ function IdePageContent() {
                                   style={protectedDarkMetaStyle}
                                 >
                                   {normalizedProblemStatement
-                                    ? "No problem-specific notices yet. Run Check to compare the draft against the prompt."
+                                    ? "Nothing compared yet. Press Check to see how your draft lines up with the problem."
                                     : "Add a problem statement to enable alignment feedback."}
                                 </div>
                               )}

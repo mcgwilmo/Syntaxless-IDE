@@ -42,7 +42,8 @@ type SurfaceCardProps = {
 
 type AuthPanelProps = {
   title: string;
-  description: string;
+  /** Optional. Prefer a <Callout> inside children when the text is a status. */
+  description?: string;
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
@@ -630,8 +631,8 @@ export function AuthPageShell({ children }: { children: ReactNode }) {
   return (
     <main
       className={cn(
-        "relative flex min-h-screen items-center justify-center overflow-hidden px-6",
-        isLight ? "bg-[#eef3f9] text-slate-900" : "bg-black text-white"
+        "relative flex min-h-screen items-center justify-center overflow-hidden px-[var(--space-6)]",
+        "bg-[var(--surface-page)] text-[var(--text-primary)]"
       )}
     >
       <BeamsBackground
@@ -652,15 +653,11 @@ export function AuthPanel({
   footer,
   className,
 }: AuthPanelProps) {
-  const { isLight } = useTheme();
-
   return (
     <SurfaceCard
       className={cn(
-        "relative w-full max-w-md p-8 backdrop-blur-xl",
-        isLight
-          ? "bg-white/88 shadow-[0_24px_70px_rgba(15,23,42,0.1)]"
-          : "bg-black/45 shadow-[0_20px_80px_rgba(0,0,0,0.45)]",
+        "relative w-full max-w-md p-[var(--space-8)] backdrop-blur-xl",
+        "bg-[var(--surface-raised)] shadow-[var(--shadow-lg)]",
         className
       )}
     >
@@ -668,7 +665,7 @@ export function AuthPanel({
         <div
           className={cn(
             "relative h-11 w-11 overflow-hidden rounded-full border",
-            isLight ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.03]"
+            "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
           )}
         >
           <Image
@@ -682,27 +679,31 @@ export function AuthPanel({
         </div>
         <div
           className={cn(
-            "text-[11px] uppercase tracking-[0.24em]",
-            isLight ? "text-slate-500" : "text-neutral-500"
+            "text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)]",
+            "text-[var(--text-soft)]"
           )}
         >
-          T.R.A.C.E.
+          {BRAND.displayName}
         </div>
       </div>
 
       <TypingHeading
         text={title}
         as="h1"
-        className={cn("mb-2 text-3xl", isLight ? "text-slate-900" : "text-white")}
+        className="mb-[var(--space-2)] text-[length:var(--text-3xl)] text-[var(--text-primary)]"
       />
 
-      <p className={cn("mb-6 text-sm leading-7", isLight ? "text-slate-600" : "text-neutral-400")}>
-        {description}
-      </p>
+      {description ? (
+        <p className="mb-[var(--space-6)] text-[length:var(--text-base)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
+          {description}
+        </p>
+      ) : (
+        <div className="mb-[var(--space-6)]" />
+      )}
 
       {children}
 
-      {footer ? <div className="mt-6">{footer}</div> : null}
+      {footer ? <div className="mt-[var(--space-6)]">{footer}</div> : null}
     </SurfaceCard>
   );
 }

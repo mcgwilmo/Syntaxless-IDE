@@ -37,12 +37,12 @@ export function ThemeScript() {
     (function() {
       try {
         var storedTheme = window.localStorage.getItem("${THEME_STORAGE_KEY}");
-        var theme = storedTheme === "light" ? "light" : "dark";
+        var theme = storedTheme === "dark" ? "dark" : "light";
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
       } catch (error) {
-        document.documentElement.dataset.theme = "dark";
-        document.documentElement.style.colorScheme = "dark";
+        document.documentElement.dataset.theme = "light";
+        document.documentElement.style.colorScheme = "light";
       }
     })();
   `;
@@ -51,17 +51,19 @@ export function ThemeScript() {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  // Light is the default: classrooms are bright and often projected.
+  // Anyone who already chose dark keeps it -- their choice is in localStorage.
+  const [theme, setThemeState] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     try {
       const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-      const nextTheme = storedTheme === "light" ? "light" : "dark";
+      const nextTheme = storedTheme === "dark" ? "dark" : "light";
       setThemeState(nextTheme);
       applyTheme(nextTheme);
     } catch {
-      applyTheme("dark");
+      applyTheme("light");
     } finally {
       setMounted(true);
     }

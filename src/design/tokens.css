@@ -1,0 +1,177 @@
+/*
+ * Design tokens.
+ *
+ * Light-first: the light palette is defined on :root, and the dark theme
+ * overrides it under [data-theme="dark"]. Classrooms are bright and projected,
+ * so light is the theme that gets designed properly.
+ *
+ * Names are semantic (--surface-raised) rather than literal (--warm-grey-100).
+ * A component should say what a color is FOR, not what it looks like -- that is
+ * what lets both themes swap without the component knowing.
+ *
+ * NEVER put a raw hex or rgba() in a component. If you need a color that is not
+ * here, add a token.
+ */
+
+:root {
+  /* ---- Surfaces -------------------------------------------------------- */
+  /* Warm off-white paper, not clinical white and not the old cold slate. */
+  --surface-page: #faf9f7;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f2f0ed;
+  --surface-overlay: rgba(28, 26, 23, 0.45);
+
+  /* ---- Text ------------------------------------------------------------ */
+  --text-primary: #1c1a17; /* 16.50:1 on page */
+  --text-muted: #57534e; /*  7.25:1 on page */
+  --text-soft: #78716c; /*  4.56:1 on page -- AA for body */
+  --text-inverted: #ffffff;
+
+  /* ---- Borders --------------------------------------------------------- */
+  --border-subtle: rgba(28, 26, 23, 0.1);
+  --border-strong: rgba(28, 26, 23, 0.18);
+  --border-focus: var(--accent-solid);
+
+  /* ---- Accent ---------------------------------------------------------- */
+  /* One accent. Used for interactive emphasis, never for decoration. */
+  --accent-solid: #0f766e; /*  5.20:1 on page, 5.47:1 white-on-accent */
+  --accent-hover: #115e59;
+  --accent-text: #0f766e;
+  --accent-subtle: rgba(15, 118, 110, 0.08);
+  --accent-border: rgba(15, 118, 110, 0.28);
+
+  /* ---- State ----------------------------------------------------------- */
+  /* Reserved for meaning. Green = it ran. Amber = look at this. Rose = blocked. */
+  --state-success: #15803d; /*  4.77:1 */
+  --state-success-subtle: rgba(21, 128, 61, 0.09);
+  --state-warning: #b45309; /*  4.77:1 */
+  --state-warning-subtle: rgba(180, 83, 9, 0.09);
+  --state-blocked: #be123c; /*  5.97:1 */
+  --state-blocked-subtle: rgba(190, 18, 60, 0.08);
+
+  /* ---- Elevation ------------------------------------------------------- */
+  /* Soft and diffuse. Depth should be felt, not outlined. */
+  --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.04), 0 1px 3px rgba(28, 26, 23, 0.06);
+  --shadow-md: 0 4px 12px rgba(28, 26, 23, 0.06), 0 2px 4px rgba(28, 26, 23, 0.04);
+  --shadow-lg: 0 12px 32px rgba(28, 26, 23, 0.09), 0 4px 8px rgba(28, 26, 23, 0.04);
+
+  /* ---- Spacing (4px base) ---------------------------------------------- */
+  /* Crowding reads as difficulty. When unsure, go one step up. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  /* Cards and panels take the generous end; controls stay modest so they
+     still read as controls rather than as decoration. */
+  --radius-sm: 0.375rem; /*  6px -- badges, chips */
+  --radius-md: 0.625rem; /* 10px -- inputs, buttons */
+  --radius-lg: 1rem; /* 16px -- cards, callouts */
+  --radius-xl: 1.5rem; /* 24px -- panels, modals */
+  --radius-full: 999px;
+
+  /* ---- Typography ------------------------------------------------------ */
+  /* Base is 15px, larger than typical dev tools. Line-height is generous. */
+  --text-xs: 0.75rem; /* 12 */
+  --text-sm: 0.8125rem; /* 13 */
+  --text-base: 0.9375rem; /* 15 */
+  --text-lg: 1.0625rem; /* 17 */
+  --text-xl: 1.25rem; /* 20 */
+  --text-2xl: 1.5rem; /* 24 */
+  --text-3xl: 2rem; /* 32 */
+
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.75;
+
+  --tracking-label: 0.14em;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme="dark"] {
+  /* Warm dark, not blue-black. Same role, different value. */
+  --surface-page: #171614;
+  --surface-raised: #211f1c;
+  --surface-sunken: #100f0e;
+  --surface-overlay: rgba(0, 0, 0, 0.6);
+
+  --text-primary: #f5f3f0; /* 16.33:1 on page */
+  --text-muted: #a8a29e; /*  7.17:1 on page */
+  --text-soft: #8a8480; /*  4.90:1 on page */
+  --text-inverted: #1c1a17;
+
+  --border-subtle: rgba(245, 243, 240, 0.1);
+  --border-strong: rgba(245, 243, 240, 0.18);
+
+  /* Light-on-dark accent needs to be much lighter to stay legible. */
+  --accent-solid: #14b8a6;
+  --accent-hover: #2dd4bf;
+  --accent-text: #5eead4; /* 12.22:1 on page */
+  --accent-subtle: rgba(45, 212, 191, 0.12);
+  --accent-border: rgba(45, 212, 191, 0.3);
+
+  --state-success: #4ade80; /* 10.38:1 */
+  --state-success-subtle: rgba(74, 222, 128, 0.12);
+  --state-warning: #fbbf24; /* 10.83:1 */
+  --state-warning-subtle: rgba(251, 191, 36, 0.12);
+  --state-blocked: #fb7185; /*  6.72:1 */
+  --state-blocked-subtle: rgba(251, 113, 133, 0.12);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+/*
+ * Expose tokens to Tailwind so `bg-surface-raised`, `text-muted`,
+ * `rounded-lg`, and `p-4` all resolve to the scale above.
+ */
+@theme inline {
+  --color-surface-page: var(--surface-page);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+
+  --color-primary: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-soft: var(--text-soft);
+  --color-inverted: var(--text-inverted);
+
+  --color-subtle: var(--border-subtle);
+  --color-strong: var(--border-strong);
+
+  --color-accent: var(--accent-solid);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-border: var(--accent-border);
+
+  --color-success: var(--state-success);
+  --color-success-subtle: var(--state-success-subtle);
+  --color-warning: var(--state-warning);
+  --color-warning-subtle: var(--state-warning-subtle);
+  --color-blocked: var(--state-blocked);
+  --color-blocked-subtle: var(--state-blocked-subtle);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
