@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored Monaco assets, copied by scripts/copy-monaco.mjs. Third-party
+    // minified source -- linting it reports thousands of problems we cannot act on.
+    "public/monaco/**",
   ]),
 ]);
 

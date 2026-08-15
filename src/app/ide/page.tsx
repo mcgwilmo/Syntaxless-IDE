@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+// Configures Monaco to load from this app rather than a CDN. Must be
+// imported before the first <Editor> renders.
+import "@/features/ide/lib/monaco-loader";
 import Editor from "@monaco-editor/react";
 import { createPortal } from "react-dom";
 import {
