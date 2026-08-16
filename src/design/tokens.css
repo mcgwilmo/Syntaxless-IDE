@@ -55,6 +55,68 @@
   --shadow-md: 0 4px 12px rgba(28, 26, 23, 0.06), 0 2px 4px rgba(28, 26, 23, 0.04);
   --shadow-lg: 0 12px 32px rgba(28, 26, 23, 0.09), 0 4px 8px rgba(28, 26, 23, 0.04);
 
+  /* ---- Material -------------------------------------------------------- */
+  /*
+   * What makes a surface read as an object rather than a rectangle.
+   *
+   * ONE LIGHT SOURCE, above and slightly forward. Every raised thing catches it
+   * on its top edge and casts below; every recessed thing does the exact
+   * opposite. Break that consistency anywhere and the whole page stops looking
+   * physical and starts looking decorated -- which is the failure mode that
+   * gave skeuomorphism its bad name.
+   *
+   * Restraint is the difference between tactile and dated. These values are
+   * deliberately small: a 1px highlight and a 2px shadow read as a real edge,
+   * while 4px of each reads as a 2008 phone.
+   */
+
+  /* The catch of light along a raised top edge. */
+  --material-highlight: rgba(255, 255, 255, 0.9);
+  /* The shading under a raised bottom edge, and inside a recess. */
+  --material-shade: rgba(28, 26, 23, 0.13);
+
+  /* Faint top-to-bottom gradient. A flat fill under a light has a slight
+     falloff; without it a "raised" surface still looks like a sticker. */
+  /* 8%, not more. The sheen sits over filled controls as well as neutral
+     cards, and at 55% it washed the accent button out until white label text
+     measured 1.98:1. Every increase here has to be re-checked against
+     white-on-accent, which is the tightest pair in the system. */
+  --material-sheen: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0) 62%
+  );
+
+  /* Raised: a thing sitting on the page, asking to be pressed. */
+  --raised:
+    inset 0 1px 0 var(--material-highlight),
+    inset 0 -1px 0 var(--material-shade),
+    0 1px 1px rgba(28, 26, 23, 0.05),
+    0 2px 4px rgba(28, 26, 23, 0.07);
+
+  /* Raised further: panels and cards, off the page rather than on it. */
+  --raised-lg:
+    inset 0 1px 0 var(--material-highlight),
+    inset 0 -1px 0 var(--material-shade),
+    0 2px 4px rgba(28, 26, 23, 0.05),
+    0 8px 20px rgba(28, 26, 23, 0.09);
+
+  /* Pressed: the same object, pushed in. Light now catches the bottom. */
+  --pressed:
+    inset 0 2px 4px rgba(28, 26, 23, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+
+  /* Recessed: a well cut into the surface -- inputs, terminals, tracks.
+     Something goes INTO these, so they must not also look pressable. */
+  --recessed:
+    inset 0 2px 3px rgba(28, 26, 23, 0.1),
+    inset 0 1px 1px rgba(28, 26, 23, 0.06),
+    0 1px 0 var(--material-highlight);
+
+  /* How far a control travels when pressed. One pixel is enough to feel; more
+     makes text jump and reads as a glitch rather than a press. */
+  --press-travel: 1px;
+
   /* ---- Spacing (4px base) ---------------------------------------------- */
   /* Crowding reads as difficulty. When unsure, go one step up. */
   --space-1: 0.25rem;
@@ -110,7 +172,10 @@
 
   --text-primary: #f5f3f0; /* 16.33:1 on page */
   --text-muted: #a8a29e; /*  7.17:1 on page */
-  --text-soft: #8a8480; /*  4.90:1 on page */
+  /* Lightened from #8a8480. That value cleared AA against the page (4.90) but
+     not against a raised card (4.46) -- phase 2 only ever measured text against
+     the page, so raised surfaces were never checked. */
+  --text-soft: #9c9691; /*  6.19:1 on page, 4.90:1 on a sheened card */
   --text-inverted: #1c1a17;
 
   --border-subtle: rgba(245, 243, 240, 0.1);
@@ -133,6 +198,43 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  /* ---- Material, in low light ------------------------------------------
+   * The same physics, different conditions. In a dark room a raised edge
+   * catches far less light, so the highlight drops from 0.9 to 0.08 -- keep it
+   * at light-theme strength and every edge turns into a glowing white wire.
+   * Shadows go the other way: darker, because there is more contrast range
+   * below the surface than above it.
+   */
+  --material-highlight: rgba(255, 255, 255, 0.08);
+  --material-shade: rgba(0, 0, 0, 0.5);
+
+  --material-sheen: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0) 62%
+  );
+
+  --raised:
+    inset 0 1px 0 var(--material-highlight),
+    inset 0 -1px 0 var(--material-shade),
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.35);
+
+  --raised-lg:
+    inset 0 1px 0 var(--material-highlight),
+    inset 0 -1px 0 var(--material-shade),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 8px 20px rgba(0, 0, 0, 0.45);
+
+  --pressed:
+    inset 0 2px 5px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+
+  --recessed:
+    inset 0 2px 4px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(0, 0, 0, 0.3),
+    0 1px 0 var(--material-highlight);
 }
 
 /*

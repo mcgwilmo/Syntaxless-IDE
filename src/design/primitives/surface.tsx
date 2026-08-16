@@ -14,7 +14,8 @@ export function Card({ children, className }: SurfaceProps) {
     <div
       className={cn(
         "rounded-[var(--radius-lg)] border border-[var(--border-subtle)]",
-        "bg-[var(--surface-raised)] p-[var(--space-5)] shadow-[var(--shadow-sm)]",
+        "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+        "p-[var(--space-5)] shadow-[var(--raised)]",
         className
       )}
     >
@@ -32,7 +33,8 @@ export function Panel({ children, className }: SurfaceProps) {
     <div
       className={cn(
         "rounded-[var(--radius-xl)] border border-[var(--border-subtle)]",
-        "bg-[var(--surface-raised)] p-[var(--space-8)] shadow-[var(--shadow-lg)]",
+        "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+        "p-[var(--space-8)] shadow-[var(--raised-lg)]",
         className
       )}
     >
@@ -63,6 +65,9 @@ export function Badge({
     <span
       className={cn(
         "inline-flex items-center rounded-[var(--radius-sm)]",
+        // Inlaid rather than raised: a badge is a label set into the surface,
+        // not something you can press.
+        "shadow-[inset_0_1px_1px_rgba(28,26,23,0.07),0_1px_0_var(--material-highlight)]",
         "px-[var(--space-2)] py-[var(--space-1)]",
         "text-[length:var(--text-xs)] font-medium",
         BADGE_TONES[tone],
