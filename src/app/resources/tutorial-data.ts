@@ -1,17 +1,9 @@
-import { TAB_ONE_LESSONS_PART_1 } from "./tutorial-lessons-part1";
-import { TAB_ONE_LESSONS_PART_2 } from "./tutorial-lessons-part2";
-import { TAB_ONE_LESSONS_PART_3 } from "./tutorial-lessons-part3";
-import { TAB_ONE_LESSONS_PART_4 } from "./tutorial-lessons-part4";
-import { TAB_TWO_LESSONS } from "./tutorial-lessons-tab2";
-import type { Example, Lesson, TabId, TutorialTab } from "./tutorial-types";
+import { LESSONS_BY_TAB as AUTHORED_LESSONS } from "@/content/lessons/generated";
+import type { Example, Lesson, TabId } from "@/content/lessons/lesson-schema";
+import type { TutorialTab } from "./tutorial-types";
 
-export type {
-  Example,
-  Lesson,
-  TabId,
-  Topic,
-  TutorialTab,
-} from "./tutorial-types";
+export type { Example, Lesson, TabId, Topic } from "@/content/lessons/lesson-schema";
+export type { TutorialTab } from "./tutorial-types";
 
 function normalizeWhitespace(line: string) {
   return line.trim().replace(/\s+/g, " ");
@@ -494,16 +486,17 @@ export const TUTORIAL_TABS: TutorialTab[] = [
   },
 ];
 
-export const TAB_ONE_LESSONS = normalizeLessons([
-  ...TAB_ONE_LESSONS_PART_1,
-  ...TAB_ONE_LESSONS_PART_2,
-  ...TAB_ONE_LESSONS_PART_3,
-  ...TAB_ONE_LESSONS_PART_4,
-]);
+// The lessons are authored as YAML in src/content/lessons and compiled into
+// generated.ts before every build. normalizeLessons still runs on the way out:
+// it rewrites the authored text for display, and every lesson's wording depends
+// on it, so it is applied here exactly as it always was.
+export const TAB_ONE_LESSONS = normalizeLessons(AUTHORED_LESSONS.operators);
 
 export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
   operators: TAB_ONE_LESSONS,
-  "data-structures-algorithms": normalizeLessons(TAB_TWO_LESSONS),
+  "data-structures-algorithms": normalizeLessons(
+    AUTHORED_LESSONS["data-structures-algorithms"],
+  ),
 };
 
 export function getLessonsForTab(tabId: TabId) {
@@ -539,6 +532,5 @@ export function findTopicById(tabId: TabId, id: string) {
   };
 }
 
-export function isTabId(value: string): value is TabId {
-  return value === "operators" || value === "data-structures-algorithms";
-}
+// Defined with the schema, so the tab list has one home.
+export { isTabId } from "@/content/lessons/lesson-schema";

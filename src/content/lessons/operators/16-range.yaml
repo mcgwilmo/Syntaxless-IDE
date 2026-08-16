@@ -1,0 +1,42 @@
+# Range
+#
+# Lesson 16 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: range
+number: 16
+title: Range
+overview: A range represents a sequence of numbers, often used for counting loops.
+topics:
+  - id: using-a-range
+    title: Using a range
+    definition: A range gives start, stop, and sometimes step information for repeated iteration.
+    howAndWhy: It is useful when the loop is about positions or counts rather than about items already stored in a collection.
+    examples:
+      - id: using-a-range-example
+        strict:
+          - For number from 1 to 5.
+          - Print number.
+        standard:
+          - Loop from 1 to 5 and print each number.
+        abstraction:
+          - Print each number from 1 to 5.
+        pseudocode:
+          - FOR number FROM 1 TO 5
+          - PRINT number
+  - id: using-a-step
+    title: Using a step
+    definition: A step changes how much the loop variable increases each time.
+    howAndWhy: This is useful for skipping values or moving through a sequence in regular jumps.
+    examples:
+      - id: using-a-step-example
+        strict:
+          - For number from 2 to 10 step 2.
+          - Print number.
+        standard:
+          - Loop from 2 to 10 in steps of 2 and print each number.
+        abstraction:
+          - Print every second number from 2 to 10.
+        pseudocode:
+          - FOR number FROM 2 TO 10 STEP 2
+          - PRINT number

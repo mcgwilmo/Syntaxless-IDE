@@ -1,0 +1,128 @@
+# OOP
+#
+# Lesson 19 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: oop
+number: 19
+title: OOP
+overview: Object-oriented programming organizes code around objects that bundle together data and behavior. Beginners should see OOP as a way to model real entities such as students, bank accounts, or game characters.
+topics:
+  - id: classes
+    title: Classes
+    definition: A class is a blueprint that describes what data and behavior an object should have.
+    howAndWhy: Use a class when many objects should share the same structure.
+    examples:
+      - id: classes-example
+        strict:
+          - Define a class named Student.
+          - Store name.
+          - Store score.
+        standard:
+          - Define a class Student that stores name and score.
+        abstraction:
+          - Define Student to store name and score.
+        pseudocode:
+          - DEFINE CLASS Student STORE name STORE score
+  - id: objects
+    title: Objects
+    definition: An object is a specific instance created from a class.
+    howAndWhy: Objects are used when the program must represent many concrete entities of the same kind.
+    examples:
+      - id: objects-example
+        strict:
+          - Create student object ava with name = "ava" and score = 95.
+        standard:
+          - Create a Student object ava with name = "Ava" and score = 95.
+        abstraction:
+          - Instantiate Student as ava with name "Ava" and score 95.
+        pseudocode:
+          - CREATE Student OBJECT ava WITH name = "Ava" AND score = 95
+  - id: init-methods
+    title: Init methods
+    definition: An initialization method sets up the object's starting data when it is created.
+    howAndWhy: This ensures every new object starts with a valid internal state.
+    examples:
+      - id: init-methods-example
+        strict:
+          - Define a class named Student.
+          - Define the initialization method that takes name, score.
+          - Set self.name to name.
+          - Set self.score to score.
+        standard:
+          - Define a class Student with an initializer that stores name and score.
+        abstraction:
+          - Initialize Student objects with name and score.
+        pseudocode:
+          - DEFINE CLASS Student DEFINE INIT(name, score) SET self.name TO name SET self.score TO score
+  - id: self-parameter
+    title: Self parameter
+    definition: The self parameter refers to the current object inside its own methods.
+    howAndWhy: It is used so the object can read or update its own data.
+    examples:
+      - id: self-parameter-example
+        strict:
+          - Define a class named Student.
+          - Define a method named show_name that takes self.
+          - Print self.name.
+        standard:
+          - Define a class Student.
+          - Define show_name to print self.name.
+        abstraction:
+          - Use self to print the object's name.
+        pseudocode:
+          - DEFINE CLASS Student DEFINE METHOD show_name(self) PRINT self.name
+  - id: class-properties
+    title: Class properties
+    definition: Class properties are the data stored on each object.
+    howAndWhy: They describe the state of each object and allow different objects to hold different values.
+    examples:
+      - id: class-properties-example
+        strict:
+          - Define a class named BankAccount.
+          - Define the initialization method that takes balance.
+          - Set self.balance to balance.
+        standard:
+          - Define a class BankAccount with an initializer that stores balance.
+        abstraction:
+          - Store balance as a BankAccount property.
+        pseudocode:
+          - DEFINE CLASS BankAccount DEFINE INIT(balance) SET self.balance TO balance
+  - id: class-methods
+    title: Class methods
+    definition: Class methods are behaviors that objects of the class can perform.
+    howAndWhy: They are used to keep related actions close to the data they affect.
+    examples:
+      - id: class-methods-example
+        strict:
+          - Define a class named BankAccount.
+          - Define a method named deposit that takes self, amount.
+          - Set self.balance to self.balance + amount.
+        standard:
+          - Define a class BankAccount.
+          - Define deposit to add amount to self.balance.
+        abstraction:
+          - Use deposit to increase the account balance.
+        pseudocode:
+          - DEFINE CLASS BankAccount DEFINE METHOD deposit(self, amount) SET self.balance TO self.balance +
+          - amount
+  - id: class-inheritance
+    title: Class inheritance
+    definition: Inheritance lets one class build on another class so shared behavior does not need to be rewritten.
+    howAndWhy: It is used when one object type is a more specific version of another.
+    examples:
+      - id: class-inheritance-example
+        strict:
+          - Define a class named GraduateStudent that extends Student.
+          - Define the initialization method that takes name, score, research_topic.
+          - Set self.name to name.
+          - Set self.score to score.
+          - Set self.research_topic to research_topic.
+        standard:
+          - Define GraduateStudent as a class that extends Student.
+          - Initialize it with name, score, and research_topic.
+        abstraction:
+          - Extend Student with GraduateStudent and add research_topic.
+        pseudocode:
+          - DEFINE CLASS GraduateStudent EXTENDS Student DEFINE INIT(name, score, research_topic) SET
+          - self.name TO name SET self.score TO score SET self.research_topic TO research_topic

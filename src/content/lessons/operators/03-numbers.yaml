@@ -1,0 +1,50 @@
+# Numbers
+#
+# Lesson 3 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: numbers
+number: 3
+title: Numbers
+overview: Numbers represent quantities. They are used for counting, measuring, averaging, scoring, comparing, and doing arithmetic.
+topics:
+  - id: integers-and-decimals
+    title: Integers and decimals
+    definition: Integers are whole numbers. Decimals store numbers with fractional parts.
+    howAndWhy: Use integers for counting items and decimals for measurements, money, probabilities, or any quantity that is not restricted to whole units.
+    examples:
+      - id: integers-and-decimals-example
+        strict:
+          - Set student_count to 8.
+          - Set average_grade to 92.5.
+        standard:
+          - Set student_count to 8.
+          - Set average_grade to 92.5.
+        abstraction:
+          - Set student_count to 8.
+          - Set average_grade to 92.5.
+        pseudocode:
+          - SET student_count TO 8
+          - SET average_grade TO 92.5
+  - id: numeric-operations
+    title: Numeric operations
+    definition: Numeric operations include addition, subtraction, multiplication, division, exponentiation, remainder, and order-of-operations combinations.
+    howAndWhy: They are used whenever a program must transform raw quantities into useful results.
+    examples:
+      - id: numeric-operations-example
+        strict:
+          - Set total to 88 + 91 + 95.
+          - Set average to total / 3.
+          - Print average.
+        standard:
+          - Set total to 88 + 91 + 95.
+          - Set average to total / 3.
+          - Print average.
+        abstraction:
+          - Set total to 88 + 91 + 95.
+          - Set average to total / 3.
+          - Print average.
+        pseudocode:
+          - SET total TO 88 + 91 + 95
+          - SET average TO total / 3
+          - PRINT average

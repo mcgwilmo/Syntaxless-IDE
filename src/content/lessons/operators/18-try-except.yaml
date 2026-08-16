@@ -1,0 +1,33 @@
+# Try except
+#
+# Lesson 18 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: try-except
+number: 18
+title: Try except
+overview: Try except logic allows a program to attempt an action and respond gracefully if something goes wrong.
+topics:
+  - id: basic-try-except
+    title: Basic try except
+    definition: The try block contains risky code. The except block explains what to do if an error occurs.
+    howAndWhy: This is used for safer programs and for user-friendly failure handling.
+    examples:
+      - id: basic-try-except-example
+        strict:
+          - Set text_value to "abc".
+          - Try.
+          - Set number_value to CONVERT text_value TO NUMBER.
+          - Print number_value.
+          - Except.
+          - Print "Conversion failed".
+        standard:
+          - Set text_value to "abc".
+          - Try converting it to a number and print it.
+          - If conversion fails, print "Conversion failed".
+        abstraction:
+          - Try to convert "abc" to a number, otherwise print "Conversion failed".
+        pseudocode:
+          - SET text_value TO "abc"
+          - TRY SET number_value TO CONVERT text_value TO NUMBER PRINT number_value EXCEPT PRINT
+          - "\"Conversion failed\""

@@ -1,0 +1,58 @@
+# Data types
+#
+# Lesson 2 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: data-types
+number: 2
+title: Data types
+overview: A data type tells you what kind of value something is. The type matters because different kinds of values support different operations.
+topics:
+  - id: common-data-types
+    title: Common data types
+    definition: Common data types include numbers, strings, booleans, lists, tuples, sets, and dictionaries.
+    howAndWhy: Knowing the type of a value prevents mistakes. For example, text and numbers are handled differently, and a list behaves differently from a single value.
+    examples:
+      - id: common-data-types-example
+        strict:
+          - Set name to "Ava".
+          - Set age to 19.
+          - Set is_enrolled to TRUE.
+        standard:
+          - Set name to "Ava".
+          - Set age to 19.
+          - Set is_enrolled to TRUE.
+        abstraction:
+          - Set name to "Ava".
+          - Set age to 19.
+          - Set is_enrolled to TRUE.
+        pseudocode:
+          - SET name TO "Ava"
+          - SET age TO 19
+          - SET is_enrolled TO TRUE
+  - id: why-type-matters
+    title: Why type matters
+    definition: Type matters because the program needs to know what actions make sense for a value.
+    howAndWhy: You can add numbers, slice strings, loop through lists, and look up values in dictionaries. Each data type gives you its own useful operations.
+    examples:
+      - id: why-type-matters-example
+        strict:
+          - Set a to 4.
+          - Set b to 7.
+          - Set is_smaller to a < b.
+          - Set full_name to "Ada" + " Lovelace".
+        standard:
+          - Set a to 4.
+          - Set b to 7.
+          - Set is_smaller to a < b.
+          - Set full_name to "Ada" + " Lovelace".
+        abstraction:
+          - Set a to 4.
+          - Set b to 7.
+          - Set is_smaller to a < b.
+          - Set full_name to "Ada" + " Lovelace".
+        pseudocode:
+          - SET a TO 4
+          - SET b TO 7
+          - SET is_smaller TO a < b
+          - SET full_name TO "Ada" + " Lovelace"

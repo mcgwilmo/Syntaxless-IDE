@@ -1,0 +1,50 @@
+# For loops
+#
+# Lesson 14 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: for-loops
+number: 14
+title: For loops
+overview: A for loop repeats over a sequence or over a known range of values. It is often the clearest loop when you already know what collection or count you want to iterate over.
+topics:
+  - id: for-each-item
+    title: For each item
+    definition: This form loops through every item in a collection.
+    howAndWhy: It is used to process lists, tuples, sets, dictionaries, and strings.
+    examples:
+      - id: for-each-item-example
+        strict:
+          - Set names to ["Ava", "Noah", "Liam"].
+          - For each name in names.
+          - Print name.
+        standard:
+          - Set names to ["Ava", "Noah", "Liam"].
+          - Loop through each name and print it.
+        abstraction:
+          - Print each name in ["Ava", "Noah", "Liam"].
+        pseudocode:
+          - SET names TO ["Ava", "Noah", "Liam"]
+          - FOR EACH name IN names
+          - PRINT name
+  - id: for-with-index
+    title: For with index
+    definition: Some loops need both the item and its position.
+    howAndWhy: This is useful when numbering output or updating a collection by index.
+    examples:
+      - id: for-with-index-example
+        strict:
+          - Set tasks to ["study", "eat", "sleep"].
+          - For each index from 0 to length of tasks - 1.
+          - Print index.
+          - Print ITEM index OF tasks.
+        standard:
+          - Set tasks to ["study", "eat", "sleep"].
+          - Loop through the indexes, then print each index and its task.
+        abstraction:
+          - Print each index with its matching task.
+        pseudocode:
+          - SET tasks TO ["study", "eat", "sleep"]
+          - FOR EACH index FROM 0 TO LENGTH OF tasks - 1
+          - PRINT index
+          - PRINT ITEM index OF tasks

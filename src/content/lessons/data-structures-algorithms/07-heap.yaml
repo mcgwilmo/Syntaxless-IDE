@@ -1,0 +1,142 @@
+# Heap
+#
+# Lesson 7 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: heap
+number: 7
+title: Heap
+overview: A heap is a tree-based priority structure usually stored in an array. In a min-heap, every parent is less than or equal to its children, so the smallest element stays at the root. In a max-heap, the largest element stays at the root.
+topics:
+  - id: heap-initialization-with-a-heap-class
+    title: Initialization with a heap class
+    definition: Initialization creates a class whose internal state is an array. The array is interpreted as a complete binary tree using index relationships rather than explicit node pointers.
+    howAndWhy: This is used because heaps are designed for fast access to the current minimum or maximum. An array representation is compact and lets parent-child navigation be computed by index formulas.
+    examples:
+      - id: heap-initialization-with-a-heap-class-example
+        strict:
+          - Create a class named MinHeap.
+          - "                  Define a function named initialize."
+          - "                  Set self.data to empty list."
+          - "                  Define a function named parent that takes i."
+          - "                  Return floor((i - 1) / 2)."
+          - "                  Define a function named left that takes i."
+          - "                  Return 2*i + 1."
+          - "                  Define a function named right that takes i."
+          - "                  Return 2*i + 2."
+        standard:
+          - Create MinHeap with self.data as an empty list.
+          - "                  Define parent(i), left(i), and right(i) helper functions."
+          - "                  Use those helpers to navigate the array-based tree."
+        abstraction:
+          - Initialize an array-backed min-heap with index helpers for parent and children.
+        pseudocode:
+          - CLASS MinHeap
+          - "                  FUNCTION initialize()"
+          - "                  SET self.data = empty list"
+          - "                  FUNCTION parent(i)"
+          - "                  RETURN floor((i - 1) / 2)"
+          - "                  FUNCTION left(i)"
+          - "                  RETURN 2*i + 1"
+          - "                  FUNCTION right(i)"
+          - "                  RETURN 2*i + 2"
+  - id: heap-search-and-why-heaps-are-not-for-arbitrary-lookup
+    title: Search and why heaps are not for arbitrary lookup
+    definition: A heap guarantees order only between parents and children, not across the entire array. Because of that, searching for an arbitrary value is generally linear.
+    howAndWhy: This matters because students often assume every ordered structure supports fast lookup. A heap is optimized for priority operations, not membership search. Its strength is at the root, not everywhere.
+    examples:
+      - id: heap-search-and-why-heaps-are-not-for-arbitrary-lookup-example
+        strict:
+          - Define a function named contains that takes target.
+          - "                  For each value in self.data."
+          - "                  If value = target, then."
+          - "                  Return true."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Return false."
+        standard:
+          - Define contains(target).
+          - "                  Scan every value in self.data."
+          - "                  Return true when target is found, otherwise return false after the scan."
+        abstraction:
+          - Search a heap linearly when you need arbitrary lookup.
+        pseudocode:
+          - FUNCTION contains(target)
+          - "                  FOR EACH value IN self.data"
+          - "                  IF value = target THEN"
+          - "                  RETURN true"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  RETURN false"
+  - id: heap-insert-with-sift-up
+    title: Insert with sift-up
+    definition: Insert adds the new value at the end of the array and then repeatedly swaps it with its parent until the heap property is restored.
+    howAndWhy: It is used whenever a new task, score, or priority enters the system. Sift-up keeps the structure complete while restoring correct priority order.
+    examples:
+      - id: heap-insert-with-sift-up-example
+        strict:
+          - Define a function named insert that takes value.
+          - "                  Append value to self.data."
+          - "                  Set i to last index of self.data."
+          - "                  While i > 0 and self.data[i] < self.data[parent(i)]."
+          - "                  Swap self.data[i] and self.data[parent(i)]."
+          - "                  Set i to parent(i)."
+          - "                  End the while."
+        standard:
+          - Define insert(value).
+          - "                  Append value and start at the last index."
+          - "                  While the new value is smaller than its parent, swap upward."
+        abstraction:
+          - Insert into the heap by appending and sifting the new value upward.
+        pseudocode:
+          - FUNCTION insert(value)
+          - "                  APPEND value TO self.data SET i = last index of self.data WHILE i > 0 AND self.data[i] <"
+          - "                  self.data[parent(i)] SWAP self.data[i] AND self.data[parent(i)] SET i = parent(i) END WHILE"
+  - id: heap-delete-root-with-sift-down
+    title: Delete root with sift-down
+    definition: Deleting the root of a heap removes the current minimum or maximum. The last element is moved to the root and then pushed downward until the heap property is restored.
+    howAndWhy: This is used in scheduling and priority queues because the structure must repeatedly return and remove the most urgent or smallest item.
+    examples:
+      - id: heap-delete-root-with-sift-down-example
+        strict:
+          - Define a function named extract_min.
+          - "                  If self.data is empty, then."
+          - "                  Return not_found."
+          - "                  End the if."
+          - "                  Set answer to self.data[0]."
+          - "                  Move last element to index 0."
+          - "                  Remove last array position."
+          - "                  Call sift_down(0)."
+          - "                  Return answer."
+          - "                  Define a function named sift_down that takes i."
+          - "                  While true."
+          - "                  Set smallest to i."
+          - "                  If left(i) EXISTS and self.data[left(i)] < self.data[smallest], then."
+          - "                  Set smallest to left(i)."
+          - "                  End the if."
+          - "                  If right(i) EXISTS and self.data[right(i)] < self.data[smallest], then."
+          - "                  Set smallest to right(i)."
+          - "                  End the if."
+          - "                  If smallest = i, then."
+          - "                  Stop the current loop."
+          - "                  End the if."
+          - "                  Swap self.data[i] and self.data[smallest]."
+          - "                  Set i to smallest."
+          - "                  End the while."
+        standard:
+          - Define extract_min.
+          - "                  Handle the empty heap, save the root, move the last element to index 0, remove the last slot, and sift down."
+          - "                  Define sift_down(i) to compare with both children, swap with the smaller child, and stop when heap order is restored."
+        abstraction:
+          - Remove the min element, move the last value to the root, and sift it down until heap order returns.
+        pseudocode:
+          - FUNCTION extract_min()
+          - "                  IF self.data IS empty THEN"
+          - "                  RETURN not_found"
+          - "                  END IF"
+          - "                  SET answer = self.data[0]"
+          - "                  MOVE last element to index 0 REMOVE last array position CALL sift_down(0) RETURN answer"
+          - "                  FUNCTION sift_down(i) WHILE true SET smallest = i IF left(i) EXISTS AND self.data[left(i)] <"
+          - "                  self.data[smallest] THEN SET smallest = left(i) END IF IF right(i) EXISTS AND self.data[right(i)] <"
+          - "                  self.data[smallest] THEN SET smallest = right(i) END IF IF smallest = i THEN BREAK END IF SWAP"
+          - "                  self.data[i] AND self.data[smallest] SET i = smallest END WHILE"

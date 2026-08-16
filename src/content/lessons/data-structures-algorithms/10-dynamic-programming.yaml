@@ -1,0 +1,195 @@
+# Dynamic Programming
+#
+# Lesson 10 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: dynamic-programming
+number: 10
+title: Dynamic Programming
+overview: "Dynamic programming solves problems with overlapping subproblems and optimal substructure by storing smaller answers and reusing them. The main design questions are always the same: what is the state, what is the recurrence, and in what order should states be filled?"
+topics:
+  - id: dynamic-programming-zero-one-knapsack
+    title: 0-1 Knapsack
+    definition: In 0-1 knapsack, each item may either be taken whole or left behind. The state usually records how many items have been considered and how much capacity remains or has already been used.
+    howAndWhy: "It is used because greedy choice fails in the 0-1 setting. Dynamic programming works by comparing two possibilities for each item: skip it or take it, then reusing those smaller decisions."
+    examples:
+      - id: dynamic-programming-zero-one-knapsack-example
+        strict:
+          - Define a function named zero_one_knapsack that takes weights, values, capacity.
+          - "                  Create table dp with rows for items and columns 0..capacity."
+          - "                  For i from 1 to number_of_items."
+          - "                  For c from 0 to capacity."
+          - "                  Set dp[i][c] to dp[i-1][c]."
+          - "                  If weights[i] <= c, then."
+          - "                  Set dp[i][c] to max(dp[i][c], values[i] + dp[i-1][c - weights[i]])."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the for."
+          - "                  Return dp[number_of_items][capacity]."
+        standard:
+          - Define zero_one_knapsack(weights, values, capacity).
+          - "                  Create a DP table over items and capacities."
+          - "                  For each item and capacity, start from the skip case."
+          - "                  If the item fits, compare skipping it with taking it."
+          - "                  Return the value at the final state."
+        abstraction:
+          - Fill a DP table that decides, for each item and capacity, whether skipping or taking the item is better.
+        pseudocode:
+          - FUNCTION zero_one_knapsack(weights, values, capacity)
+          - "                  CREATE table dp with rows for items and columns 0..capacity"
+          - "                  FOR i FROM 1 TO number_of_items"
+          - "                  FOR c FROM 0 TO capacity"
+          - "                  SET dp[i][c] = dp[i-1][c]"
+          - "                  IF weights[i] <= c THEN"
+          - "                  SET dp[i][c] = max(dp[i][c], values[i] + dp[i-1][c - weights[i]])"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  END FOR"
+          - "                  RETURN dp[number_of_items][capacity]"
+  - id: dynamic-programming-unbounded-knapsack
+    title: Unbounded Knapsack
+    definition: In unbounded knapsack, an item may be used more than once. The recurrence changes because the current item can remain available after it is chosen.
+    howAndWhy: It is used for production, coin-style packing, and resource allocation problems where repeating an item is legal. The central lesson is that a small change in problem rules changes the recurrence completely.
+    examples:
+      - id: dynamic-programming-unbounded-knapsack-example
+        strict:
+          - Define a function named unbounded_knapsack that takes weights, values, capacity.
+          - "                  Create array dp[0..capacity] initialized to 0."
+          - "                  For c from 0 to capacity."
+          - "                  For each item i."
+          - "                  If weights[i] <= c, then."
+          - "                  Set dp[c] to max(dp[c], values[i] + dp[c - weights[i]])."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the for."
+          - "                  Return dp[capacity]."
+        standard:
+          - Define unbounded_knapsack(weights, values, capacity).
+          - "                  Create a 1D DP array from 0 to capacity."
+          - "                  For each capacity, test every item that fits."
+          - "                  Update dp[c] using the best value after taking that item again."
+          - "                  Return dp[capacity]."
+        abstraction:
+          - Use dynamic programming over capacity, allowing the same item to be reused.
+        pseudocode:
+          - FUNCTION unbounded_knapsack(weights, values, capacity)
+          - "                  CREATE array dp[0..capacity] initialized to 0"
+          - "                  FOR c FROM 0 TO capacity"
+          - "                  FOR EACH item i"
+          - "                  IF weights[i] <= c THEN"
+          - "                  SET dp[c] = max(dp[c], values[i] + dp[c - weights[i]])"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  END FOR"
+          - "                  RETURN dp[capacity]"
+  - id: dynamic-programming-longest-common-subsequence
+    title: Longest Common Subsequence (LCS)
+    definition: The longest common subsequence problem asks for the longest sequence of symbols that appears in the same relative order in two strings, not necessarily contiguously.
+    howAndWhy: It is used in diff tools, bioinformatics, and version comparison because it measures shared structure rather than exact matching blocks. The state compares prefixes of the two strings.
+    examples:
+      - id: dynamic-programming-longest-common-subsequence-example
+        strict:
+          - Define a function named lcs that takes X, Y.
+          - "                  Create table dp with size (length(x)+1) by (length(y)+1)."
+          - "                  For i from 1 to length(x)."
+          - "                  For j from 1 to length(y)."
+          - "                  If X[i] = Y[j], then."
+          - "                  Set dp[i][j] to 1 + dp[i-1][j-1]."
+          - "                  Otherwise."
+          - "                  Set dp[i][j] to max(dp[i-1][j], dp[i][j-1])."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the for."
+          - "                  Return dp[length(X)][length(Y)]."
+        standard:
+          - Define lcs(X, Y).
+          - "                  Create a DP table over prefixes of X and Y."
+          - "                  For each pair of positions, extend the diagonal when the symbols match."
+          - "                  Otherwise take the larger value from the cell above or left."
+          - "                  Return the final table entry."
+        abstraction:
+          - Fill a DP table over both strings to compute the length of their longest common subsequence.
+        pseudocode:
+          - FUNCTION lcs(X, Y)
+          - "                  CREATE table dp with size (length(X)+1) by (length(Y)+1)"
+          - "                  FOR i FROM 1 TO length(X)"
+          - "                  FOR j FROM 1 TO length(Y)"
+          - "                  IF X[i] = Y[j] THEN"
+          - "                  SET dp[i][j] = 1 + dp[i-1][j-1]"
+          - "                  ELSE"
+          - "                  SET dp[i][j] = max(dp[i-1][j], dp[i][j-1])"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  END FOR"
+          - "                  RETURN dp[length(X)][length(Y)]"
+  - id: dynamic-programming-longest-increasing-subsequence
+    title: Longest Increasing Subsequence (LIS)
+    definition: The longest increasing subsequence problem asks for the longest subsequence of numbers that increases strictly from left to right.
+    howAndWhy: "It is used because it teaches how to reason about sequences where local comparisons affect future potential. A classic dynamic program lets each position ask: what is the best increasing subsequence ending here?"
+    examples:
+      - id: dynamic-programming-longest-increasing-subsequence-example
+        strict:
+          - Define a function named lis that takes A.
+          - "                  Create array dp of length(a), initialized to 1."
+          - "                  For i from 0 to length(a) - 1."
+          - "                  For j from 0 to i - 1."
+          - "                  If A[j] < A[i], then."
+          - "                  Set dp[i] to max(dp[i], dp[j] + 1)."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the for."
+          - "                  Return maximum value in dp."
+        standard:
+          - Define lis(A).
+          - "                  Create dp so every position starts with length 1."
+          - "                  For each i, compare against all earlier j."
+          - "                  When A[j] < A[i], update dp[i] from dp[j] + 1."
+          - "                  Return the maximum value in dp."
+        abstraction:
+          - Compute the best increasing subsequence ending at each position and return the largest one.
+        pseudocode:
+          - FUNCTION lis(A)
+          - "                  CREATE array dp of length(A), initialized to 1"
+          - "                  FOR i FROM 0 TO length(A) - 1"
+          - "                  FOR j FROM 0 TO i - 1"
+          - "                  IF A[j] < A[i] THEN"
+          - "                  SET dp[i] = max(dp[i], dp[j] + 1)"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  END FOR"
+          - "                  RETURN maximum value in dp"
+  - id: dynamic-programming-matrix-chain-multiplication
+    title: Matrix Chain Multiplication
+    definition: Matrix chain multiplication asks how to parenthesize a product of matrices so the total number of scalar multiplications is minimized.
+    howAndWhy: It is used because multiplication order changes cost dramatically even though the final mathematical product stays the same. Dynamic programming compares all possible split points of each subchain and stores the cheapest one.
+    examples:
+      - id: dynamic-programming-matrix-chain-multiplication-example
+        strict:
+          - Define a function named matrix_chain_order that takes p.
+          - "                  Let n = number of matrices."
+          - "                  Create table dp[n][n]."
+          - "                  For chain_length from 2 to n."
+          - "                  For i from 1 to n - chain_length + 1."
+          - "                  Set j to i + chain_length - 1."
+          - "                  Set dp[i][j] to infinity."
+          - "                  For k from i to j - 1."
+          - "                  Set cost to dp[i][k] + dp[k+1][j] + p[i-1] * p[k] * p[j]."
+          - "                  Set dp[i][j] to min(dp[i][j], cost)."
+          - "                  End the for."
+          - "                  End the for."
+          - "                  End the for."
+          - "                  Return dp[1][n]."
+        standard:
+          - Define matrix_chain_order(p).
+          - "                  Create a DP table for all matrix subchains."
+          - "                  Process chains in increasing length."
+          - "                  For each subchain, try every split point k and keep the cheapest multiplication cost."
+          - "                  Return dp[1][n]."
+        abstraction:
+          - Use dynamic programming to test every split of each matrix subchain and keep the minimum cost.
+        pseudocode:
+          - FUNCTION matrix_chain_order(p)
+          - "                  LET n = number of matrices CREATE table dp[n][n] FOR chain_length FROM 2 TO n FOR i FROM 1 TO n -"
+          - "                  chain_length + 1 SET j = i + chain_length - 1 SET dp[i][j] = infinity FOR k FROM i TO j - 1 SET cost = dp[i]"
+          - "                  [k] + dp[k+1][j] + p[i-1] * p[k] * p[j] SET dp[i][j] = min(dp[i][j], cost) END FOR END FOR END FOR RETURN"
+          - "                  dp[1][n]"

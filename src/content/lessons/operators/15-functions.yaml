@@ -1,0 +1,128 @@
+# Functions
+#
+# Lesson 15 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: functions
+number: 15
+title: Functions
+overview: A function is a reusable block of instructions that performs one clear job. Functions help programs stay organized because instead of repeating the same steps many times, the program can define those steps once and call them whenever needed.
+topics:
+  - id: defining-a-function
+    title: Defining a function
+    definition: Defining a function gives a name to a block of reusable instructions.
+    howAndWhy: This is used to organize repeated logic into one place.
+    examples:
+      - id: defining-a-function-example
+        strict:
+          - Define a function named welcome.
+          - Print "Welcome".
+        standard:
+          - Define a function welcome that prints "Welcome".
+        abstraction:
+          - Define welcome to print "Welcome".
+        pseudocode:
+          - DEFINE FUNCTION welcome PRINT "Welcome"
+  - id: calling-a-function
+    title: Calling a function
+    definition: Calling a function means running the instructions inside it.
+    howAndWhy: This is how reuse actually happens.
+    examples:
+      - id: calling-a-function-example
+        strict:
+          - Call welcome.
+        standard:
+          - Run the welcome function.
+        abstraction:
+          - Invoke welcome.
+        pseudocode:
+          - CALL welcome
+  - id: function-arguments
+    title: Function arguments
+    definition: Arguments are input values passed into a function.
+    howAndWhy: They make one function reusable for many different values instead of only one fixed case.
+    examples:
+      - id: function-arguments-example
+        strict:
+          - Define a function named greet that takes name.
+          - Print "Hello " + name.
+          - Call greet("Ava").
+        standard:
+          - Define a function greet that takes name.
+          - Call greet("Ava") to print the greeting.
+        abstraction:
+          - Call greet with "Ava" to print a greeting.
+        pseudocode:
+          - DEFINE FUNCTION greet(name) PRINT "Hello " + name CALL greet("Ava")
+  - id: return-values
+    title: Return values
+    definition: A return value is the result sent back by a function.
+    howAndWhy: Functions return values when later steps need to use the result in another calculation.
+    examples:
+      - id: return-values-example
+        strict:
+          - Define a function named double that takes number.
+          - Return number * 2.
+          - Set answer to CALL double(6).
+          - Print answer.
+        standard:
+          - Define a function double that returns number * 2.
+          - Call it with 6, store the answer, and print it.
+        abstraction:
+          - Print the value returned by double(6).
+        pseudocode:
+          - DEFINE FUNCTION double(number) RETURN number * 2 SET answer TO CALL double(6) PRINT answer
+  - id: function-scope
+    title: Function scope
+    definition: Scope describes where a variable can be seen and used.
+    howAndWhy: This matters because variables created inside a function are usually meant to stay local to that function.
+    examples:
+      - id: function-scope-example
+        strict:
+          - Define a function named show_score.
+          - Set score to 100.
+          - Print score.
+          - Call show_score.
+        standard:
+          - Define show_score so score is set and printed inside the function.
+          - Call show_score.
+        abstraction:
+          - Call show_score to print its local score.
+        pseudocode:
+          - DEFINE FUNCTION show_score SET score TO 100 PRINT score CALL show_score
+  - id: recursion
+    title: Recursion
+    definition: Recursion means a function calls itself on a smaller version of the same problem.
+    howAndWhy: It is used for repeating structures such as factorials, tree-like data, and divide-and-conquer logic.
+    examples:
+      - id: recursion-example
+        strict:
+          - Define a function named factorial that takes n.
+          - If n <= 1, then.
+          - Return 1.
+          - Otherwise.
+          - Return n * CALL factorial(n - 1).
+        standard:
+          - Define factorial(n).
+          - Return 1 when n <= 1, otherwise return n * CALL factorial(n - 1).
+        abstraction:
+          - Define factorial recursively with a base case of 1.
+        pseudocode:
+          - DEFINE FUNCTION factorial(n) IF n <= 1 THEN RETURN 1 ELSE RETURN n * CALL factorial(n - 1)
+  - id: generators
+    title: Generators
+    definition: A generator produces values one at a time instead of building the whole result at once.
+    howAndWhy: This is useful when a sequence may be large or when values should be produced only when needed.
+    examples:
+      - id: generators-example
+        strict:
+          - Define generator count_to_three.
+          - Yield 1.
+          - Yield 2.
+          - Yield 3.
+        standard:
+          - Define generator count_to_three that yields 1, 2, and 3.
+        abstraction:
+          - Yield 1, 2, and 3 from count_to_three.
+        pseudocode:
+          - DEFINE GENERATOR count_to_three YIELD 1 YIELD 2 YIELD 3

@@ -1,0 +1,91 @@
+# Variables
+#
+# Lesson 1 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: variables
+number: 1
+title: Variables
+overview: Variables let a program keep track of information by giving that information a name. They are used whenever a value needs to be stored, reused, updated, or compared later.
+topics:
+  - id: variable-names
+    title: Variable names
+    definition: A variable name is the label used to refer to stored information. Good names make a program easier to read because the name tells you what the value represents.
+    howAndWhy: Use variable names when you want instructions to stay understandable. A name like total_score is better than a name like x because it explains the role of the value.
+    examples:
+      - id: variable-names-example
+        strict:
+          - Initialize a variable called score.
+          - Make score equal 95.
+          - Print score.
+        standard:
+          - Set a variable called score to 95.
+          - Print score.
+        abstraction:
+          - Print a variable score that equals 95.
+        pseudocode:
+          - SET score TO 95
+          - PRINT score
+  - id: assign-multiple-values
+    title: Assign multiple values
+    definition: Assigning multiple values means creating or updating more than one variable during the same step or small group of steps.
+    howAndWhy: This is used when several related values belong together, such as width and height, or first_name and last_name. It helps organize state early before later calculations use those values.
+    examples:
+      - id: assign-multiple-values-example
+        strict:
+          - Initialize a variable called width.
+          - Initialize a variable called height.
+          - Set width to 10.
+          - Set height to 20.
+          - Print width.
+          - Print height.
+        standard:
+          - Create 2 variables called width and height.
+          - Set width to 10 and set height to 20.
+          - Print width and height
+        abstraction:
+          - Print 2 variables width and height that are 10 and 20 repsectively.
+        pseudocode:
+          - SET width TO 10
+          - SET height TO 20
+          - PRINT width
+          - PRINT height
+  - id: output-variables
+    title: Output variables
+    definition: Outputting a variable means showing the value currently stored inside it.
+    howAndWhy: This is used for debugging, checking progress, and presenting results. If you cannot see a value, it is harder to know whether earlier steps worked correctly.
+    examples:
+      - id: output-variables-example
+        strict:
+          - Initialize a variable called name.
+          - Set name to "Matthew".
+          - Print name.
+        standard:
+          - Make a variable called name and set it to "Matthew".
+          - Print name.
+        abstraction:
+          - Set name to "Matthew".
+          - Print name.
+        pseudocode:
+          - SET name TO "Matthew"
+          - PRINT name
+  - id: global-variables
+    title: Global variables
+    definition: A global variable is a variable that is intended to be available across multiple parts of a program instead of living only inside one small block.
+    howAndWhy: Global variables are used when many parts of a program must share the same setting or state. They should be used carefully because too many shared variables make programs harder to reason about.
+    examples:
+      - id: global-variables-example
+        strict:
+          - Create a global variable called tax_rate.
+          - Set tax_rate to 0.13.
+          - Create a variable called price and set it to 100.
+          - Calculate final_price as price plus (price times tax_rate).
+        standard:
+          - Set the global variable tax_rate to 0.13.
+          - Calculate a value final_price as price plus (price times tax_rate).
+        abstraction:
+          - Set the global variable tax_rate to 0.13.
+          - Use tax_rate when calculating final_price.
+        pseudocode:
+          - SET GLOBAL tax_rate TO 0.13
+          - USE tax_rate WHEN CALCULATING final_price

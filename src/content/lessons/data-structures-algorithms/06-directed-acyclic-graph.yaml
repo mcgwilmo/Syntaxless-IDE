@@ -1,0 +1,157 @@
+# Directed Acyclic Graph (DAG)
+#
+# Lesson 6 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: directed-acyclic-graph
+number: 6
+title: Directed Acyclic Graph (DAG)
+overview: A DAG is a directed graph with no directed cycles. This restriction is powerful because it creates a partial order, which makes DAGs ideal for scheduling, prerequisite systems, build pipelines, and dependency management.
+topics:
+  - id: dag-initialization-and-modeling-dependencies
+    title: Initialization and modeling dependencies
+    definition: Initialization is the same as for a directed graph, but the graph is built under the rule that no directed cycle may be introduced.
+    howAndWhy: It is used because many real systems have one-way dependencies that must not loop back on themselves. If task A depends on task B, and task B depends on task A, the schedule is impossible.
+    examples:
+      - id: dag-initialization-and-modeling-dependencies-example
+        strict:
+          - Create a class named DAG.
+          - "                  Define a function named initialize."
+          - "                  Set self.adj to empty map."
+          - "                  Define a function named add_edge that takes u, v."
+          - "                  Call add_vertex(u)."
+          - "                  Call add_vertex(v)."
+          - "                  Append v to self.adj[u]."
+        standard:
+          - Create DAG with an empty adjacency map.
+          - "                  Define add_edge(u, v) to ensure both vertices exist and then append v to u's list."
+        abstraction:
+          - Model dependencies as directed edges in a DAG adjacency map.
+        pseudocode:
+          - CLASS DAG
+          - "                  FUNCTION initialize()"
+          - "                  SET self.adj = empty map"
+          - "                  FUNCTION add_edge(u, v)"
+          - "                  CALL add_vertex(u)"
+          - "                  CALL add_vertex(v)"
+          - "                  APPEND v TO self.adj[u]"
+  - id: dag-topological-sort
+    title: Topological sort
+    definition: A topological sort is an ordering of the vertices such that every edge goes from an earlier vertex to a later one.
+    howAndWhy: It is used whenever tasks must be completed in a legal order. In a DAG, topological order turns graph structure into an actual execution sequence.
+    examples:
+      - id: dag-topological-sort-example
+        strict:
+          - Define a function named topological_sort.
+          - "                  Compute in_degree of every vertex."
+          - "                  Create queue of all vertices with in_degree 0."
+          - "                  Create empty order list."
+          - "                  While queue is not empty."
+          - "                  Dequeue from current."
+          - "                  Append current to order."
+          - "                  For each neighbor in self.adj[current]."
+          - "                  Decrease in_degree[neighbor] by 1."
+          - "                  If in_degree[neighbor] = 0, then."
+          - "                  Enqueue neighbor."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the while."
+          - "                  Return order."
+        standard:
+          - Define topological_sort.
+          - "                  Compute in_degree for every vertex."
+          - "                  Queue all vertices with in_degree 0 and build order as they are removed."
+          - "                  Decrease neighbors' in_degree and enqueue any that become 0."
+          - "                  Return order."
+        abstraction:
+          - Produce a topological order by repeatedly removing vertices whose in-degree is 0.
+        pseudocode:
+          - FUNCTION topological_sort()
+          - "                  COMPUTE in_degree of every vertex CREATE queue of all vertices with in_degree 0 CREATE empty"
+          - "                  order list WHILE queue IS NOT empty DEQUEUE current APPEND current TO order FOR EACH"
+          - "                  neighbor IN self.adj[current] DECREASE in_degree[neighbor] BY 1 IF in_degree[neighbor] = 0 THEN"
+          - "                  ENQUEUE neighbor END IF END FOR END WHILE RETURN order"
+  - id: dag-shortest-path-unweighted
+    title: Shortest path in an unweighted DAG
+    definition: An unweighted DAG can use topological order to relax edges once in the correct dependency order.
+    howAndWhy: It is used because the acyclic structure removes the need to revisit vertices endlessly. Once earlier dependencies are processed, later distances can be updated cleanly.
+    examples:
+      - id: dag-shortest-path-unweighted-example
+        strict:
+          - Define a function named dag_shortest_path_unweighted that takes start.
+          - "                  Set order to topological_sort()."
+          - "                  Initialize all distances to infinity."
+          - "                  Set distance[start] to 0."
+          - "                  For each vertex in order."
+          - "                  If distance[vertex] is not infinity, then."
+          - "                  For each neighbor in self.adj[vertex]."
+          - "                  If distance[vertex] + 1 < distance[neighbor], then."
+          - "                  Set distance[neighbor] to distance[vertex] + 1."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the if."
+          - "                  End the for."
+        standard:
+          - Define dag_shortest_path_unweighted(start).
+          - "                  Get the topological order and initialize distances."
+          - "                  Process vertices in that order only when they are reachable."
+          - "                  Relax each outgoing edge with cost 1."
+        abstraction:
+          - Use topological order to compute unweighted shortest paths in a DAG.
+        pseudocode:
+          - FUNCTION dag_shortest_path_unweighted(start)
+          - "                  SET order = topological_sort()"
+          - "                  INITIALIZE all distances to infinity"
+          - "                  SET distance[start] = 0"
+          - "                  FOR EACH vertex IN order"
+          - "                  IF distance[vertex] IS NOT infinity THEN"
+          - "                  FOR EACH neighbor IN self.adj[vertex]"
+          - "                  IF distance[vertex] + 1 < distance[neighbor] THEN"
+          - "                  SET distance[neighbor] = distance[vertex] + 1"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  END IF"
+          - "                  END FOR"
+  - id: dag-shortest-path-weighted
+    title: Shortest path in a weighted DAG
+    definition: A weighted DAG can compute shortest paths by processing vertices in topological order and relaxing weighted edges once.
+    howAndWhy: It is used because acyclicity removes the risk of revisiting a vertex due to a future cycle. This makes the algorithm simpler than Bellman-Ford and often faster than Dijkstra in DAG settings.
+    examples:
+      - id: dag-shortest-path-weighted-example
+        strict:
+          - Define a function named dag_shortest_path_weighted that takes start.
+          - "                  Set order to topological_sort()."
+          - "                  Initialize all distances to infinity."
+          - "                  Set distance[start] to 0."
+          - "                  For each vertex in order."
+          - "                  If distance[vertex] is not infinity, then."
+          - "                  For each (neighbor, weight) in self.adj[vertex]."
+          - "                  If distance[vertex] + weight < distance[neighbor], then."
+          - "                  Set distance[neighbor] to distance[vertex] + weight."
+          - "                  Set parent[neighbor] to vertex."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the if."
+          - "                  End the for."
+        standard:
+          - Define dag_shortest_path_weighted(start).
+          - "                  Get the topological order and initialize distances."
+          - "                  Process each reachable vertex in order."
+          - "                  Relax each outgoing weighted edge and update parent when distance improves."
+        abstraction:
+          - Use topological order to compute weighted shortest paths in a DAG.
+        pseudocode:
+          - FUNCTION dag_shortest_path_weighted(start)
+          - "                  SET order = topological_sort()"
+          - "                  INITIALIZE all distances to infinity"
+          - "                  SET distance[start] = 0"
+          - "                  FOR EACH vertex IN order"
+          - "                  IF distance[vertex] IS NOT infinity THEN"
+          - "                  FOR EACH (neighbor, weight) IN self.adj[vertex]"
+          - "                  IF distance[vertex] + weight < distance[neighbor] THEN"
+          - "                  SET distance[neighbor] = distance[vertex] + weight"
+          - "                  SET parent[neighbor] = vertex"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  END IF"
+          - "                  END FOR"

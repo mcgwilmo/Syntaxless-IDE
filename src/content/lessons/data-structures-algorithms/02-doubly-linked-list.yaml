@@ -1,0 +1,187 @@
+# Doubly Linked List
+#
+# Lesson 2 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: doubly-linked-list
+number: 2
+title: Doubly Linked List
+overview: A doubly linked list is like a linked list, but each node stores both a next pointer and a previous pointer. This extra link makes backward movement and deletion from known positions easier, at the cost of more memory and slightly more bookkeeping.
+topics:
+  - id: doubly-linked-list-initialization
+    title: Initialization with previous and next references
+    definition: Initialization defines nodes that know both their predecessor and successor, and a list object that usually stores both a head and a tail.
+    howAndWhy: It is used because many real tasks need movement in both directions. A tail pointer also makes appending more natural because the structure remembers where the chain ends.
+    examples:
+      - id: doubly-linked-list-initialization-example
+        strict:
+          - Create a class named DoublyNode.
+          - "                  Define a function named initialize that takes value."
+          - "                  Set self.value to value."
+          - "                  Set self.next to null."
+          - "                  Set self.prev to null."
+          - "                  Create a class named DoublyLinkedList."
+          - "                  Define a function named initialize."
+          - "                  Set self.head to null."
+          - "                  Set self.tail to null."
+          - "                  Define a function named append that takes value."
+          - "                  Create new_node as DoublyNode(value)."
+          - "                  If self.head is null, then."
+          - "                  Set self.head to new_node."
+          - "                  Set self.tail to new_node."
+          - "                  Return."
+          - "                  End the if."
+          - "                  Set self.tail.next to new_node."
+          - "                  Set new_node.prev to self.tail."
+          - "                  Set self.tail to new_node."
+        standard:
+          - Create DoublyNode with value, next, and prev.
+          - "                  Create DoublyLinkedList with head and tail starting at null."
+          - "                  Define append(value) to handle the empty list or link the new node after the current tail."
+        abstraction:
+          - Build a doubly linked list with head and tail pointers and append support.
+        pseudocode:
+          - CLASS DoublyNode
+          - "                  FUNCTION initialize(value)"
+          - "                  SET self.value = value"
+          - "                  SET self.next = null"
+          - "                  SET self.prev = null"
+          - "                  CLASS DoublyLinkedList"
+          - "                  FUNCTION initialize()"
+          - "                  SET self.head = null"
+          - "                  SET self.tail = null"
+          - "                  FUNCTION append(value)"
+          - "                  CREATE new_node AS DoublyNode(value)"
+          - "                  IF self.head IS null THEN"
+          - "                  SET self.head = new_node"
+          - "                  SET self.tail = new_node"
+          - "                  RETURN"
+          - "                  END IF"
+          - "                  SET self.tail.next = new_node"
+          - "                  SET new_node.prev = self.tail"
+          - "                  SET self.tail = new_node"
+  - id: doubly-linked-list-bidirectional-search-and-traversal
+    title: Bidirectional search and traversal
+    definition: Traversal means walking through the nodes. In a doubly linked list, the walk can begin at the head and move forward or begin at the tail and move backward.
+    howAndWhy: This is used when a program needs to undo, reverse-iterate, or inspect neighbors on both sides. Searching by value is still linear, but the extra direction changes how surrounding structure can be inspected and edited.
+    examples:
+      - id: doubly-linked-list-bidirectional-search-and-traversal-example
+        strict:
+          - Define a function named print_forward.
+          - "                  Set current to self.head."
+          - "                  While current is not null."
+          - "                  Output current.value."
+          - "                  Set current to current.next."
+          - "                  End the while."
+          - "                  Define a function named print_backward."
+          - "                  Set current to self.tail."
+          - "                  While current is not null."
+          - "                  Output current.value."
+          - "                  Set current to current.prev."
+          - "                  End the while."
+        standard:
+          - Define print_forward and walk from head through next links.
+          - "                  Define print_backward and walk from tail through prev links."
+          - "                  Output each value during both traversals."
+        abstraction:
+          - Traverse the list forward from head and backward from tail.
+        pseudocode:
+          - FUNCTION print_forward()
+          - "                  SET current = self.head"
+          - "                  WHILE current IS NOT null"
+          - "                  OUTPUT current.value"
+          - "                  SET current = current.next"
+          - "                  END WHILE"
+          - "                  FUNCTION print_backward()"
+          - "                  SET current = self.tail"
+          - "                  WHILE current IS NOT null"
+          - "                  OUTPUT current.value"
+          - "                  SET current = current.prev"
+          - "                  END WHILE"
+  - id: doubly-linked-list-insert-before-or-after-a-node
+    title: Insert before or after a node
+    definition: "A doubly linked list can insert relative to a known node by updating four references: the new node's prev and next, and the neighboring nodes that must point to it."
+    howAndWhy: This is used when the list represents an ordered sequence and insertion must happen at a precise local position. Because both directions are stored, the structure can be updated without searching for the predecessor separately.
+    examples:
+      - id: doubly-linked-list-insert-before-or-after-a-node-example
+        strict:
+          - Define a function named insert_before that takes node, value.
+          - "                  If node is null, then."
+          - "                  Return."
+          - "                  End the if."
+          - "                  Create new_node as DoublyNode(value)."
+          - "                  Set new_node.next to node."
+          - "                  Set new_node.prev to node.prev."
+          - "                  If node.prev is not null, then."
+          - "                  Set node.prev.next to new_node."
+          - "                  Otherwise."
+          - "                  Set self.head to new_node."
+          - "                  End the if."
+          - "                  Set node.prev to new_node."
+        standard:
+          - Define insert_before(node, value).
+          - "                  Return if node is null."
+          - "                  Create new_node, connect it before node, and update the surrounding prev and next links."
+          - "                  Set self.head when the insertion happens before the old first node."
+        abstraction:
+          - Insert a new node before a known node and repair both directions.
+        pseudocode:
+          - FUNCTION insert_before(node, value)
+          - "                  IF node IS null THEN"
+          - "                  RETURN"
+          - "                  END IF"
+          - "                  CREATE new_node AS DoublyNode(value)"
+          - "                  SET new_node.next = node"
+          - "                  SET new_node.prev = node.prev"
+          - "                  IF node.prev IS NOT null THEN"
+          - "                  SET node.prev.next = new_node"
+          - "                  ELSE"
+          - "                  SET self.head = new_node"
+          - "                  END IF"
+          - "                  SET node.prev = new_node"
+  - id: doubly-linked-list-delete-a-known-node
+    title: Delete a known node
+    definition: Deleting a known node removes it by connecting its predecessor directly to its successor and then updating head or tail when necessary.
+    howAndWhy: It is especially useful in structures such as browser histories, deques, and LRU caches because once the node is known, removal is local and efficient.
+    examples:
+      - id: doubly-linked-list-delete-a-known-node-example
+        strict:
+          - Define a function named delete_node that takes node.
+          - "                  If node is null, then."
+          - "                  Return false."
+          - "                  End the if."
+          - "                  If node.prev is not null, then."
+          - "                  Set node.prev.next to node.next."
+          - "                  Otherwise."
+          - "                  Set self.head to node.next."
+          - "                  End the if."
+          - "                  If node.next is not null, then."
+          - "                  Set node.next.prev to node.prev."
+          - "                  Otherwise."
+          - "                  Set self.tail to node.prev."
+          - "                  End the if."
+          - "                  Return true."
+        standard:
+          - Define delete_node(node).
+          - "                  Return false if node is null."
+          - "                  Reconnect node.prev and node.next around the node being removed."
+          - "                  Update self.head or self.tail when the removed node is at an end."
+          - "                  Return true after deletion."
+        abstraction:
+          - Delete a known node by reconnecting its neighbors and updating head or tail when needed.
+        pseudocode:
+          - FUNCTION delete_node(node)
+          - "                  IF node IS null THEN"
+          - "                  RETURN false"
+          - "                  END IF"
+          - "                  IF node.prev IS NOT null THEN"
+          - "                  SET node.prev.next = node.next"
+          - "                  ELSE"
+          - "                  SET self.head = node.next"
+          - "                  END IF"
+          - "                  IF node.next IS NOT null THEN"
+          - "                  SET node.next.prev = node.prev"
+          - "                  ELSE"
+          - "                  SET self.tail = node.prev"
+          - "                  END IF"
+          - "                  RETURN true"

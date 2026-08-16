@@ -1,0 +1,191 @@
+# Sorting Algorithms
+#
+# Lesson 8 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: sorting-algorithms
+number: 8
+title: Sorting Algorithms
+overview: "Sorting places values into a chosen order, usually ascending or descending. Different sorting methods reflect different strategies: local swapping, repeated selection, gradual insertion into a sorted region, divide-and-conquer merging, and digit-by-digit grouping."
+topics:
+  - id: sorting-bubble-sort
+    title: Bubble sort
+    definition: Bubble sort repeatedly compares neighboring elements and swaps them when they are out of order. Larger values gradually move toward the end of the list, like bubbles rising upward.
+    howAndWhy: It is used mainly as a teaching algorithm because it makes local improvement visible. It is easy to understand but inefficient on large inputs because it performs many repeated comparisons.
+    examples:
+      - id: sorting-bubble-sort-example
+        strict:
+          - Define a function named bubble_sort that takes A.
+          - "                  For pass from 1 to length(a) - 1."
+          - "                  Set swapped to false."
+          - "                  For i from 0 to length(a) - 2."
+          - "                  If A[i] > A[i+1], then."
+          - "                  Swap A[i] and A[i+1]."
+          - "                  Set swapped to true."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  If swapped = false, then."
+          - "                  Stop the current loop."
+          - "                  End the if."
+          - "                  End the for."
+        standard:
+          - Define bubble_sort(A).
+          - "                  Repeat passes through the array, swapping adjacent out-of-order pairs."
+          - "                  Track whether any swap happened on the pass."
+          - "                  Stop early when a pass makes no swaps."
+        abstraction:
+          - Repeatedly swap adjacent out-of-order pairs until the array is sorted.
+        pseudocode:
+          - FUNCTION bubble_sort(A)
+          - "                  FOR pass FROM 1 TO length(A) - 1"
+          - "                  SET swapped = false"
+          - "                  FOR i FROM 0 TO length(A) - 2"
+          - "                  IF A[i] > A[i+1] THEN"
+          - "                  SWAP A[i] AND A[i+1]"
+          - "                  SET swapped = true"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  IF swapped = false THEN"
+          - "                  BREAK END IF END FOR"
+  - id: sorting-selection-sort
+    title: Selection sort
+    definition: Selection sort repeatedly finds the smallest remaining unsorted value and places it into the next correct position.
+    howAndWhy: It is used because it separates the sorted prefix from the unsorted suffix very clearly. Like bubble sort, it is mostly pedagogical, but it teaches the idea of repeatedly selecting the next best candidate.
+    examples:
+      - id: sorting-selection-sort-example
+        strict:
+          - Define a function named selection_sort that takes A.
+          - "                  For i from 0 to length(a) - 1."
+          - "                  Set min_index to i."
+          - "                  For j from i+1 to length(a) - 1."
+          - "                  If A[j] < A[min_index], then."
+          - "                  Set min_index to j."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Swap A[i] and A[min_index]."
+          - "                  End the for."
+        standard:
+          - Define selection_sort(A).
+          - "                  For each position i, find the smallest remaining value to the right."
+          - "                  Swap that minimum into position i."
+        abstraction:
+          - Repeatedly select the smallest remaining value and place it next.
+        pseudocode:
+          - FUNCTION selection_sort(A)
+          - "                  FOR i FROM 0 TO length(A) - 1"
+          - "                  SET min_index = i"
+          - "                  FOR j FROM i+1 TO length(A) - 1"
+          - "                  IF A[j] < A[min_index] THEN"
+          - "                  SET min_index = j"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  SWAP A[i] AND A[min_index]"
+          - "                  END FOR"
+  - id: sorting-insertion-sort
+    title: Insertion sort
+    definition: Insertion sort builds a sorted region from left to right. Each new value is inserted into the correct position within the portion that is already sorted.
+    howAndWhy: It is used because it performs very well on small inputs and nearly sorted data. It also matches the way many people sort cards in their hands, so the mental model feels natural.
+    examples:
+      - id: sorting-insertion-sort-example
+        strict:
+          - Define a function named insertion_sort that takes A.
+          - "                  For i from 1 to length(a) - 1."
+          - "                  Set key to a[i]."
+          - "                  Set j to i - 1."
+          - "                  While j >= 0 and A[j] > key."
+          - "                  Set a[j+1] to a[j]."
+          - "                  Set j to j - 1."
+          - "                  End the while."
+          - "                  Set a[j+1] to key."
+          - "                  End the for."
+        standard:
+          - Define insertion_sort(A).
+          - "                  Take each new key from left to right."
+          - "                  Shift larger earlier values one position right."
+          - "                  Insert the key into the gap that remains."
+        abstraction:
+          - Grow a sorted prefix by shifting larger values right and inserting the current key.
+        pseudocode:
+          - FUNCTION insertion_sort(A)
+          - "                  FOR i FROM 1 TO length(A) - 1"
+          - "                  SET key = A[i]"
+          - "                  SET j = i - 1"
+          - "                  WHILE j >= 0 AND A[j] > key"
+          - "                  SET A[j+1] = A[j]"
+          - "                  SET j = j - 1"
+          - "                  END WHILE"
+          - "                  SET A[j+1] = key"
+          - "                  END FOR"
+  - id: sorting-merge-sort
+    title: Merge sort
+    definition: Merge sort divides the list into smaller halves, sorts each half recursively, and then merges the sorted halves back together.
+    howAndWhy: It is used because divide-and-conquer gives predictable efficiency and stable behavior. It is especially valuable when reliable performance matters more than in-place memory savings.
+    examples:
+      - id: sorting-merge-sort-example
+        strict:
+          - Define a function named merge_sort that takes A.
+          - "                  If length(A) <= 1, then."
+          - "                  Return A."
+          - "                  End the if."
+          - "                  Set mid to floor(length(a) / 2)."
+          - "                  Set left to merge_sort(first half of a)."
+          - "                  Set right to merge_sort(second half of a)."
+          - "                  Return merge(left, right)."
+          - "                  Define a function named merge that takes left, right."
+          - "                  Create empty result."
+          - "                  While left NOT empty and right NOT empty."
+          - "                  If first(left) <= first(right), then."
+          - "                  Move first(left) to result."
+          - "                  Otherwise."
+          - "                  Move first(right) to result."
+          - "                  End the if."
+          - "                  End the while."
+          - "                  Append remaining items to result."
+          - "                  Return result."
+        standard:
+          - Define merge_sort(A).
+          - "                  Return A immediately when its length is 1 or less."
+          - "                  Split A into halves, recursively sort each half, and merge the sorted results."
+          - "                  Define merge(left, right) to repeatedly move the smaller front item into result, then append the remainder."
+        abstraction:
+          - Recursively split the array, sort both halves, and merge them back together.
+        pseudocode:
+          - FUNCTION merge_sort(A)
+          - "                  IF length(A) <= 1 THEN"
+          - "                  RETURN A"
+          - "                  END IF"
+          - "                  SET mid = floor(length(A) / 2)"
+          - "                  SET left = merge_sort(first half of A)"
+          - "                  SET right = merge_sort(second half of A)"
+          - "                  RETURN merge(left, right)"
+          - "                  FUNCTION merge(left, right)"
+          - "                  CREATE empty result"
+          - "                  WHILE left NOT empty AND right NOT empty"
+          - "                  IF first(left) <= first(right) THEN"
+          - "                  MOVE first(left) TO result ELSE MOVE first(right) TO result END IF END WHILE APPEND remaining"
+          - "                  items to result RETURN result"
+  - id: sorting-radix-sort
+    title: Radix sort
+    definition: Radix sort sorts numbers digit by digit, usually from least significant digit to most significant digit, using a stable grouping step at each digit position.
+    howAndWhy: It is used when keys are integers or strings with a fixed alphabetic or numeric structure. Instead of comparing whole values directly, it organizes them by parts. This can be very efficient in the right setting.
+    examples:
+      - id: sorting-radix-sort-example
+        strict:
+          - Define a function named radix_sort that takes A.
+          - "                  Set max_digits to number of digits in the largest value."
+          - "                  For digit_position from 1 to max_digits."
+          - "                  Place each value into bucket based on its current digit."
+          - "                  Collect buckets back into a in bucket order."
+          - "                  End the for."
+        standard:
+          - Define radix_sort(A).
+          - "                  Find how many digit positions the largest value has."
+          - "                  For each digit position, bucket values by that digit and collect the buckets back into A."
+        abstraction:
+          - Sort numbers digit by digit, from least significant to most significant.
+        pseudocode:
+          - FUNCTION radix_sort(A)
+          - "                  SET max_digits = number of digits in the largest value"
+          - "                  FOR digit_position FROM 1 TO max_digits"
+          - "                  PLACE each value into bucket based on its current digit COLLECT buckets back into A in bucket order"
+          - "                  END FOR"
