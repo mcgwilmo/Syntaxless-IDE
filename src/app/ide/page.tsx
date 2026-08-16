@@ -1648,6 +1648,10 @@ function IdePageContent() {
                                           ? isLight
                                             ? "border-rose-200 bg-rose-50"
                                             : "border-rose-500/20 bg-rose-500/[0.06]"
+                                          : entry.stream === "explanation"
+                                          ? isLight
+                                            ? "border-amber-200 bg-amber-50"
+                                            : "border-amber-500/20 bg-amber-500/[0.06]"
                                           : entry.stream === "stdout"
                                           ? isLight
                                             ? "border-sky-200 bg-white"
@@ -1663,6 +1667,10 @@ function IdePageContent() {
                                             ? isLight
                                               ? "border-rose-200 text-rose-700"
                                               : "border-rose-500/15 text-rose-200"
+                                            : entry.stream === "explanation"
+                                            ? isLight
+                                              ? "border-amber-200 text-amber-700"
+                                              : "border-amber-500/15 text-amber-200"
                                             : entry.stream === "stdout"
                                             ? isLight
                                               ? "border-sky-100 text-sky-700"

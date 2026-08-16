@@ -274,11 +274,28 @@ export function formatIntentLabel(line: InterpretationLine) {
   return action;
 }
 
+/**
+ * The language to report runtime errors in.
+ *
+ * Reads the browser's preference, which is the best signal available until the
+ * IDE has an explicit language setting. The backend narrows whatever it gets to
+ * a locale it can actually speak, so a regional tag like `es-MX` or an
+ * unsupported one is safe to send as-is.
+ *
+ * Returns null during server rendering rather than guessing, which the backend
+ * reads the same way as an unsupported locale: English.
+ */
+export function getBrowserLocale(): string | null {
+  if (typeof navigator === "undefined") return null;
+  return navigator.language || null;
+}
+
 export function terminalStreamLabel(stream: TerminalEntry["stream"]) {
   if (stream === "stdout") return "Output";
   if (stream === "stderr") return "Error";
   if (stream === "input") return "Input";
   if (stream === "runtime") return "Runtime";
+  if (stream === "explanation") return "What went wrong";
   return "System";
 }
 

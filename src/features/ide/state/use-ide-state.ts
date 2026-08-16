@@ -25,6 +25,7 @@ import {
 } from "@/lib/supabase/client";
 import { useTheme } from "@/components/theme-provider";
 import { STORAGE_KEYS } from "@/config/brand";
+import type { RuntimeErrorExplanation } from "@/lib/api/types";
 import type {
   ActionableDiagnostic,
   BackendArtifact,
@@ -74,6 +75,7 @@ import {
   getModeBarGlowStyle,
   getModeButtonClass,
   getProblemNoticeSeverity,
+  getBrowserLocale,
   getProblemStatusLabel,
   getProtectedDarkSurfaceStyle,
   getProtectedDarkTextStyle,
@@ -1297,6 +1299,24 @@ export function useIdeState() {
         return;
       }
 
+      if (payload.type === "error_explanation") {
+        // Arrives after the raw traceback has already been streamed, so this
+        // reads as a plain-language summary of the error above it rather than
+        // a replacement for it.
+        //
+        // Every string here is composed by the backend, `location` included --
+        // the IDE has no locale catalog of its own yet, so any text added on
+        // this side would arrive in English and undo the translation.
+        const explanation = payload as unknown as RuntimeErrorExplanation;
+        const parts = [
+          explanation.location,
+          explanation.explanation,
+          explanation.hint,
+        ].filter(Boolean);
+        appendTerminal(parts.join("\n") + "\n", "explanation");
+        return;
+      }
+
       if (payload.type === "input_requested") {
         setInputPrompt(payload.prompt || "Input:");
         setShowBottomPanel(true);
@@ -1397,6 +1417,7 @@ export function useIdeState() {
           project_context: referenceFiles,
           mode,
           subscription_tier: activeTier,
+          locale: getBrowserLocale(),
         }),
       });
 

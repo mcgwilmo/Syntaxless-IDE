@@ -30,6 +30,38 @@ export type PipelineRequest = {
   project_context: Array<{ path: string; content: string }>;
   mode: IdeMode;
   subscription_tier: string;
+  /**
+   * Language to report runtime errors in, as a BCP-47 tag.
+   *
+   * Free-form rather than a union: the backend accepts regional forms like
+   * `es-MX` and falls back to English for anything it cannot speak, so an
+   * unrecognized tag degrades the message instead of failing the run.
+   */
+  locale?: string | null;
+};
+
+/**
+ * A runtime failure, explained in the student's language.
+ *
+ * Sits alongside the raw stderr rather than replacing it -- the traceback is
+ * still streamed verbatim. `line_number` counts lines of the student's own
+ * program, already mapped back past the sandbox's runtime prelude, and is null
+ * when the backend could not map it honestly.
+ */
+export type RuntimeErrorExplanation = {
+  exception_type: string;
+  raw_message: string;
+  line_number: number | null;
+  /** Localized label for `line_number`, e.g. "Línea 7". Null when unmapped. */
+  location: string | null;
+  locale: string;
+  explanation: string;
+  hint: string | null;
+  /** CPython's own spelling suggestion, when it offered one. */
+  did_you_mean: string | null;
+  message_key: string;
+  /** False when only the generic per-type explanation applied. */
+  recognized: boolean;
 };
 
 /** One line of the student's program, as the backend understood it. */
@@ -145,6 +177,11 @@ export type RunListResponse = { runs: PersistedRun[] };
  *
  * The sandbox writes these; anything it prints that is not an event arrives as
  * a `stdout` event. `completed` is terminal -- the socket closes after it.
+ *
+ * `error_explanation` is emitted at most once, immediately before `completed`,
+ * and only when the run failed with an actual Python exception. Runs that ended
+ * for our reasons rather than the student's -- a timeout, a stop, an output
+ * limit -- have no exception to explain and send nothing.
  */
 export type RunEvent =
   | { type: "run_started"; run_id: string; executor_mode: string }
@@ -153,6 +190,7 @@ export type RunEvent =
   | { type: "runtime_message"; text: string }
   | { type: "input_requested"; prompt: string }
   | { type: "artifact_created"; name: string; artifact_type?: string; label?: string }
+  | ({ type: "error_explanation"; run_id: string } & RuntimeErrorExplanation)
   | {
       type: "completed";
       run_id: string;
