@@ -306,17 +306,17 @@ function BugReportModal({
               : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] shadow-[0_20px_80px_rgba(0,0,0,0.45)]"
           }`}
         >
-        <div className={`mb-2 text-[11px] uppercase tracking-[0.26em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+        <div className={`mb-2 text-[11px] uppercase tracking-[0.26em] ${"text-[var(--text-soft)]"}`}>
           Report Bug
         </div>
 
         <h2
-          className={`${PAGE_HEADING_CLASS} ${isLight ? "text-3xl text-slate-900" : "text-3xl text-white"}`}
+          className={`${PAGE_HEADING_CLASS} ${"text-3xl text-[var(--text-primary)]"}`}
         >
           {targetKind === "run" ? "Report this run" : "Report IDE issue"}
         </h2>
 
-        <p className={`mt-3 text-sm leading-7 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
+        <p className={`mt-3 text-sm leading-7 ${"text-[var(--text-muted)]"}`}>
           {targetKind === "run"
             ? "This report will include the selected run diagnostics automatically."
             : "This report will include the current IDE state automatically."}
@@ -324,7 +324,7 @@ function BugReportModal({
 
         <div className="mt-6 grid gap-4">
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
               Category
             </label>
             <select
@@ -345,7 +345,7 @@ function BugReportModal({
           </div>
 
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
               Title
             </label>
             <input
@@ -361,7 +361,7 @@ function BugReportModal({
           </div>
 
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
               What went wrong
             </label>
             <textarea
@@ -378,7 +378,7 @@ function BugReportModal({
           </div>
 
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
               Expected behavior
             </label>
             <textarea
@@ -405,7 +405,7 @@ function BugReportModal({
           </label>
 
           <div className={`rounded-2xl border p-4 ${isLight ? "border-slate-200 bg-slate-50" : "border-neutral-900 bg-[#0b0b0b]"}`}>
-            <div className={`mb-2 text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <div className={`mb-2 text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
               Attached context
             </div>
             <div className={`space-y-1 text-sm ${isLight ? "text-slate-700" : "text-neutral-300"}`}>
@@ -477,7 +477,7 @@ function ArtifactPreview({
     );
   }
 
-  return <div className={`p-4 text-sm ${isLight ? "text-slate-600" : "text-neutral-400"}`}>Artifact available.</div>;
+  return <div className={`p-4 text-sm ${"text-[var(--text-muted)]"}`}>Artifact available.</div>;
 }
 
 function IdePageContent() {
@@ -730,13 +730,13 @@ function IdePageContent() {
                           </button>
 
                           {showAddMenu && (
-                            <div className={`absolute right-0 top-9 z-30 w-40 rounded-[1rem] border p-1.5 backdrop-blur-md ${isLight ? "border-slate-200 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.12)]" : "border-neutral-800 bg-[#090909]/95 shadow-[0_18px_60px_rgba(0,0,0,0.5)]"}`}>
+                            <div className={`absolute right-0 top-9 z-30 w-40 rounded-[1rem] border p-1.5 backdrop-blur-md ${"border-[var(--border-strong)] bg-[var(--surface-raised)] shadow-[var(--raised-lg)]"}`}>
                               <button
                                 onClick={() => {
                                   createFile();
                                   setShowAddMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"}`}
+                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
                               >
                                 New file
                               </button>
@@ -745,7 +745,7 @@ function IdePageContent() {
                                   createFolder();
                                   setShowAddMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"}`}
+                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
                               >
                                 New folder
                               </button>
@@ -777,13 +777,13 @@ function IdePageContent() {
                           </button>
 
                           {showTreeMenu && (
-                            <div className={`absolute right-0 top-9 z-30 w-44 rounded-[1rem] border p-1.5 backdrop-blur-md ${isLight ? "border-slate-200 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.12)]" : "border-neutral-800 bg-[#090909]/95 shadow-[0_18px_60px_rgba(0,0,0,0.5)]"}`}>
+                            <div className={`absolute right-0 top-9 z-30 w-44 rounded-[1rem] border p-1.5 backdrop-blur-md ${"border-[var(--border-strong)] bg-[var(--surface-raised)] shadow-[var(--raised-lg)]"}`}>
                               <button
                                 onClick={() => {
                                   setExplorerTree((prev) => setAllFoldersOpen(prev, true));
                                   setShowTreeMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"}`}
+                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
                               >
                                 Expand all folders
                               </button>
@@ -792,7 +792,7 @@ function IdePageContent() {
                                   setExplorerTree((prev) => setAllFoldersOpen(prev, false));
                                   setShowTreeMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"}`}
+                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
                               >
                                 Collapse all folders
                               </button>
@@ -988,7 +988,7 @@ function IdePageContent() {
                         : "px-4 font-medium duration-300",
                       !isRunning &&
                         activeFile &&
-                        `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} ${isLight ? "text-slate-900" : "text-white"} shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] hover:-translate-y-[1px]`
+                        `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} ${"text-[var(--text-primary)]"} shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] hover:-translate-y-[1px]`
                     )}
                   >
                     {iconControls ? (
@@ -1217,7 +1217,7 @@ function IdePageContent() {
                           "inline-flex items-center gap-2 px-3.5 py-2 text-[12px] font-semibold",
                           !isRunning &&
                             activeFile &&
-                            `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} ${isLight ? "text-slate-900" : "text-white"}`
+                            `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} ${"text-[var(--text-primary)]"}`
                         )}
                       >
                         <MinimalControlIcon name="run" className="h-4 w-4" />
@@ -1700,7 +1700,7 @@ function IdePageContent() {
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter") handleSendTerminalInput();
                                   }}
-                                  className={`flex-1 rounded-[0.95rem] px-3 py-2 text-[13px] outline-none transition-colors ${inputSurfaceClass} ${isLight ? "focus:border-blue-400/60" : "focus:border-neutral-600"}`}
+                                  className={`flex-1 rounded-[0.95rem] px-3 py-2 text-[13px] outline-none transition-colors ${inputSurfaceClass} ${"focus:border-[var(--accent-solid)]"}`}
                                   placeholder="Type input for the running program..."
                                 />
                                 <button
@@ -1818,14 +1818,14 @@ function IdePageContent() {
                               <div>
                                 <div
                                   className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                    isLight ? "text-slate-500" : "text-neutral-500"
+                                    "text-[var(--text-soft)]"
                                   }`}
                                   style={protectedDarkLabelStyle}
                                 >
                                   Problem Context
                                 </div>
                                 <div
-                                  className={`mt-0.5 text-[11px] ${isLight ? "text-slate-500" : "text-neutral-500"}`}
+                                  className={`mt-0.5 text-[11px] ${"text-[var(--text-soft)]"}`}
                                   style={protectedDarkMetaStyle}
                                 >
                                   Quiet alignment checks for the active solution
@@ -1846,7 +1846,7 @@ function IdePageContent() {
                             <div>
                               <div
                                 className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                  isLight ? "text-slate-500" : "text-neutral-500"
+                                  "text-[var(--text-soft)]"
                                 }`}
                                 style={protectedDarkLabelStyle}
                               >
@@ -1879,7 +1879,7 @@ function IdePageContent() {
                                 <div className="min-w-0">
                                   <div
                                     className={`mb-1 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                      isLight ? "text-slate-500" : "text-neutral-500"
+                                      "text-[var(--text-soft)]"
                                     }`}
                                     style={protectedDarkLabelStyle}
                                   >
@@ -1902,7 +1902,7 @@ function IdePageContent() {
                                 </div>
                               </div>
                               <div
-                                className={`mt-2 text-[11px] ${isLight ? "text-slate-500" : "text-neutral-500"}`}
+                                className={`mt-2 text-[11px] ${"text-[var(--text-soft)]"}`}
                                 style={protectedDarkMetaStyle}
                               >
                                 Updates on Check or Run
@@ -1918,7 +1918,7 @@ function IdePageContent() {
                             >
                               <div
                                 className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                  isLight ? "text-slate-500" : "text-neutral-500"
+                                  "text-[var(--text-soft)]"
                                 }`}
                                 style={protectedDarkLabelStyle}
                               >
@@ -1947,7 +1947,7 @@ function IdePageContent() {
                                 </div>
                               ) : (
                                 <div
-                                  className={`text-[13px] leading-5 ${isLight ? "text-slate-500" : "text-neutral-500"}`}
+                                  className={`text-[13px] leading-5 ${"text-[var(--text-soft)]"}`}
                                   style={protectedDarkMetaStyle}
                                 >
                                   {normalizedProblemStatement
@@ -1961,7 +1961,7 @@ function IdePageContent() {
                               <div>
                               <div
                                 className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                  isLight ? "text-slate-500" : "text-neutral-500"
+                                  "text-[var(--text-soft)]"
                                 }`}
                                 style={protectedDarkLabelStyle}
                               >
@@ -2084,7 +2084,7 @@ function IdePageContent() {
                     <div className="space-y-3">
                       <div
                         className={`rounded-[1.05rem] border p-3 ${
-                          isLight ? "border-slate-200 bg-[#f8fafc]" : "border-white/[0.05] bg-white/[0.015]"
+                          "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
                         }`}
                       >
                         <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
@@ -2095,7 +2095,7 @@ function IdePageContent() {
                             <div
                               key={metric.label}
                               className={`rounded-[0.95rem] border px-3 py-2 ${
-                                isLight ? "border-slate-200 bg-white" : "border-neutral-900 bg-black/20"
+                                "border-[var(--border-subtle)] bg-[var(--surface-raised)]"
                               }`}
                             >
                               <div className={`text-[10px] uppercase tracking-[0.18em] ${softTextClass}`}>
@@ -2111,7 +2111,7 @@ function IdePageContent() {
 
                       <div
                         className={`rounded-[1.05rem] border p-3 ${
-                          isLight ? "border-slate-200 bg-[#f8fafc]" : "border-white/[0.05] bg-white/[0.015]"
+                          "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
                         }`}
                       >
                         <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
@@ -2119,7 +2119,7 @@ function IdePageContent() {
                         </div>
                         <div className="space-y-2">
                           {(devMetrics?.steps || []).length === 0 ? (
-                            <div className={`rounded-[0.95rem] border px-3 py-2 text-[12px] ${isLight ? "border-slate-200 bg-white text-slate-500" : "border-neutral-900 bg-black/20 text-neutral-500"}`}>
+                            <div className={`rounded-[0.95rem] border px-3 py-2 text-[12px] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
                               Run the file to populate step timings.
                             </div>
                           ) : (
@@ -2127,7 +2127,7 @@ function IdePageContent() {
                               <div
                                 key={step.key}
                                 className={`rounded-[0.95rem] border px-3 py-2 ${
-                                  isLight ? "border-slate-200 bg-white" : "border-neutral-900 bg-black/20"
+                                  "border-[var(--border-subtle)] bg-[var(--surface-raised)]"
                                 }`}
                               >
                                 <div className="flex items-center justify-between gap-3">
@@ -2151,7 +2151,7 @@ function IdePageContent() {
 
                       <div
                         className={`rounded-[1.05rem] border p-3 ${
-                          isLight ? "border-slate-200 bg-[#f8fafc]" : "border-white/[0.05] bg-white/[0.015]"
+                          "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
                         }`}
                       >
                         <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
@@ -2159,7 +2159,7 @@ function IdePageContent() {
                         </div>
                         <div className="space-y-2">
                           {resolvedInterpretationLines.length === 0 ? (
-                            <div className={`rounded-[0.95rem] border px-3 py-2 text-[12px] ${isLight ? "border-slate-200 bg-white text-slate-500" : "border-neutral-900 bg-black/20 text-neutral-500"}`}>
+                            <div className={`rounded-[0.95rem] border px-3 py-2 text-[12px] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
                               No interpretation data yet.
                             </div>
                           ) : (
@@ -2173,7 +2173,7 @@ function IdePageContent() {
                                 <div
                                   key={`${line.resolvedLineNumber || index}-${line.raw}`}
                                   className={`rounded-[0.95rem] border px-3 py-2 ${
-                                    isLight ? "border-slate-200 bg-white" : "border-neutral-900 bg-black/20"
+                                    "border-[var(--border-subtle)] bg-[var(--surface-raised)]"
                                   }`}
                                 >
                                   <div className="flex items-start justify-between gap-3">
@@ -2199,37 +2199,37 @@ function IdePageContent() {
                                   </div>
 
                                   <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-neutral-800 bg-[#0a0a0a] text-neutral-400"}`}>
+                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
                                       <div className="uppercase tracking-[0.16em]">Mode Specificity</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-neutral-800 bg-[#0a0a0a] text-neutral-400"}`}>
+                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
                                       <div className="uppercase tracking-[0.16em]">Raw Specificity</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.raw_specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-neutral-800 bg-[#0a0a0a] text-neutral-400"}`}>
+                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
                                       <div className="uppercase tracking-[0.16em]">Strict Score</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.strict_specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-neutral-800 bg-[#0a0a0a] text-neutral-400"}`}>
+                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
                                       <div className="uppercase tracking-[0.16em]">Structure Score</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.structure_specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-neutral-800 bg-[#0a0a0a] text-neutral-400"}`}>
+                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
                                       <div className="uppercase tracking-[0.16em]">Mode Struct Penalty</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.structure_penalty)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-neutral-800 bg-[#0a0a0a] text-neutral-400"}`}>
+                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
                                       <div className="uppercase tracking-[0.16em]">Intent Confidence</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(confidence)}
@@ -2253,7 +2253,7 @@ function IdePageContent() {
                                   </div>
 
                                   {(line.intent?.target || line.intent?.value_or_source || line.intent?.context) && (
-                                    <div className={`mt-2 rounded-[0.8rem] border px-2.5 py-2 text-[11px] leading-5 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-neutral-800 bg-[#0a0a0a] text-neutral-400"}`}>
+                                    <div className={`mt-2 rounded-[0.8rem] border px-2.5 py-2 text-[11px] leading-5 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
                                       <div>Target: {line.intent?.target || "n/a"}</div>
                                       <div>Source: {line.intent?.value_or_source || "n/a"}</div>
                                       <div>Context: {line.intent?.context || "n/a"}</div>
@@ -2381,7 +2381,7 @@ function IdePageContent() {
                   if (e.key === "Enter") handleDevVisionUnlock();
                 }}
                 className={`w-full rounded-[1rem] px-3 py-3 text-[14px] outline-none transition-colors ${inputSurfaceClass} ${
-                  isLight ? "focus:border-blue-400/60" : "focus:border-neutral-600"
+                  "focus:border-[var(--accent-solid)]"
                 }`}
                 placeholder="Enter password"
               />
@@ -2432,7 +2432,7 @@ function IdePageContent() {
               setContextMenu(null);
             }}
             className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-              isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"
+              "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
             }`}
           >
             Rename
@@ -2444,7 +2444,7 @@ function IdePageContent() {
               setContextMenu(null);
             }}
             className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-              isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"
+              "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
             }`}
           >
             Duplicate
@@ -2458,7 +2458,7 @@ function IdePageContent() {
                   setContextMenu(null);
                 }}
                 className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-                  isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"
+                  "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
                 }`}
               >
                 New file inside
@@ -2469,7 +2469,7 @@ function IdePageContent() {
                   setContextMenu(null);
                 }}
                 className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-                  isLight ? "text-slate-700 hover:bg-slate-100 hover:text-slate-900" : "text-neutral-300 hover:bg-[#141414] hover:text-white"
+                  "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
                 }`}
               >
                 New folder inside
@@ -2529,7 +2529,7 @@ function IdePageContent() {
                 Select IDE Mode
               </div>
               <h2
-                className={`${PAGE_HEADING_CLASS} ${isLight ? "mb-3 text-3xl text-slate-900 md:text-4xl" : "mb-3 text-3xl text-white md:text-4xl"}`}
+                className={`${PAGE_HEADING_CLASS} ${"mb-3 text-3xl text-[var(--text-primary)] md:text-4xl"}`}
               >
                 Choose how you want to code
               </h2>
@@ -2573,10 +2573,10 @@ function IdePageContent() {
 
                     {!unlocked && (
                       <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center ${isLight ? "bg-white/75" : "bg-black/35"}`}>
-                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-xl ${isLight ? "border-slate-200 bg-white text-slate-500" : "border-neutral-700 bg-[#0d0d0d] text-neutral-300"}`}>
+                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-xl ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
                           🔒
                         </div>
-                        <div className={`rounded-2xl border px-4 py-3 text-xs leading-5 ${isLight ? "border-slate-200 bg-white text-slate-600" : "border-neutral-800 bg-[#0a0a0a]/90 text-neutral-300"}`}>
+                        <div className={`rounded-2xl border px-4 py-3 text-xs leading-5 ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
                           Upgrade your subscription to access this mode.
                         </div>
                       </div>
@@ -2585,26 +2585,26 @@ function IdePageContent() {
                     <div className="relative z-10 flex h-full flex-col">
                       <div className="mb-6 flex items-start justify-between">
                         <div
-                          className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-2xl ${item.badge} ${isLight ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.03]"}`}
+                          className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-2xl ${item.badge} ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)]"}`}
                         >
                           {item.icon}
                         </div>
 
                         {selected && unlocked ? (
                           <div
-                            className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${item.badge} ${isLight ? "border-slate-200 bg-white" : "border-white/10 bg-white/[0.04]"}`}
+                            className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${item.badge} ${"border-[var(--border-subtle)] bg-[var(--surface-raised)]"}`}
                           >
                             Selected
                           </div>
                         ) : unlocked ? null : (
-                          <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${isLight ? "border-slate-200 bg-white text-slate-400" : "border-neutral-800 bg-[#090909] text-neutral-500"}`}>
+                          <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
                             Locked
                           </div>
                         )}
                       </div>
 
-                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} ${isLight ? "text-slate-900" : "text-white"}`}>{item.label}</div>
-                      <div className={`mb-5 text-sm leading-6 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>{item.short}</div>
+                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} ${"text-[var(--text-primary)]"}`}>{item.label}</div>
+                      <div className={`mb-5 text-sm leading-6 ${"text-[var(--text-muted)]"}`}>{item.short}</div>
 
                       <div className={`mt-auto rounded-2xl border p-4 text-xs leading-6 ${isLight ? "border-slate-200 bg-[#f8fafc] text-slate-500" : "border-white/5 bg-black/20 text-neutral-500"}`}>
                         {item.description}
@@ -2658,7 +2658,7 @@ function IdePageContent() {
                 Select Layout
               </div>
               <h2
-                className={`${PAGE_HEADING_CLASS} ${isLight ? "mb-3 text-3xl text-slate-900 md:text-4xl" : "mb-3 text-3xl text-white md:text-4xl"}`}
+                className={`${PAGE_HEADING_CLASS} ${"mb-3 text-3xl text-[var(--text-primary)] md:text-4xl"}`}
               >
                 Choose your workspace
               </h2>
@@ -2697,10 +2697,10 @@ function IdePageContent() {
                   >
                     {!unlocked && (
                       <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center ${isLight ? "bg-white/75" : "bg-black/35"}`}>
-                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-xl ${isLight ? "border-slate-200 bg-white text-slate-500" : "border-neutral-700 bg-[#0d0d0d] text-neutral-300"}`}>
+                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-xl ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
                           🔒
                         </div>
-                        <div className={`rounded-2xl border px-4 py-3 text-xs leading-5 ${isLight ? "border-slate-200 bg-white text-slate-600" : "border-neutral-800 bg-[#0a0a0a]/90 text-neutral-300"}`}>
+                        <div className={`rounded-2xl border px-4 py-3 text-xs leading-5 ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
                           Upgrade your subscription to access this layout.
                         </div>
                       </div>
@@ -2718,29 +2718,29 @@ function IdePageContent() {
                     <div className="relative z-10 flex h-full flex-col">
                       <div className="mb-6 flex items-start justify-between">
                         <div
-                          className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-xs font-semibold uppercase tracking-[0.24em] ${item.accentText} ${isLight ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.03]"}`}
+                          className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-xs font-semibold uppercase tracking-[0.24em] ${item.accentText} ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)]"}`}
                         >
                           {layoutKey === "minimalist" ? "○" : layoutKey === "normal" ? "◫" : "▣"}
                         </div>
 
                         {selected && unlocked ? (
                           <div
-                            className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${item.accentText} ${isLight ? "border-slate-200 bg-white" : "border-white/10 bg-white/[0.04]"}`}
+                            className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${item.accentText} ${"border-[var(--border-subtle)] bg-[var(--surface-raised)]"}`}
                           >
                             Selected
                           </div>
                         ) : unlocked ? null : (
-                          <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${isLight ? "border-slate-200 bg-white text-slate-400" : "border-neutral-800 bg-[#090909] text-neutral-500"}`}>
+                          <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
                             Locked
                           </div>
                         )}
                       </div>
 
-                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} ${isLight ? "text-slate-900" : "text-white"}`}>
+                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} ${"text-[var(--text-primary)]"}`}>
                         {item.label}
                       </div>
 
-                      <div className={`mb-5 text-sm leading-6 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
+                      <div className={`mb-5 text-sm leading-6 ${"text-[var(--text-muted)]"}`}>
                         {item.short}
                       </div>
 
@@ -2791,7 +2791,7 @@ function IdePageContent() {
               Subscription Required
             </div>
             <h2
-              className={`${PAGE_HEADING_CLASS} ${isLight ? "text-3xl text-slate-900" : "text-3xl text-white"}`}
+              className={`${PAGE_HEADING_CLASS} ${"text-3xl text-[var(--text-primary)]"}`}
             >
               {upgradeModal.title}
             </h2>
