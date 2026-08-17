@@ -813,6 +813,7 @@
       <a href="#layers">Four layers</a>
       <a href="#sequence">Sequence</a>
       <a href="#unlocks">What it unlocks</a>
+      <a href="#why">Capturing why</a>
       <a href="#risks">Risks</a>
       <a href="#questions">Open questions</a>
     </nav>
@@ -1319,7 +1320,11 @@ SUM_OF = re.compile(r"(?:the )?sum of ([A-Za-z_][A-Za-z0-9_ ]+)", re.IGNORECASE)
           <p class="phase-body">
             Canonicalize <code>action</code> / <code>target</code> /
             <code>value_or_source</code>, preserve <code>raw_text</code> verbatim,
-            ship the v1 reader.
+            ship the v1 reader. Add <code>intent_id</code> in the same migration
+            even though nothing consumes it yet — it is the prerequisite for
+            <a href="#why">rationale and why-level diffs</a>, and adding an
+            identifier to a persisted schema twice costs far more than adding it
+            once.
           </p>
         </div>
         <div class="phase">
@@ -1393,6 +1398,45 @@ SUM_OF = re.compile(r"(?:the )?sum of ([A-Za-z_][A-Za-z0-9_ ]+)", re.IGNORECASE)
       </div>
 
       <div class="card">
+        <h3>Review in intent-space</h3>
+        <p>
+          Because the IR exists, a diff can be <em>semantic</em> rather than
+          textual: not "these lines changed" but "this intent's action went from
+          print to return", or "a slot that used to be resolved no longer is".
+          No text-based review tool can do that. Stack it with the locale layer
+          and a reviewer in São Paulo reviews, in Portuguese, a change authored
+          in Spanish, with identical Python underneath.
+        </p>
+        <p>
+          One constraint makes this sound rather than dangerous. Codegen is
+          LLM-primary, so the same document can emit different Python on
+          different runs — reviewing intent alone would approve something nobody
+          had seen. Review has to show <strong>intent as the lens and the
+          generated code as the ground truth</strong>, side by side. Every run
+          record already stores <code>document</code>,
+          <code>interpretation_lines</code> and <code>generated_python</code>
+          together, so the pinning costs nothing.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>Documentation that cannot drift</h3>
+        <p>
+          Docs rot because code and prose are two artifacts kept in step by
+          discipline. Here there is one artifact and the other is a projection —
+          and the Python panel is <code>readOnly</code>, so there is no path by
+          which someone edits the code and desynchronizes it. Drift is not
+          prevented, it is unrepresentable.
+        </p>
+        <p>
+          The trap is that this buys the <em>what</em>, which is the one kind of
+          documentation every style guide says to delete. The paragraph worth
+          reading is the <em>why</em>, and no field in the IR holds it yet. See
+          <a href="#why">capturing why</a>.
+        </p>
+      </div>
+
+      <div class="card">
         <h3>Parallel bilingual view</h3>
         <p>
           A split gutter showing the student's language alongside English. It
@@ -1419,6 +1463,187 @@ SUM_OF = re.compile(r"(?:the )?sum of ([A-Za-z_][A-Za-z0-9_ ]+)", re.IGNORECASE)
           Indonesia, Francophone Africa — is an institutional sale to
           universities and ministries, not a freemium extension listing. Same
           engineering, substantially larger contract.
+        </p>
+      </div>
+    </section>
+
+    <section id="why">
+      <p class="section-label">Extension</p>
+      <h2>Capturing why</h2>
+      <p>
+        Everything above gives the <em>what</em> for free — an intent lowers to
+        an IR, and the IR renders back to a sentence in any language. What it
+        cannot give is the reason: why this approach, what was ruled out, what
+        constraint forced it. That is the half of documentation worth reading,
+        and it is the half no renderer can synthesize, because it was never
+        written down.
+      </p>
+      <p>
+        The instinct is to add a rationale field and ask authors to fill it in.
+        That fails the same way comments fail — a blank box labelled "explain
+        your reasoning" gets skipped by everyone, forever. The capture has to be
+        cheaper than the skip.
+      </p>
+
+      <h3>Ask at decision points, never in general</h3>
+      <p>
+        The pipeline already knows the exact moments a choice was made, and can
+        already phrase the question specifically. Four hooks exist today:
+      </p>
+      <ul>
+        <li>
+          <strong>An assumption is recorded.</strong>
+          <code>ConstraintIR.assumptions</code> is literally the system saying
+          "I guessed" — the closest thing to captured reasoning already in the
+          product, currently spent as a diagnostic and thrown away.
+        </li>
+        <li>
+          <strong>An unresolved slot is filled.</strong> The author picked one
+          option over others the system had enumerated.
+        </li>
+        <li>
+          <strong>An intent is edited after a run.</strong> Something was learned
+          from the result, and the diff already exists to ask about.
+        </li>
+        <li>
+          <strong>A <code>suggested_fix</code> is dismissed.</strong> The author
+          overruled the system. This is the highest-value rationale in the whole
+          product and today it leaves no trace at all.
+        </li>
+      </ul>
+      <p>
+        In every case the prompt is one specific question, at the moment the
+        answer is already in the author's head, answerable in a sentence — "you
+        changed this from sorting by count to sorting by length; why?" Rationale
+        stays optional throughout. An intent without one is normal; the diff
+        simply has nothing to say about its why.
+      </p>
+      <p>
+        Note the interaction with modes: vibe mode bypasses governance and
+        records no assumptions, so three of the four hooks do not fire there.
+        Rationale capture is a property of the governed path, which is
+        consistent with what that path is for.
+      </p>
+
+      <h3>The prerequisite: intents need identity</h3>
+      <p>
+        Rationale attached to a line number is worse than no rationale. Insert a
+        line and every explanation below it silently describes the wrong intent —
+        confidently, and with no error to notice. Rationale has to hang on a
+        stable <code>intent_id</code> that survives editing and reordering.
+      </p>
+
+      <figure class="breakout">
+        <div class="figure-frame">
+          <svg viewBox="0 0 860 356" role="img" aria-label="Rationale anchored to a line number reattaches to the wrong intent when a line is inserted above it; rationale anchored to a stable intent id follows the intent it was written for.">
+            <defs>
+              <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+              </marker>
+            </defs>
+
+            <text x="20" y="24" class="svg-panel-tag">ANCHORED TO A LINE NUMBER</text>
+
+            <rect x="20" y="38" width="252" height="70" rx="7" class="svg-box" />
+            <text x="36" y="60" class="svg-mono">line 2</text>
+            <text x="36" y="78" class="svg-label">sort them by length</text>
+            <text x="36" y="96" class="svg-sub">why: length ranks better than count here</text>
+
+            <path d="M 272 73 L 556 73" class="flow" marker-end="url(#a3)" />
+            <text x="414" y="64" class="svg-edge" text-anchor="middle">a line is inserted above</text>
+
+            <rect x="564" y="38" width="276" height="70" rx="7" class="svg-box-warn" />
+            <text x="580" y="60" class="svg-mono">line 2</text>
+            <text x="580" y="78" class="svg-label">count the words</text>
+            <text x="580" y="96" class="svg-sub">why: length ranks better than count here</text>
+
+            <text x="564" y="128" class="svg-edge-warn">the rationale now explains an intent it was never written for</text>
+
+            <line x1="20" y1="164" x2="840" y2="164" stroke="var(--rule)" stroke-width="1" />
+
+            <text x="20" y="200" class="svg-panel-tag">ANCHORED TO AN INTENT ID</text>
+
+            <rect x="20" y="214" width="252" height="70" rx="7" class="svg-box" />
+            <text x="36" y="236" class="svg-mono">intent i7 · line 2</text>
+            <text x="36" y="254" class="svg-label">sort them by length</text>
+            <text x="36" y="272" class="svg-sub">why: length ranks better than count here</text>
+
+            <path d="M 272 249 L 556 249" class="flow" marker-end="url(#a3)" />
+            <text x="414" y="240" class="svg-edge" text-anchor="middle">a line is inserted above</text>
+
+            <rect x="564" y="214" width="276" height="70" rx="7" class="svg-box-accent" />
+            <text x="580" y="236" class="svg-mono">intent i7 · line 3</text>
+            <text x="580" y="254" class="svg-label">sort them by length</text>
+            <text x="580" y="272" class="svg-sub">why: length ranks better than count here</text>
+
+            <text x="564" y="304" class="svg-edge-good">the rationale moves with the intent it belongs to</text>
+          </svg>
+        </div>
+        <figcaption>
+          Identity is what makes a why-level diff possible at all: two versions of
+          an intent can only be compared once the system knows they are the same
+          intent. <code>intent_id</code> belongs in
+          <code>trace_ir_v2</code> alongside the canonicalization work, since that
+          is already a schema migration.
+        </figcaption>
+      </figure>
+
+      <h3>Diffing why instead of what</h3>
+      <p>
+        With identity and rationale in place, every changed intent falls into one
+        of four buckets, and a reviewer can filter to the ones that carry
+        meaning. A two-hundred-line rewrite with one changed reason should read
+        as one line of review.
+      </p>
+
+      <div class="table-wrap breakout">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">What changed</th>
+              <th scope="col">What it means</th>
+              <th scope="col">In review</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>raw_text</code> differs, IR identical</td>
+              <td>The author reworded. Nothing about the program changed.</td>
+              <td><span class="chip chip-accent">Hidden by default</span></td>
+            </tr>
+            <tr>
+              <td>IR differs, rationale unchanged</td>
+              <td>The approach changed; the goal did not.</td>
+              <td><span class="chip chip-good">How</span></td>
+            </tr>
+            <tr>
+              <td>Rationale differs</td>
+              <td>
+                The reasoning itself changed — the part a reviewer cannot infer
+                from the code.
+              </td>
+              <td><span class="chip chip-warn">Why · always surfaced</span></td>
+            </tr>
+            <tr>
+              <td><code>intent_id</code> added or removed</td>
+              <td>The scope of the program changed.</td>
+              <td><span class="chip chip-warn">Scope</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p class="section-label">Where drift gets back in</p>
+        <p>
+          Be honest about this one. Code cannot drift from intent here because
+          the code is generated and read-only. <strong>Rationale has no such
+          protection</strong> — nothing executes it, so nothing can prove it
+          still true. Bind each rationale to the version of the intent it was
+          written against, and when the intent changes underneath it, mark it
+          unreviewed rather than presenting it as current. That is a staleness
+          signal, not a guarantee, and it is the one place the drift argument
+          above does not hold.
         </p>
       </div>
     </section>
