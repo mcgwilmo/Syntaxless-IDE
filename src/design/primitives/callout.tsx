@@ -46,6 +46,8 @@ export function Callout({ tone = "neutral", title, children, className }: Callou
       role={tone === "blocked" ? "alert" : "status"}
       className={cn(
         "rounded-[var(--radius-lg)] border px-[var(--space-4)] py-[var(--space-3)]",
+        // Set into the page, not sitting on it -- a callout is read, not pressed.
+        "shadow-[var(--inlaid)]",
         "text-[length:var(--text-sm)] leading-[var(--leading-normal)]",
         styles.box,
         className

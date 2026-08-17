@@ -113,9 +113,68 @@
     inset 0 1px 1px rgba(28, 26, 23, 0.06),
     0 1px 0 var(--material-highlight);
 
+  /* Lifted: hover, before the press. The object rises slightly toward the
+     light, so its cast shadow grows and softens. Hover is the only state that
+     moves a thing UP; everything else moves it down or into the page. */
+  --lifted:
+    inset 0 1px 0 var(--material-highlight),
+    inset 0 -1px 0 var(--material-shade),
+    0 2px 3px rgba(28, 26, 23, 0.06),
+    0 6px 12px rgba(28, 26, 23, 0.1);
+
+  /* Floating: menus, popovers, toasts. Off the page entirely, so the contact
+     shadow disappears and only the cast shadow remains. */
+  --floating:
+    inset 0 1px 0 var(--material-highlight),
+    0 6px 12px rgba(28, 26, 23, 0.08),
+    0 18px 36px rgba(28, 26, 23, 0.14);
+
+  /* Modal: the top of the stack, over a scrim. Falls off over a long distance
+     because it is far from the page behind it. */
+  --modal:
+    inset 0 1px 0 var(--material-highlight),
+    0 10px 20px rgba(28, 26, 23, 0.1),
+    0 32px 64px rgba(28, 26, 23, 0.2);
+
+  /* Inlaid: set flush into the surface rather than cut into it. Badges,
+     chips, callouts -- things you read, not things you press or type into. A
+     hair of inset shading and a lit bottom edge, and nothing more. */
+  --inlaid:
+    inset 0 1px 1px rgba(28, 26, 23, 0.07),
+    0 1px 0 var(--material-highlight);
+
   /* How far a control travels when pressed. One pixel is enough to feel; more
      makes text jump and reads as a glitch rather than a press. */
   --press-travel: 1px;
+  /* And how far it rises on hover. Half a press: noticed, not announced. */
+  --lift-travel: 1px;
+
+  /* ---- Elevation ladder -------------------------------------------------
+   * Every surface in the app sits on exactly one of these rungs. The rung
+   * decides the shadow; nothing picks a shadow directly.
+   *
+   *   sunken    a well cut into the page          --recessed
+   *   page      the page itself                   (no shadow)
+   *   base      resting on the page               --raised
+   *   card      lifted off it                     --raised-lg
+   *   floating  detached: menus, popovers         --floating
+   *   modal     top of the stack, over a scrim    --modal
+   *
+   * If something needs a shadow that is not on this ladder, the answer is
+   * almost always that it belongs on a rung that already exists.
+   */
+
+  /* ---- Motion -----------------------------------------------------------
+   * Physical things overshoot slightly and settle. --ease-spring is that
+   * settle, and it is the default for anything that moves position or size.
+   * --ease-out stays for fades, which do not have momentum.
+   *
+   * Presses use --duration-press, which is faster than anything else in the
+   * system: a control that takes 200ms to acknowledge a click feels broken,
+   * however pretty the easing is.
+   */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --duration-press: 90ms;
 
   /* ---- Spacing (4px base) ---------------------------------------------- */
   /* Crowding reads as difficulty. When unsure, go one step up. */
@@ -235,6 +294,28 @@
     inset 0 2px 4px rgba(0, 0, 0, 0.45),
     inset 0 1px 1px rgba(0, 0, 0, 0.3),
     0 1px 0 var(--material-highlight);
+
+  --inlaid:
+    inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 1px 0 var(--material-highlight);
+
+  --lifted:
+    inset 0 1px 0 var(--material-highlight),
+    inset 0 -1px 0 var(--material-shade),
+    0 2px 3px rgba(0, 0, 0, 0.35),
+    0 6px 12px rgba(0, 0, 0, 0.45);
+
+  /* In low light a detached surface reads by its own lit top edge more than by
+     its shadow, so the highlight carries proportionally more of the work. */
+  --floating:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 6px 12px rgba(0, 0, 0, 0.45),
+    0 18px 36px rgba(0, 0, 0, 0.55);
+
+  --modal:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 20px rgba(0, 0, 0, 0.5),
+    0 32px 64px rgba(0, 0, 0, 0.65);
 }
 
 /*
