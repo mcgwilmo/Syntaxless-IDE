@@ -10,10 +10,9 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { BeamsBackground } from "@/components/beams-background";
 import { cn } from "@/lib/cn";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { ThemeToggleButton, useTheme } from "@/components/theme-provider";
+import { ThemeToggleButton } from "@/components/theme-provider";
 import { BRAND } from "@/config/brand";
 
 type SiteHeaderProps = {
@@ -84,6 +83,49 @@ function getWidthClass(maxWidth: "6xl" | "7xl") {
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/*
+ * The shared material for a control sitting on the nav bar.
+ *
+ * The bar is itself a raised surface, so these cannot read by fill alone -- what
+ * separates a button from the bar underneath it is the lit top edge, the strong
+ * border and the shadow it casts. Hover raises it toward the light, holding it
+ * pushes it in. Same physics as the Button primitive, which these deliberately
+ * mirror; they are not Buttons only because a 48px circle does not fit the
+ * primitive's padding scale.
+ */
+const BAR_CONTROL = cn(
+  "border border-[var(--border-strong)]",
+  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+  "text-[var(--text-muted)] shadow-[var(--raised)]",
+  "transition-[background-color,border-color,box-shadow,color,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+  "hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]",
+  "hover:shadow-[var(--lifted)] hover:-translate-y-[var(--lift-travel)]",
+  "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none"
+);
+
+/*
+ * A nav item is a control on that same bar, so an unselected one is exactly the
+ * bar material. A selected one is the same object already pushed in: it keeps
+ * the pressed shading and stays down, which is what makes "you are here" read as
+ * a state of the control rather than as a tint someone chose. It has nowhere
+ * left to travel, so it does not respond to hover.
+ */
+function navItemClasses(isActive: boolean) {
+  if (!isActive) return BAR_CONTROL;
+
+  return cn(
+    "border border-[var(--accent-border)] bg-[var(--accent-subtle)]",
+    "text-[var(--accent-text)]",
+    "shadow-[var(--pressed)] translate-y-[var(--press-travel)]",
+    "transition-[background-color,border-color,box-shadow,color,transform]",
+    "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+    "motion-reduce:transform-none"
+  );
 }
 
 export function TypingHeading({
@@ -157,19 +199,18 @@ export function TypingHeading({
     <>
       <Tag ref={ref} className={cn("font-bold", className)} style={style}>
         {visibleText}
+        {/* The caret is the one place a heading is allowed the accent, and it
+            gets the flat color with no glow: a halo around it would be a second
+            light source, and the material system only has the one. */}
         <span
           className={cn(
-            "ml-1 inline-block h-[0.88em] w-[2px] align-[-0.08em]",
+            "ml-1 inline-block h-[0.88em] w-[2px] align-[-0.08em] bg-[var(--accent-solid)]",
             !showCursor
               ? "opacity-0"
               : cursorBlink
               ? "animate-[typedCursorBlink_1s_steps(1)_infinite]"
               : "opacity-100"
           )}
-          style={{
-            backgroundColor: "rgba(115, 207, 255, 0.9)",
-            boxShadow: "0 0 10px rgba(82,183,255,0.28)",
-          }}
           aria-hidden="true"
         />
       </Tag>
@@ -203,7 +244,6 @@ export function SiteHeader({
   surfaceClassName,
 }: SiteHeaderProps) {
   const pathname = usePathname();
-  const { isLight } = useTheme();
   const [isHidden, setIsHidden] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -300,39 +340,47 @@ export function SiteHeader({
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 px-4 py-4 transition-all duration-300 md:px-6 md:py-5",
-        hideOnScroll && isHidden && !isMenuOpen && "-translate-y-[calc(100%+1.5rem)]",
+        "fixed inset-x-0 top-0 z-50 px-[var(--space-4)] py-[var(--space-4)]",
+        "transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+        "md:px-[var(--space-6)] md:py-[var(--space-5)]",
+        hideOnScroll &&
+          isHidden &&
+          !isMenuOpen &&
+          "-translate-y-[calc(100%+var(--space-6))]",
         className
       )}
     >
+      {/*
+       * The bar takes the card rung rather than the base one because the page
+       * scrolls underneath it -- it is lifted off the page, not resting on it.
+       *
+       * The old glass treatment (backdrop blur plus a 135deg gradient) is gone.
+       * The blur cost a full-width compositing pass on every scroll frame, and
+       * the diagonal gradient was a second light raking across from the left
+       * while every other edge in the app is lit from above. The sheen replaces
+       * both: one soft falloff, from the one light source.
+       */}
       <div
         className={cn(
-          "relative isolate mx-auto overflow-hidden px-4 py-3 backdrop-blur-2xl backdrop-saturate-150 transition-all duration-500 md:px-5",
-          isLight
-            ? "border border-white/70 bg-white/72 shadow-[0_18px_48px_rgba(15,23,42,0.1)]"
-            : "border border-white/8 bg-black/18 shadow-[0_20px_60px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "relative isolate mx-auto overflow-hidden",
+          "px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]",
+          "border border-[var(--border-subtle)]",
+          "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+          "shadow-[var(--raised-lg)]",
+          "transition-[border-radius] duration-[var(--duration-slow)] ease-[var(--ease-spring)]",
           getWidthClass(maxWidth),
-          isMenuOpen ? "rounded-[2rem]" : "rounded-full",
+          isMenuOpen ? "rounded-[var(--radius-xl)]" : "rounded-[var(--radius-full)]",
           surfaceClassName
         )}
       >
-        <div
-          aria-hidden="true"
-          className={cn(
-            "pointer-events-none absolute inset-0",
-            isLight
-              ? "bg-[linear-gradient(135deg,rgba(255,255,255,0.52),rgba(255,255,255,0.16)_42%,rgba(255,255,255,0.24)_100%)]"
-              : "bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(255,255,255,0.015)_42%,rgba(255,255,255,0.05)_100%)]"
-          )}
-        />
-
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="relative flex items-center justify-between gap-[var(--space-4)]">
+          <div className="flex min-w-0 items-center gap-[var(--space-3)]">
             <Link
               href="/home"
               className={cn(
-                "flex h-12 shrink-0 items-center gap-2 rounded-full border pl-3 pr-4",
-                isLight ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.03]"
+                "flex h-12 shrink-0 items-center gap-[var(--space-2)]",
+                "rounded-[var(--radius-full)] pl-[var(--space-3)] pr-[var(--space-4)]",
+                BAR_CONTROL
               )}
               aria-label="Go to home"
             >
@@ -349,20 +397,23 @@ export function SiteHeader({
               <span
                 className={cn(
                   "text-lg font-semibold leading-none tracking-[-0.03em] md:text-[1.2rem]",
-                  isLight ? "text-slate-800" : "text-neutral-100"
+                  "text-[var(--text-primary)]"
                 )}
               >
                 {BRAND.name.toLowerCase()}
               </span>
             </Link>
 
+            {/* The tier is a label, not a control -- inlaid, so it reads as set
+                into the bar rather than as another thing to press. */}
             {tierLabel ? (
               <div
                 className={cn(
-                  "truncate rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-blue-300",
-                  isLight
-                    ? "border-blue-200 bg-blue-50 text-blue-600"
-                    : "border-blue-400/20 bg-blue-500/10"
+                  "truncate rounded-[var(--radius-full)] border",
+                  "border-[var(--accent-border)] bg-[var(--accent-subtle)]",
+                  "px-[var(--space-4)] py-[var(--space-2)] shadow-[var(--inlaid)]",
+                  "text-[length:var(--text-xs)] uppercase",
+                  "tracking-[var(--tracking-label)] text-[var(--accent-text)]"
                 )}
               >
                 {tierLabel}
@@ -370,7 +421,7 @@ export function SiteHeader({
             ) : null}
           </div>
 
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-[var(--space-2)]">
             <ThemeToggleButton />
 
             {showSignOut ? (
@@ -381,10 +432,20 @@ export function SiteHeader({
                 aria-label="Sign out"
                 title="Sign out"
                 className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50",
-                  isLight
-                    ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                    : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                  "flex h-12 w-12 items-center justify-center rounded-[var(--radius-full)]",
+                  BAR_CONTROL,
+                  // Disabled means "not a thing you can press", so the depth
+                  // goes with the color rather than the color going alone --
+                  // and the pointer response goes with both. A disabled button
+                  // still matches :hover in CSS, so every hover rule BAR_CONTROL
+                  // sets has to be cancelled here, not just the travel;
+                  // otherwise the one control that cannot be pressed is also
+                  // the one that lifts toward the light when you point at it.
+                  "disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none",
+                  "disabled:hover:bg-[var(--surface-raised)]",
+                  "disabled:hover:text-[var(--text-muted)]",
+                  "disabled:hover:shadow-none disabled:active:shadow-none",
+                  "disabled:hover:translate-y-0 disabled:active:translate-y-0"
                 )}
               >
                 <svg
@@ -406,14 +467,14 @@ export function SiteHeader({
 
             <div
               className={cn(
-                "hidden min-w-0 items-center overflow-hidden transition-[max-width,opacity,transform,margin] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:flex",
+                "hidden min-w-0 items-center overflow-hidden transition-[max-width,opacity,transform,margin] duration-[var(--duration-slow)] ease-[var(--ease-out)] md:flex",
                 isMenuOpen
-                  ? "mr-1 max-w-[46rem] translate-x-0 opacity-100"
+                  ? "mr-[var(--space-1)] max-w-[46rem] translate-x-0 opacity-100"
                   : "pointer-events-none mr-0 max-w-0 translate-x-4 opacity-0"
               )}
               aria-hidden={!isMenuOpen}
             >
-              <nav className="flex items-center justify-end gap-2 pr-1">
+              <nav className="flex items-center justify-end gap-[var(--space-2)] pr-[var(--space-1)]">
                 {navItems.map((item) => {
                   const isActive = isActivePath(pathname, item.href);
 
@@ -423,15 +484,17 @@ export function SiteHeader({
                       href={getNavigationHref(item.href)}
                       onClick={closeMenu}
                       tabIndex={isMenuOpen ? 0 : -1}
+                      aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "whitespace-nowrap rounded-full border px-4 py-2 text-sm tracking-[0.08em] transition-all duration-300",
-                        isActive
-                          ? isLight
-                            ? "border-blue-200 bg-blue-50 text-slate-900 shadow-[0_10px_28px_rgba(59,130,246,0.08)]"
-                            : "border-blue-300/30 bg-blue-400/12 text-white shadow-[0_0_24px_rgba(115,207,255,0.14)]"
-                          : isLight
-                          ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                          : "border-white/8 bg-white/[0.03] text-neutral-300 hover:border-white/16 hover:bg-white/[0.06] hover:text-white"
+                        // inline-block, not left to the parent: an inline <a>
+                        // ignores transform, so the press travel would silently
+                        // stop working if this nav ever stopped being a flex
+                        // container. Blockified either way today, so this costs
+                        // nothing and removes the dependency.
+                        "inline-block whitespace-nowrap rounded-[var(--radius-full)]",
+                        "px-[var(--space-4)] py-[var(--space-2)]",
+                        "text-[length:var(--text-sm)] tracking-[0.08em]",
+                        navItemClasses(isActive)
                       )}
                     >
                       {item.label}
@@ -447,23 +510,21 @@ export function SiteHeader({
               aria-expanded={isMenuOpen}
               onClick={toggleMenu}
               className={cn(
-                "group flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-300",
-                isLight
-                  ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                  : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                "group flex h-12 w-12 items-center justify-center rounded-[var(--radius-full)]",
+                BAR_CONTROL
               )}
             >
               <span className="relative h-5 w-5">
                 <span
                   className={cn(
-                    "absolute left-0 top-0.5 h-[1.5px] w-5 origin-center rounded-full bg-current transition-all duration-300",
+                    "absolute left-0 top-0.5 h-[1.5px] w-5 origin-center rounded-full bg-current transition-all duration-[var(--duration-slow)] ease-[var(--ease-spring)]",
                     isMenuOpen && "top-2.5 scale-x-0 opacity-0"
                   )}
                 />
-                <span className="absolute left-0 top-2.5 h-[1.5px] w-5 origin-center rounded-full bg-current transition-all duration-300" />
+                <span className="absolute left-0 top-2.5 h-[1.5px] w-5 origin-center rounded-full bg-current transition-all duration-[var(--duration-slow)] ease-[var(--ease-spring)]" />
                 <span
                   className={cn(
-                    "absolute left-0 top-[1.125rem] h-[1.5px] w-5 origin-center rounded-full bg-current transition-all duration-300",
+                    "absolute left-0 top-[1.125rem] h-[1.5px] w-5 origin-center rounded-full bg-current transition-all duration-[var(--duration-slow)] ease-[var(--ease-spring)]",
                     isMenuOpen && "top-2.5 scale-x-0 opacity-0"
                   )}
                 />
@@ -474,19 +535,16 @@ export function SiteHeader({
 
         <div
           className={cn(
-            "grid transition-[grid-template-rows,opacity,margin] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:hidden",
-            isMenuOpen ? "mt-4 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            "grid transition-[grid-template-rows,opacity,margin] duration-[var(--duration-slow)] ease-[var(--ease-out)] md:hidden",
+            isMenuOpen
+              ? "mt-[var(--space-4)] grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
           )}
           aria-hidden={!isMenuOpen}
         >
           <div className="overflow-hidden">
-            <div
-              className={cn(
-                "pt-4",
-                isLight ? "border-t border-slate-200/90" : "border-t border-white/[0.08]"
-              )}
-            >
-              <nav className="flex flex-col gap-2">
+            <div className="border-t border-[var(--border-subtle)] pt-[var(--space-4)]">
+              <nav className="flex flex-col gap-[var(--space-2)]">
                 {navItems.map((item) => {
                   const isActive = isActivePath(pathname, item.href);
 
@@ -496,15 +554,14 @@ export function SiteHeader({
                       href={getNavigationHref(item.href)}
                       onClick={closeMenu}
                       tabIndex={isMenuOpen ? 0 : -1}
+                      aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "rounded-2xl border px-4 py-3 text-sm tracking-[0.08em] transition-all duration-300",
-                        isActive
-                          ? isLight
-                            ? "border-blue-200 bg-blue-50 text-slate-900 shadow-[0_10px_28px_rgba(59,130,246,0.08)]"
-                            : "border-blue-300/30 bg-blue-400/12 text-white shadow-[0_0_24px_rgba(115,207,255,0.14)]"
-                          : isLight
-                          ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                          : "border-white/8 bg-white/[0.03] text-neutral-300 hover:border-white/16 hover:bg-white/[0.06] hover:text-white"
+                        // See the desktop nav: block so the transform applies
+                        // without depending on the parent's display.
+                        "block rounded-[var(--radius-lg)]",
+                        "px-[var(--space-4)] py-[var(--space-3)]",
+                        "text-[length:var(--text-sm)] tracking-[0.08em]",
+                        navItemClasses(isActive)
                       )}
                     >
                       {item.label}
@@ -538,28 +595,55 @@ export function PageFrame({
   );
 }
 
-export function AppPageBackground() {
-  const { isLight } = useTheme();
+/*
+ * The ground everything else sits on.
+ *
+ * Static by design. The material system is lit by exactly ONE light source,
+ * above and slightly forward -- every raised edge, every cast shadow, every
+ * recess in the app refers to it. An animated background is a second, moving
+ * light, and the moment there are two the page stops reading as physical and
+ * starts reading as decorated.
+ *
+ * So the page gets what a real surface under that light gets: one soft pool at
+ * the top, falling off downward, and nothing else. Same idea as the body
+ * falloff in globals.css, wider because this covers the whole viewport. Both
+ * stops are opaque colors mixed from --surface-page, so it inherits the theme
+ * with no JS and no per-theme branch.
+ */
+const PAGE_BACKDROP_IMAGE = [
+  "radial-gradient(140% 90% at 50% 0%,",
+  "color-mix(in srgb, var(--surface-page) 96%, white),",
+  "var(--surface-page) 62%)",
+].join(" ");
 
+function PageBackdrop({ className }: { className?: string }) {
   return (
-    <BeamsBackground
-      className="fixed inset-0"
-      intensity={isLight ? "medium" : "strong"}
-      theme={isLight ? "light" : "dark"}
+    <div
+      aria-hidden="true"
+      className={cn("pointer-events-none bg-[var(--surface-page)]", className)}
+      style={{ backgroundImage: PAGE_BACKDROP_IMAGE }}
     />
   );
 }
 
-export function SurfaceCard({ children, className }: SurfaceCardProps) {
-  const { isLight } = useTheme();
+export function AppPageBackground() {
+  return <PageBackdrop className="fixed inset-0" />;
+}
 
+/*
+ * The marketing equivalent of the Panel primitive: same card rung, same
+ * material. It is not Panel itself only because Panel bakes in its padding, and
+ * every caller here sets its own -- cn joins classes rather than merging them,
+ * so a built-in p-8 would fight whatever the caller passed instead of losing to
+ * it.
+ */
+export function SurfaceCard({ children, className }: SurfaceCardProps) {
   return (
     <section
       className={cn(
-        "rounded-[2rem] border",
-        isLight
-          ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] shadow-[0_20px_48px_rgba(15,23,42,0.08)]"
-          : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.022),rgba(255,255,255,0.008))] shadow-[0_0_0_1px_rgba(255,255,255,0.01)]",
+        "rounded-[var(--radius-xl)] border border-[var(--border-subtle)]",
+        "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+        "shadow-[var(--raised-lg)]",
         className
       )}
     >
@@ -577,57 +661,52 @@ export function PageHero({
   className,
   descriptionClassName,
 }: PageHeroProps) {
-  const { isLight } = useTheme();
-
   return (
     <SurfaceCard
       className={cn(
-        "overflow-hidden p-5 backdrop-blur-xl md:p-6",
-        isLight ? "bg-white/72" : "bg-black/35",
+        "overflow-hidden p-[var(--space-5)] md:p-[var(--space-6)]",
         className
       )}
     >
       <div className="max-w-4xl">
+        {/* Muted rather than soft: the card is a raised surface, and in the dark
+            theme --text-soft only clears AA against the page behind it. */}
         <div
           className={cn(
-            "mb-4 text-[11px] uppercase tracking-[0.28em]",
-            isLight ? "text-slate-500" : "text-neutral-500"
+            "mb-[var(--space-4)] text-[length:var(--text-xs)] uppercase",
+            "tracking-[var(--tracking-label)] text-[var(--text-muted)]"
           )}
         >
           {eyebrow}
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-[var(--space-3)]">
           <TypingHeading
             text={title}
             as="h1"
-            className={cn(
-              "text-4xl md:text-5xl",
-              isLight ? "text-slate-900" : "text-white"
-            )}
+            className="text-4xl text-[var(--text-primary)] md:text-5xl"
           />
           {badges}
         </div>
 
         <p
           className={cn(
-            "mt-4 max-w-4xl text-sm leading-7 md:text-base",
-            isLight ? "text-slate-600" : "text-neutral-400",
+            "mt-[var(--space-4)] max-w-4xl text-[length:var(--text-sm)]",
+            "leading-[var(--leading-relaxed)] text-[var(--text-muted)]",
+            "md:text-[length:var(--text-base)]",
             descriptionClassName
           )}
         >
           {description}
         </p>
 
-        {footer ? <div className="mt-3">{footer}</div> : null}
+        {footer ? <div className="mt-[var(--space-3)]">{footer}</div> : null}
       </div>
     </SurfaceCard>
   );
 }
 
 export function AuthPageShell({ children }: { children: ReactNode }) {
-  const { isLight } = useTheme();
-
   return (
     <main
       className={cn(
@@ -635,11 +714,7 @@ export function AuthPageShell({ children }: { children: ReactNode }) {
         "bg-[var(--surface-page)] text-[var(--text-primary)]"
       )}
     >
-      <BeamsBackground
-        className="absolute inset-0"
-        intensity={isLight ? "medium" : "strong"}
-        theme={isLight ? "light" : "dark"}
-      />
+      <PageBackdrop className="absolute inset-0" />
 
       {children}
     </main>
@@ -655,17 +730,16 @@ export function AuthPanel({
 }: AuthPanelProps) {
   return (
     <SurfaceCard
-      className={cn(
-        "relative w-full max-w-md p-[var(--space-8)] backdrop-blur-xl",
-        "bg-[var(--surface-raised)] shadow-[var(--shadow-lg)]",
-        className
-      )}
+      className={cn("relative w-full max-w-md p-[var(--space-8)]", className)}
     >
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-[var(--space-5)] flex items-center gap-[var(--space-3)]">
+        {/* The mark sits in a shallow inlay, not a well -- nothing is typed or
+            scrolled into it, it is just set flush into the panel. */}
         <div
           className={cn(
-            "relative h-11 w-11 overflow-hidden rounded-full border",
-            "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
+            "relative h-11 w-11 overflow-hidden rounded-[var(--radius-full)] border",
+            "border-[var(--border-subtle)] bg-[var(--surface-sunken)]",
+            "shadow-[var(--inlaid)]"
           )}
         >
           <Image
@@ -680,7 +754,9 @@ export function AuthPanel({
         <div
           className={cn(
             "text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)]",
-            "text-[var(--text-soft)]"
+            // Not --text-soft: this label sits on a raised panel, where soft
+            // falls under AA in the dark theme.
+            "text-[var(--text-muted)]"
           )}
         >
           {BRAND.displayName}

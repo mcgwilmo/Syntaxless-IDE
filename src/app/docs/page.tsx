@@ -9,7 +9,8 @@ import {
   TypingHeading,
 } from "@/components/site-shell";
 import { SiteFooter } from "@/components/site-footer";
-import { useTheme } from "@/components/theme-provider";
+import { Badge, Card } from "@/design/primitives";
+import { cn } from "@/lib/cn";
 import {
   getSupabaseBrowserClient,
   getSupabaseSession,
@@ -396,27 +397,43 @@ function ReleaseNotesBackground() {
   return <AppPageBackground />;
 }
 
-function PlusMinusIcon({
-  open,
-  isLight,
-}: {
-  open: boolean;
-  isLight: boolean;
-}) {
+/*
+ * The disclosure affordance for a changelog entry.
+ *
+ * The whole header row is the button, but travelling the row on press would
+ * make a 24px heading jump, which reads as a glitch rather than a click. So the
+ * material lives on the one element that already looks like a control, and it
+ * moves off the row's hover/active via `group-`.
+ */
+function PlusMinusIcon({ open }: { open: boolean }) {
   return (
     <span
-      className={`relative flex h-10 w-10 items-center justify-center rounded-full border transition-colors duration-300 ${
-        isLight
-          ? "border-slate-200 bg-white text-slate-500"
-          : "border-white/10 bg-white/[0.03] text-neutral-300"
-      }`}
+      className={cn(
+        "relative flex h-10 w-10 items-center justify-center",
+        "rounded-[var(--radius-full)] border border-[var(--border-subtle)]",
+        "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+        "text-[var(--text-muted)] shadow-[var(--raised)]",
+        "transition-[box-shadow,transform,color]",
+        "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+        "group-hover:-translate-y-[var(--lift-travel)] group-hover:shadow-[var(--lifted)]",
+        "group-hover:text-[var(--text-primary)]",
+        "group-active:translate-y-[var(--press-travel)] group-active:shadow-[var(--pressed)]"
+        // Depth still reads with motion off; only the travel is dropped. That
+        // is handled by --lift-travel/--press-travel going to 0px under
+        // prefers-reduced-motion, NOT by a motion-reduce:transform-none class:
+        // Tailwind v4 compiles translate-y-* to the `translate` property, which
+        // `transform: none` does not touch.
+      )}
       aria-hidden="true"
     >
-      <span className="absolute h-[1.5px] w-4 rounded-full bg-current" />
+      <span className="absolute h-[1.5px] w-4 rounded-[var(--radius-full)] bg-current" />
       <span
-        className={`absolute h-4 w-[1.5px] rounded-full bg-current transition-all duration-200 ${
+        className={cn(
+          "absolute h-4 w-[1.5px] rounded-[var(--radius-full)] bg-current",
+          "transition-[transform,opacity]",
+          "duration-[var(--duration-base)] ease-[var(--ease-spring)]",
           open ? "scale-y-0 opacity-0" : "scale-y-100 opacity-100"
-        }`}
+        )}
       />
     </span>
   );
@@ -426,120 +443,104 @@ function ChangelogEntry({
   entry,
   open,
   onToggle,
-  delay = 0,
 }: {
   entry: VersionEntry;
   open: boolean;
   onToggle: () => void;
-  delay?: number;
 }) {
-  const { isLight } = useTheme();
+  const slug = entry.version.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const panelId = `changelog-panel-${slug}`;
+  const buttonId = `changelog-trigger-${slug}`;
 
   return (
-    <section
-      className={`page-enter-soft overflow-hidden border-b last:border-b-0 ${
-        isLight
-          ? "border-slate-200/90"
-          : "border-white/[0.08]"
-      }`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
+    <section className="overflow-hidden border-b border-[var(--border-subtle)] last:border-b-0">
       <button
+        type="button"
+        id={buttonId}
         onClick={onToggle}
-        className={`flex w-full items-start justify-between gap-5 py-6 text-left transition-colors duration-200 md:gap-6 md:py-7 ${
-          isLight ? "hover:bg-slate-50/50" : "hover:bg-white/[0.02]"
-        }`}
+        className={cn(
+          "group flex w-full items-start justify-between gap-[var(--space-5)] text-left",
+          "py-[var(--space-6)] md:gap-[var(--space-6)] md:py-[var(--space-8)]",
+          "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          // The row itself sinks toward the panel rather than lifting off it;
+          // the lift belongs to PlusMinusIcon.
+          "hover:bg-[var(--surface-sunken)]"
+        )}
         aria-expanded={open}
+        aria-controls={panelId}
       >
         <div className="min-w-0 flex-1">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-blue-300">
+          <div className="mb-[var(--space-3)] flex flex-wrap items-center gap-[var(--space-2)]">
+            <Badge tone="accent" className="uppercase tracking-[var(--tracking-label)]">
               {entry.version}
-            </span>
-            <span
-              className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-500"
-                  : "border-white/10 bg-white/[0.04] text-neutral-400"
-              }`}
-            >
+            </Badge>
+            <Badge tone="neutral" className="uppercase tracking-[var(--tracking-label)]">
               {entry.badge}
-            </span>
+            </Badge>
           </div>
 
-          <h2
-            className={
-              isLight
-                ? "text-[1.55rem] font-bold leading-tight tracking-[-0.035em] text-slate-900 md:text-[1.75rem]"
-                : "text-[1.55rem] font-bold leading-tight tracking-[-0.035em] text-white md:text-[1.75rem]"
-            }
-          >
+          <h2 className="text-[length:var(--text-2xl)] font-bold leading-[var(--leading-tight)] tracking-[-0.035em] text-[var(--text-primary)] md:text-[length:var(--text-3xl)]">
             {entry.version}
           </h2>
 
-          <p
-            className={`mt-2 max-w-3xl text-sm leading-7 md:text-[0.95rem] ${
-              isLight ? "text-slate-600" : "text-neutral-400"
-            }`}
-          >
+          <p className="mt-[var(--space-2)] max-w-3xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)] md:text-[length:var(--text-base)]">
             {entry.summary}
           </p>
         </div>
 
-        <PlusMinusIcon open={open} isLight={isLight} />
+        <PlusMinusIcon open={open} />
       </button>
 
+      {/*
+       * The collapsed panel stays in the DOM so the row can animate open, so
+       * aria-hidden has to do what the clipping does visually. Without it
+       * aria-expanded={false} is a lie: a screen reader would read every
+       * collapsed release in full.
+       */}
       <div
-        className={`grid transition-all duration-300 ${
+        id={panelId}
+        role="region"
+        aria-labelledby={buttonId}
+        aria-hidden={!open}
+        className={cn(
+          "grid transition-all duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+          "motion-reduce:transition-none",
           open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
+        )}
       >
         <div className="overflow-hidden">
-          <div
-            className={`pb-6 pr-2 md:pb-7 ${
-              isLight ? "border-t border-slate-200/90" : "border-t border-white/[0.08]"
-            }`}
-          >
-            <div className="grid gap-4 pt-6 md:grid-cols-2 md:gap-5 md:pt-7">
+          <div className="border-t border-[var(--border-subtle)] pb-[var(--space-6)] pr-[var(--space-2)] md:pb-[var(--space-8)]">
+            <div className="grid gap-[var(--space-4)] pt-[var(--space-6)] md:grid-cols-2 md:gap-[var(--space-5)] md:pt-[var(--space-8)]">
               {entry.sections.map((section) => (
-                <section
-                  key={section.title}
-                  className={`rounded-[1.65rem] border p-5 md:p-6 ${
-                    isLight
-                      ? "border-sky-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,249,255,0.96)_44%,rgba(248,250,252,0.94))] shadow-[0_14px_34px_rgba(14,165,233,0.08)]"
-                      : "border-cyan-400/10 bg-[linear-gradient(180deg,rgba(18,31,48,0.52),rgba(10,24,36,0.42)_44%,rgba(255,255,255,0.018))] shadow-[0_18px_40px_rgba(5,20,40,0.22)]"
-                  }`}
-                >
-                  <h3
-                    className={`mb-4 text-[11px] font-bold uppercase tracking-[0.24em] ${
-                      isLight ? "text-slate-500" : "text-neutral-500"
-                    }`}
-                  >
+                // A Card, not a Panel: these are grouped content resting on the
+                // changelog panel, not a second panel floating above it.
+                <Card key={section.title} className="md:p-[var(--space-6)]">
+                  <h3 className="mb-[var(--space-4)] text-[length:var(--text-xs)] font-bold uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                     {section.title}
                   </h3>
 
-                  <div className="space-y-3">
+                  <div className="space-y-[var(--space-3)]">
                     {section.items.map((item) => (
+                      // Inlaid: each note is set into the card it sits in. It is
+                      // read, never pressed, so it must not look raised.
                       <div
                         key={item.title}
-                        className={`rounded-2xl border px-4 py-3 ${
-                          isLight
-                            ? "border-sky-100 bg-[linear-gradient(180deg,rgba(239,246,255,0.86),rgba(255,255,255,0.92))]"
-                            : "border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(6,182,212,0.035))]"
-                        }`}
+                        className={cn(
+                          "rounded-[var(--radius-lg)] border border-[var(--border-subtle)]",
+                          "bg-[var(--surface-sunken)] shadow-[var(--inlaid)]",
+                          "px-[var(--space-4)] py-[var(--space-3)]"
+                        )}
                       >
-                        <p className={`text-sm leading-7 ${isLight ? "text-slate-700" : "text-neutral-200"}`}>
-                          <span className={`font-medium ${isLight ? "text-slate-900" : "text-white"}`}>
+                        <p className="text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
+                          <span className="font-medium text-[var(--text-primary)]">
                             {item.title}
                           </span>{" "}
-                          <span className={isLight ? "text-slate-600" : "text-neutral-400"}>
-                            {item.description}
-                          </span>
+                          <span>{item.description}</span>
                         </p>
                       </div>
                     ))}
                   </div>
-                </section>
+                </Card>
               ))}
             </div>
           </div>
@@ -552,7 +553,6 @@ function ChangelogEntry({
 export default function DocsPage() {
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const { isLight } = useTheme();
   const [isAuthed, setIsAuthed] = useState(false);
   const [currentTier, setCurrentTier] = useState<SubscriptionTier>("free");
   const [openVersion, setOpenVersion] = useState("");
@@ -587,11 +587,7 @@ export default function DocsPage() {
   }, [router, supabase]);
 
   return (
-    <main
-      className={`relative min-h-screen overflow-hidden ${
-        isLight ? "bg-[#f4f7fb] text-slate-900" : "bg-[#0f0f10] text-white"
-      }`}
-    >
+    <main className="relative min-h-screen overflow-hidden bg-[var(--surface-page)] text-[var(--text-primary)]">
       <ReleaseNotesBackground />
 
       <SiteHeader
@@ -600,70 +596,51 @@ export default function DocsPage() {
         authLabel={isAuthed ? "Dashboard" : "Login"}
         learningCenterHref={isAuthed ? "/resources" : "/login"}
         showSignOut={isAuthed}
-        className="page-enter-soft"
       />
 
-      <PageFrame className="space-y-10 md:space-y-12">
-        <section className="page-enter">
+      <PageFrame className="space-y-[var(--space-10)] md:space-y-[var(--space-12)]">
+        <section>
           <div className="mx-auto max-w-4xl text-center">
             <TypingHeading
               text="Release Notes"
               as="h1"
-              className={`mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] ${
-                isLight ? "text-slate-950" : "text-white"
-              }`}
+              className="mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]"
             />
 
-            <p
-              className={`mx-auto mt-4 max-w-2xl text-[0.88rem] leading-6 md:text-[0.95rem] md:leading-7 ${
-                isLight ? "text-slate-600" : "text-neutral-400"
-              }`}
-            >
+            <p className="mx-auto mt-[var(--space-4)] max-w-2xl text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--text-muted)] md:text-[length:var(--text-base)] md:leading-[var(--leading-relaxed)]">
               Track the latest updates, new features, and bug fixes as T.R.A.C.E.
               evolves through pre-alpha, with the newest release at the top.
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-              <div className="rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-blue-300">
+            <div className="mt-[var(--space-5)] flex flex-wrap items-center justify-center gap-[var(--space-3)]">
+              <Badge tone="accent" className="uppercase tracking-[var(--tracking-label)]">
                 {VERSION_HISTORY[0]?.version}
-              </div>
-              <div
-                className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.2em] ${
-                  isLight
-                    ? "border-slate-200 bg-white/90 text-slate-500"
-                    : "border-white/10 bg-white/[0.04] text-neutral-400"
-                }`}
-              >
+              </Badge>
+              <Badge tone="neutral" className="uppercase tracking-[var(--tracking-label)]">
                 Current Release
-              </div>
+              </Badge>
             </div>
           </div>
         </section>
 
+        {/* The changelog is one object lifted off the page -- the panel rung --
+            with every entry sharing its surface, rather than a stack of
+            separately floating cards.
+
+            The two blurred sky/blue glows that used to sit inside this panel
+            are gone rather than re-tinted. tokens.css reserves the accent for
+            interactive emphasis and says explicitly it is never for
+            decoration, and the panel's depth is the --raised-lg shadow's job,
+            not a coloured haze behind it. */}
         <section
-          className={`relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] border px-6 md:px-8 ${
-            isLight
-              ? "border-sky-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(240,249,255,0.88)_36%,rgba(248,250,252,0.92))] shadow-[0_24px_56px_rgba(14,165,233,0.1)]"
-              : "border-cyan-400/10 bg-[linear-gradient(180deg,rgba(12,18,28,0.72),rgba(10,22,32,0.66)_34%,rgba(255,255,255,0.012))] shadow-[0_0_0_1px_rgba(255,255,255,0.01),0_26px_60px_rgba(0,0,0,0.28)]"
-          }`}
+          className={cn(
+            "relative mx-auto max-w-5xl overflow-hidden",
+            "rounded-[var(--radius-xl)] border border-[var(--border-subtle)]",
+            "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+            "px-[var(--space-6)] shadow-[var(--raised-lg)] md:px-[var(--space-8)]"
+          )}
         >
-          <div
-            aria-hidden="true"
-            className={`pointer-events-none absolute inset-x-[18%] top-16 h-32 rounded-full blur-3xl ${
-              isLight
-                ? "bg-[radial-gradient(circle,rgba(56,189,248,0.16),transparent_68%)]"
-                : "bg-[radial-gradient(circle,rgba(34,211,238,0.12),transparent_68%)]"
-            }`}
-          />
-          <div
-            aria-hidden="true"
-            className={`pointer-events-none absolute bottom-10 right-[-8%] h-44 w-44 rounded-full blur-3xl ${
-              isLight
-                ? "bg-[radial-gradient(circle,rgba(59,130,246,0.12),transparent_70%)]"
-                : "bg-[radial-gradient(circle,rgba(59,130,246,0.09),transparent_70%)]"
-            }`}
-          />
-          {VERSION_HISTORY.map((entry, index) => (
+          {VERSION_HISTORY.map((entry) => (
             <ChangelogEntry
               key={entry.version}
               entry={entry}
@@ -673,7 +650,6 @@ export default function DocsPage() {
                   current === entry.version ? "" : entry.version
                 )
               }
-              delay={120 + index * 70}
             />
           ))}
         </section>

@@ -124,47 +124,18 @@ body {
   scrollbar-width: none;
 }
 
-@keyframes pageReveal {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-enter,
-.page-enter-soft,
-.subscription-card-in,
-[data-scroll-reveal] {
-  opacity: 0;
-  transform: translateY(20px);
-  will-change: transform, opacity;
-}
-
-.page-enter[data-reveal-state="visible"],
-.page-enter-soft[data-reveal-state="visible"],
-.subscription-card-in[data-reveal-state="visible"],
-[data-scroll-reveal][data-reveal-state="visible"] {
-  animation: pageReveal var(--duration-slow) var(--ease-out) both;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .page-enter,
-  .page-enter-soft,
-  .subscription-card-in,
-  [data-scroll-reveal] {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-
   /* The press travel is motion too. Depth and shading stay -- those are how a
-     control says what it is -- but nothing moves. */
+     control says what it is -- but nothing moves.
+
+     Both travels have to be zeroed here, not just the press. The Tailwind v4
+     `translate-y-*` utilities compile to the `translate` property, so the
+     `motion-reduce:transform-none` written alongside them does NOT cancel them
+     -- `transform: none` and `translate: 0 1px` are different properties. The
+     token is the only thing that actually stops the movement. */
   :root {
     --press-travel: 0px;
+    --lift-travel: 0px;
   }
 }
 

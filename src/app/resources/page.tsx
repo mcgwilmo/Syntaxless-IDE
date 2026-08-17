@@ -7,8 +7,6 @@ import {
   TypingHeading,
 } from "@/components/site-shell";
 import { SiteFooter } from "@/components/site-footer";
-import { useTheme } from "@/components/theme-provider";
-import { cn } from "@/lib/cn";
 import { SUBSCRIPTION_META } from "@/lib/subscriptions";
 import { LEARNING_CENTER_TAB_ROUTES } from "./resource-routes";
 import RadialOrbitalTimeline from "./radial-orbital-timeline";
@@ -78,17 +76,13 @@ function SparkIcon({ className }: { className?: string }) {
 }
 
 export default function ResourcesPage() {
-  const { isLight } = useTheme();
   const { authResolved, currentTier, isAuthed } = useLearningCenterAccess();
 
   if (!authResolved || !isAuthed) {
+    // Bare page ground while access resolves: no card, no panel, nothing that
+    // would flash an object into place and then swap it for the timeline.
     return (
-      <main
-        className={cn(
-          "relative min-h-screen overflow-hidden",
-          isLight ? "bg-[#f4f7fb] text-slate-900" : "bg-[#0f0f10] text-white"
-        )}
-      >
+      <main className="relative min-h-screen overflow-hidden bg-[var(--surface-page)] text-[var(--text-primary)]">
         <AppPageBackground />
       </main>
     );
@@ -167,12 +161,7 @@ export default function ResourcesPage() {
   ];
 
   return (
-    <main
-      className={cn(
-        "relative min-h-screen overflow-hidden",
-        isLight ? "bg-[#f4f7fb] text-slate-900" : "bg-[#0f0f10] text-white"
-      )}
-    >
+    <main className="relative min-h-screen overflow-hidden bg-[var(--surface-page)] text-[var(--text-primary)]">
       <AppPageBackground />
 
       <SiteHeader
@@ -181,32 +170,29 @@ export default function ResourcesPage() {
         authLabel="Dashboard"
         learningCenterHref="/resources"
         showSignOut
-        className="page-enter-soft"
       />
 
-      <PageFrame className="page-enter transition-all duration-700 ease-out">
-        <section className="page-enter mb-10">
+      <PageFrame>
+        <section className="mb-[var(--space-10)]">
           <div className="mx-auto max-w-4xl text-center">
             <TypingHeading
               text="Learning Center"
               as="h1"
-              className={`mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] ${
-                isLight ? "text-slate-950" : "text-white"
-              }`}
+              className="mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]"
             />
 
-            <p
-              className={`mx-auto mt-4 max-w-2xl text-[0.88rem] leading-6 md:text-[0.95rem] md:leading-7 ${
-                isLight ? "text-slate-600" : "text-neutral-400"
-              }`}
-            >
+            <p className="mx-auto mt-[var(--space-4)] max-w-2xl text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--text-muted)] md:text-[length:var(--text-base)] md:leading-[var(--leading-relaxed)]">
               Foundations first, deeper structures next, and more {BRAND.name}
               lessons on deck.
             </p>
           </div>
         </section>
 
-        <section className="page-enter-soft" style={{ animationDelay: "140ms" }}>
+        <section>
+          {/* The orbit needs the full viewport width to stay circular, so it
+              cancels PageFrame's gutters exactly -- these numbers mirror its
+              px-4 md:px-6 and have to move with it. The timeline sits on the
+              page itself, with no surface of its own under it. */}
           <div className="-mx-4 md:-mx-6">
             <RadialOrbitalTimeline timelineData={timelineData} />
           </div>

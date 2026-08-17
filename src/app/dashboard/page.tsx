@@ -24,7 +24,16 @@ import {
   TypingHeading,
 } from "@/components/site-shell";
 import { SiteFooter } from "@/components/site-footer";
-import { useTheme } from "@/components/theme-provider";
+import {
+  Badge,
+  Button,
+  Callout,
+  Card,
+  Field,
+  Modal,
+  Scrim,
+} from "@/design/primitives";
+import { cn } from "@/lib/cn";
 
 type ExplorerNode =
   | {
@@ -49,6 +58,81 @@ type ProjectRow = {
 };
 
 type SortMode = "recent" | "oldest" | "name";
+
+/*
+ * The caption above each stat card's value.
+ *
+ * Muted rather than soft: these sit on a raised card, and soft is tuned for the
+ * page behind it, not for a surface a step closer to the light.
+ */
+const CARD_LABEL_CLASS = cn(
+  "mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase",
+  "tracking-[var(--tracking-label)] text-[var(--text-muted)]"
+);
+
+/*
+ * The sort control.
+ *
+ * Recessed, like every other form control in the app: the migrated select in
+ * the IDE's bug-report modal is a sunken well, and Field is too, so a raised
+ * select here would make the same control look like two different objects on
+ * two screens. It also sits in the same row as the search Field -- on a card
+ * whose fill is already --surface-raised, so a raised select would have had no
+ * fill contrast against its own container at all.
+ */
+const SELECT_CLASS = cn(
+  "w-full rounded-[var(--radius-md)] border border-[var(--border-strong)]",
+  "bg-[var(--surface-sunken)]",
+  "px-[var(--space-4)] py-[var(--space-3)]",
+  "text-[length:var(--text-base)] text-[var(--text-primary)]",
+  "shadow-[var(--recessed)]",
+  "hover:border-[color-mix(in_srgb,var(--border-strong)_140%,transparent)]",
+  "outline-none focus:border-[var(--accent-solid)]",
+  "transition-[border-color,box-shadow] duration-[var(--duration-fast)]"
+);
+
+/*
+ * A link wearing the primary Button's material.
+ *
+ * These stay anchors rather than becoming <Button>: they navigate, so
+ * cmd-click, middle-click and "open in new tab" all have to keep working. The
+ * classes mirror Button's primary variant so the two never drift apart on
+ * screen even though they cannot share an element.
+ */
+const ACCENT_LINK_CLASS = cn(
+  "relative inline-flex items-center justify-center font-medium",
+  "border border-[color-mix(in_srgb,var(--accent-solid)_70%,black)]",
+  "bg-[var(--accent-solid)] bg-[image:var(--material-sheen)]",
+  "text-[var(--text-inverted)] hover:bg-[var(--accent-hover)]",
+  "shadow-[var(--raised)] hover:shadow-[var(--lifted)] active:shadow-[var(--pressed)]",
+  "hover:-translate-y-[var(--lift-travel)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none",
+  "transition-[background-color,box-shadow,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]"
+);
+
+const ACCENT_LINK_SIZES = {
+  sm: "px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-sm)] rounded-[var(--radius-sm)]",
+  md: "px-[var(--space-4)] py-[var(--space-2)] text-[length:var(--text-base)] rounded-[var(--radius-md)]",
+} as const;
+
+/*
+ * The material both kinds of grid tile share.
+ *
+ * Every tile in the grid opens something when clicked, so every tile travels:
+ * up toward the light on hover, down and inverted while held. Nothing inside
+ * them moves -- a card that both lifts and animates its own contents reads as
+ * two objects rather than one.
+ */
+const PRESSABLE_CARD_CLASS = cn(
+  "shadow-[var(--raised)] hover:shadow-[var(--lifted)] active:shadow-[var(--pressed)]",
+  "hover:-translate-y-[var(--lift-travel)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none",
+  "transition-[background-color,border-color,box-shadow,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]"
+);
 
 function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -135,7 +219,6 @@ function getRelativeUpdatedLabel(dateString: string) {
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const { isLight } = useTheme();
 
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [status, setStatus] = useState("Loading projects...");
@@ -282,42 +365,18 @@ export default function DashboardPage() {
 
   const remainingProjects =
     projectLimit === null ? null : Math.max(projectLimit - projectCount, 0);
-  const statCardClass = isLight
-    ? "rounded-[2rem] border border-slate-200 bg-white/92 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)]"
-    : "rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(255,255,255,0.01))] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.01)]";
-  const inputClass = isLight
-    ? "w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-blue-400/60"
-    : "w-full rounded-[1.5rem] border border-white/[0.08] bg-[#080808] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-blue-400/40";
-  const modalSurfaceClass = isLight
-    ? "relative z-10 w-full rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)]"
-    : "relative z-10 w-full rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] p-6 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_30px_rgba(56,189,248,0.04)]";
-  const modalGhostButtonClass = isLight
-    ? "rounded-[1.4rem] border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition-all duration-300 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-    : "rounded-[1.4rem] border border-white/[0.08] bg-[#0b0b0b] px-4 py-2 text-sm text-neutral-300 transition-all duration-300 hover:border-white/12 hover:bg-[#111111] hover:text-white";
-  const projectCountBadgeClass = isLight
-    ? "mb-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-500 shadow-[0_10px_24px_rgba(15,23,42,0.05)]"
-    : "mb-1 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-neutral-400";
+
+  /*
+   * The create tile stops being an invitation once the plan is full, so it
+   * swaps the accent for the warning tone rather than just dimming: amber here
+   * means "look at this", and the tile now leads to pricing, not to a project.
+   */
   const createCardClass = atProjectLimit
-    ? "border-dashed border-amber-400/20 bg-[linear-gradient(180deg,rgba(245,158,11,0.06),rgba(255,255,255,0.006))] hover:border-amber-300/30 hover:bg-[linear-gradient(180deg,rgba(245,158,11,0.1),rgba(255,255,255,0.01))]"
-    : isLight
-    ? "border-dashed border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] shadow-[0_18px_46px_rgba(15,23,42,0.08)] hover:-translate-y-1 hover:border-blue-300/40 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.98))] hover:shadow-[0_24px_54px_rgba(59,130,246,0.12)]"
-    : "border-dashed border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.006))] hover:-translate-y-1 hover:border-blue-400/30 hover:bg-[linear-gradient(180deg,rgba(14,165,233,0.08),rgba(255,255,255,0.01))] hover:shadow-[0_16px_40px_rgba(0,0,0,0.3),0_0_28px_rgba(56,189,248,0.04)]";
-  const projectCardClass = isLight
-    ? "page-enter-soft group min-h-[250px] cursor-pointer rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-6 shadow-[0_18px_46px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-300/30 hover:shadow-[0_24px_54px_rgba(59,130,246,0.12)]"
-    : "page-enter-soft group min-h-[250px] cursor-pointer rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.022),rgba(255,255,255,0.008))] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.01)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/20 hover:shadow-[0_18px_50px_rgba(0,0,0,0.28),0_0_30px_rgba(56,189,248,0.04)]";
-  const projectPreviewClass = isLight
-    ? "rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] px-5 py-4 transition-colors duration-300 group-hover:border-slate-300 group-hover:bg-white"
-    : "rounded-[1.5rem] border border-white/[0.04] bg-black/25 px-5 py-4 transition-colors duration-300 group-hover:border-white/[0.05]";
-  const emptySearchClass = isLight
-    ? "page-enter-soft mt-5 rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-10 text-center shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
-    : "page-enter-soft mt-5 rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.006))] p-10 text-center";
+    ? "border-[color-mix(in_srgb,var(--state-warning)_35%,transparent)] bg-[var(--state-warning-subtle)] bg-[image:var(--material-sheen)]"
+    : "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]";
 
   return (
-    <main
-      className={`relative min-h-screen overflow-hidden ${
-        isLight ? "bg-[#f4f7fb] text-slate-900" : "bg-[#0f0f10] text-white"
-      }`}
-    >
+    <main className="relative min-h-screen overflow-hidden bg-[var(--surface-page)] text-[var(--text-primary)]">
       <AppPageBackground />
 
       <SiteHeader
@@ -325,152 +384,142 @@ export default function DashboardPage() {
         authHref="/dashboard"
         authLabel="Dashboard"
         showSignOut
-        className="page-enter-soft"
       />
 
       <PageFrame>
-        <section className="page-enter mb-8">
+        <section className="mb-[var(--space-8)]">
           <div className="mx-auto max-w-4xl text-center">
             <TypingHeading
               text="Dashboard"
               as="h1"
-              className={`mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] ${
-                isLight ? "text-slate-950" : "text-white"
-              }`}
+              className="mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]"
             />
 
-            <p
-              className={`mx-auto mt-4 max-w-2xl text-[0.88rem] leading-6 md:text-[0.95rem] md:leading-7 ${
-                isLight ? "text-slate-600" : "text-neutral-400"
-              }`}
-            >
+            <p className="mx-auto mt-[var(--space-4)] max-w-2xl text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--text-muted)] md:text-[length:var(--text-base)] md:leading-[var(--leading-relaxed)]">
               Manage your projects, jump back into recent work, and keep building inside a cleaner syntaxless workflow.
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-              <div className="rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-blue-300">
+            <div className="mt-[var(--space-5)] flex flex-wrap items-center justify-center gap-[var(--space-3)]">
+              <Badge tone="accent" className="uppercase tracking-[var(--tracking-label)]">
                 {SUBSCRIPTION_META[activeTier].label}
-              </div>
-              <div className={projectCountBadgeClass}>
+              </Badge>
+              <Badge tone="neutral" className="uppercase tracking-[var(--tracking-label)]">
                 {projectCount} Project{projectCount === 1 ? "" : "s"}
-              </div>
+              </Badge>
             </div>
 
             {sessionEmail ? (
-              <div className={`mt-4 text-sm ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+              <div className="mt-[var(--space-4)] text-[length:var(--text-sm)] text-[var(--text-soft)]">
                 {sessionEmail}
               </div>
             ) : null}
           </div>
         </section>
 
-        <div
-          className="page-enter-soft mb-7 grid gap-4 lg:grid-cols-4"
-          style={{ animationDelay: "120ms" }}
-        >
-          <div className={statCardClass}>
-            <div className={`mb-2 text-[11px] uppercase tracking-[0.24em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
-              Search Projects
-            </div>
-            <input
+        <div className="mb-[var(--space-8)] grid gap-[var(--space-4)] lg:grid-cols-4">
+          <Card>
+            {/* The visible caption names the field, so the Field's own label is
+                kept for screen readers only rather than shown twice. */}
+            <div className={CARD_LABEL_CLASS}>Search Projects</div>
+            <Field
+              label="Search Projects"
+              hideLabel
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by project name or preview text..."
-              className={inputClass}
             />
-          </div>
+          </Card>
 
-          <div className={statCardClass}>
-            <div className={`mb-2 text-[11px] uppercase tracking-[0.24em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
-              Sort
-            </div>
+          <Card>
+            <div className={CARD_LABEL_CLASS}>Sort</div>
             <select
+              aria-label="Sort projects"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value as SortMode)}
-              className={inputClass}
+              className={SELECT_CLASS}
             >
               <option value="recent">Most Recent</option>
               <option value="oldest">Oldest First</option>
               <option value="name">Name A–Z</option>
             </select>
-          </div>
+          </Card>
 
-          <div className={statCardClass}>
-            <div className={`mb-2 text-[11px] uppercase tracking-[0.24em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
-              Project Cap
-            </div>
-            <div className={`text-sm leading-7 ${isLight ? "text-slate-700" : "text-neutral-300"}`}>
+          <Card>
+            <div className={CARD_LABEL_CLASS}>Project Cap</div>
+            <div className="text-[length:var(--text-base)] leading-[var(--leading-relaxed)] text-[var(--text-primary)]">
               {getProjectLimitLabel(activeTier)}
             </div>
-            <div className={`mt-1 text-sm ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <div className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-[var(--text-muted)]">
               {remainingProjects === null
                 ? "Unlimited remaining"
                 : `${remainingProjects} remaining`}
             </div>
-          </div>
+          </Card>
 
-          <div className={statCardClass}>
-            <div className={`mb-2 text-[11px] uppercase tracking-[0.24em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
-              Synth File Cap
-            </div>
-            <div className={`text-sm leading-7 ${isLight ? "text-slate-700" : "text-neutral-300"}`}>
+          <Card>
+            <div className={CARD_LABEL_CLASS}>Synth File Cap</div>
+            <div className="text-[length:var(--text-base)] leading-[var(--leading-relaxed)] text-[var(--text-primary)]">
               {getSynthFileLimitLabel(activeTier)} / project
             </div>
-            <div className={`mt-1 text-sm ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <div className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-[var(--text-muted)]">
               Enforced in IDE file actions
             </div>
-          </div>
+          </Card>
         </div>
 
         {projectCount === 0 ? (
-          <div
-            className={`page-enter-soft rounded-[2rem] border p-12 text-center ${
-              isLight
-                ? "border-slate-200 bg-white/92 shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
-                : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.006))]"
-            }`}
-            style={{ animationDelay: "220ms" }}
-          >
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-blue-400/20 bg-blue-500/10 text-3xl text-blue-300 shadow-[0_0_30px_rgba(56,189,248,0.08)]">
-              +
+          <Card className="text-center">
+            <div className="py-[var(--space-8)]">
+              {/* Inlaid, not raised: the glyph is a mark on the card, and a
+                  second pressable-looking object here would compete with the
+                  button underneath it. */}
+              <div className="mx-auto mb-[var(--space-4)] flex h-16 w-16 items-center justify-center rounded-[var(--radius-lg)] border border-[var(--accent-border)] bg-[var(--accent-subtle)] text-[length:var(--text-3xl)] text-[var(--accent-text)] shadow-[var(--inlaid)]">
+                +
+              </div>
+              <TypingHeading
+                text="No projects yet"
+                as="h2"
+                className="text-[length:var(--text-2xl)] text-[var(--text-primary)]"
+              />
+              <p className="mx-auto mt-[var(--space-3)] max-w-xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
+                Create your first project to start building in T.R.A.C.E.
+              </p>
+              <div className="mt-[var(--space-6)]">
+                <Button onClick={openCreateModal} size="lg">
+                  Create Project
+                </Button>
+              </div>
             </div>
-            <TypingHeading
-              text="No projects yet"
-              as="h2"
-              className={isLight ? "text-2xl text-slate-900" : "text-2xl text-white"}
-            />
-            <p className={`mx-auto mt-3 max-w-xl text-sm leading-7 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
-              Create your first project to start building in T.R.A.C.E.
-            </p>
-            <button
-              onClick={openCreateModal}
-              className="mt-6 rounded-[1.5rem] border border-blue-400/30 bg-blue-500/10 px-5 py-3 text-sm text-blue-300 transition-all duration-300 hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-white"
-            >
-              Create Project
-            </button>
-          </div>
+          </Card>
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-[var(--space-5)] md:grid-cols-2 xl:grid-cols-3">
             <button
               onClick={openCreateModal}
-                className={`page-enter-soft group min-h-[250px] rounded-[2rem] border p-6 text-left transition-all duration-300 ${createCardClass}`}
-                style={{ animationDelay: "180ms" }}
-              >
+              className={cn(
+                "group min-h-[250px] rounded-[var(--radius-lg)] border border-dashed",
+                "p-[var(--space-6)] text-left",
+                PRESSABLE_CARD_CLASS,
+                createCardClass
+              )}
+            >
               <div className="flex h-full flex-col justify-between">
                 <div className="flex flex-1 flex-col justify-center">
                   <div
-                    className={`mb-5 flex h-14 w-14 items-center justify-center rounded-[1.4rem] border text-3xl transition-all duration-300 ${
+                    className={cn(
+                      "mb-[var(--space-5)] flex h-14 w-14 items-center justify-center",
+                      "rounded-[var(--radius-lg)] border text-[length:var(--text-3xl)]",
+                      "shadow-[var(--inlaid)]",
                       atProjectLimit
-                        ? "border-amber-400/20 bg-amber-500/8 text-amber-300"
-                        : "border-blue-400/20 bg-blue-500/10 text-blue-300 shadow-[0_0_28px_rgba(56,189,248,0.08)] group-hover:scale-105 group-hover:text-white"
-                    }`}
+                        ? "border-[color-mix(in_srgb,var(--state-warning)_35%,transparent)] bg-[var(--state-warning-subtle)] text-[var(--state-warning)]"
+                        : "border-[var(--accent-border)] bg-[var(--accent-subtle)] text-[var(--accent-text)]"
+                    )}
                   >
                     {atProjectLimit ? "!" : "+"}
                   </div>
-                  <div className={`text-2xl font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
+                  <div className="text-[length:var(--text-2xl)] font-bold text-[var(--text-primary)]">
                     {atProjectLimit ? "Upgrade to Create More" : "Create New Project"}
                   </div>
-                  <p className={`mt-3 max-w-sm text-sm leading-7 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
+                  <p className="mt-[var(--space-3)] max-w-sm text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
                     {atProjectLimit
                       ? `Your ${SUBSCRIPTION_META[activeTier].label} plan has reached its project cap.`
                       : "Start a fresh syntaxless workspace and jump straight into building."}
@@ -478,36 +527,44 @@ export default function DashboardPage() {
                 </div>
 
                 <div
-                  className={`text-xs uppercase tracking-[0.22em] ${
-                    atProjectLimit ? "text-amber-300" : "text-neutral-500 group-hover:text-blue-300"
-                  }`}
+                  className={cn(
+                    "text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)]",
+                    atProjectLimit
+                      ? "text-[var(--state-warning)]"
+                      : "text-[var(--text-muted)] group-hover:text-[var(--accent-text)]"
+                  )}
                 >
                   {atProjectLimit ? "See pricing" : "New workspace"}
                 </div>
               </div>
             </button>
 
-            {filteredProjects.map((project, index) => (
+            {filteredProjects.map((project) => (
               <div
                 key={project.id}
                 onClick={() => router.push(`/ide?project=${project.id}`)}
-                className={projectCardClass}
-                style={{ animationDelay: `${220 + index * 55}ms` }}
+                className={cn(
+                  "group min-h-[250px] cursor-pointer rounded-[var(--radius-lg)]",
+                  "border border-[var(--border-subtle)]",
+                  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                  "p-[var(--space-6)]",
+                  PRESSABLE_CARD_CLASS
+                )}
               >
                 <div className="flex h-full flex-col justify-between">
                   <div>
-                    <div className="mb-4 flex items-start justify-between gap-4">
+                    <div className="mb-[var(--space-4)] flex items-start justify-between gap-[var(--space-4)]">
                       <div>
-                        <div className="mb-2 flex items-center gap-3">
-                          <div className="h-2.5 w-2.5 rounded-full bg-blue-300/80 shadow-[0_0_14px_rgba(125,211,252,0.4)]" />
-                          <div className={`text-2xl font-bold transition-colors duration-300 ${isLight ? "text-slate-900 group-hover:text-blue-900" : "text-white group-hover:text-[#eaf5ff]"}`}>
+                        <div className="mb-[var(--space-2)] flex items-center gap-[var(--space-3)]">
+                          <div className="h-2.5 w-2.5 rounded-[var(--radius-full)] bg-[var(--accent-solid)]" />
+                          <div className="text-[length:var(--text-2xl)] font-bold text-[var(--text-primary)] transition-colors duration-[var(--duration-fast)] group-hover:text-[var(--accent-text)]">
                             {project.name}
                           </div>
                         </div>
 
-                        <div className={`flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-400" : "text-neutral-500"}`}>
+                        <div className="flex flex-wrap items-center gap-[var(--space-3)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                           <span>{getRelativeUpdatedLabel(project.updated_at)}</span>
-                          <span className={`h-1 w-1 rounded-full ${isLight ? "bg-slate-300" : "bg-neutral-700"}`} />
+                          <span className="h-1 w-1 rounded-[var(--radius-full)] bg-[var(--border-strong)]" />
                           <span>
                             {countSynthFiles(project.tree_json)} synth file
                             {countSynthFiles(project.tree_json) === 1 ? "" : "s"}
@@ -516,34 +573,39 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className={projectPreviewClass}>
-                      <div className={`mb-2 text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-400" : "text-neutral-500"}`}>
+                    {/* The preview is a window cut into the card showing the
+                        file underneath, so it takes the same recess as the
+                        editor it is quoting -- not the raised material of the
+                        card around it. */}
+                    <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-[var(--space-5)] py-[var(--space-4)] shadow-[var(--recessed)]">
+                      <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                         Preview
                       </div>
-                      <p className={`text-sm leading-7 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
+                      <p className="text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
                         {getProjectPreview(project.tree_json)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-5 flex gap-2">
+                  <div className="mt-[var(--space-5)] flex gap-[var(--space-2)]">
                     <Link
                       href={`/ide?project=${project.id}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded-[1.4rem] border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm text-blue-300 transition-all duration-300 hover:bg-blue-500/15 hover:text-white"
+                      className={cn(ACCENT_LINK_CLASS, ACCENT_LINK_SIZES.sm)}
                     >
                       Open
                     </Link>
 
-                    <button
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteProject(project.id);
                       }}
-                      className="rounded-[1.4rem] border border-rose-400/20 bg-rose-500/5 px-4 py-2 text-sm text-rose-300 transition-all duration-300 hover:bg-rose-500/10 hover:text-white"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -552,56 +614,51 @@ export default function DashboardPage() {
         )}
 
         {projectCount > 0 && filteredProjects.length === 0 && (
-          <div
-            className={emptySearchClass}
-            style={{ animationDelay: "220ms" }}
-          >
-            <div className={`mx-auto mb-3 h-10 w-10 rounded-full border ${isLight ? "border-slate-200 bg-white" : "border-white/[0.08] bg-[#0b0b0b]"}`} />
-            <TypingHeading
-              text="No matching projects"
-              as="h2"
-              className={isLight ? "text-xl text-slate-900" : "text-xl text-white"}
-            />
-            <p className={`mt-2 text-sm ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
-              Try a different search term or clear the filter.
-            </p>
-            <button
-              onClick={() => setSearchQuery("")}
-              className={`mt-5 rounded-[1.4rem] border px-4 py-2 text-sm transition-all duration-300 ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                  : "border-white/[0.08] bg-[#0b0b0b] text-neutral-300 hover:border-white/12 hover:bg-[#111111] hover:text-white"
-              }`}
-            >
-              Clear Search
-            </button>
-          </div>
+          <Card className="mt-[var(--space-5)] text-center">
+            <div className="py-[var(--space-6)]">
+              <div className="mx-auto mb-[var(--space-3)] h-10 w-10 rounded-[var(--radius-full)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] shadow-[var(--inlaid)]" />
+              <TypingHeading
+                text="No matching projects"
+                as="h2"
+                className="text-[length:var(--text-xl)] text-[var(--text-primary)]"
+              />
+              <p className="mt-[var(--space-2)] text-[length:var(--text-sm)] text-[var(--text-muted)]">
+                Try a different search term or clear the filter.
+              </p>
+              <div className="mt-[var(--space-5)]">
+                <Button variant="secondary" onClick={() => setSearchQuery("")}>
+                  Clear Search
+                </Button>
+              </div>
+            </div>
+          </Card>
         )}
 
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+          <Scrim>
+            {/* Click-outside target. It sits behind the modal rather than
+                wrapping it, so a click inside the dialog never reaches it. */}
             <div
-              className={`absolute inset-0 backdrop-blur-sm ${isLight ? "bg-slate-200/70" : "bg-black/70"}`}
+              aria-hidden="true"
+              className="absolute inset-0"
               onClick={() => setShowCreateModal(false)}
             />
-            <div className={`${modalSurfaceClass} max-w-md`}>
-              <div className={`mb-2 text-[11px] uppercase tracking-[0.26em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <Modal className="relative z-10 w-full max-w-md">
+              <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                 T.R.A.C.E.
               </div>
               <TypingHeading
                 text="New Project"
                 as="h2"
-                className={isLight ? "text-3xl text-slate-900" : "text-3xl text-white"}
+                className="text-[length:var(--text-3xl)] text-[var(--text-primary)]"
               />
-              <p className={`mt-3 text-sm leading-7 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
+              <p className="mt-[var(--space-3)] text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
                 Give your new project a name and start with a fresh syntaxless workspace.
               </p>
 
-              <div className="mt-6">
-                <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
-                  Project Name
-                </label>
-                <input
+              <div className="mt-[var(--space-6)]">
+                <Field
+                  label="Project Name"
                   autoFocus
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
@@ -611,71 +668,66 @@ export default function DashboardPage() {
                     }
                   }}
                   placeholder="Untitled Project"
-                  className={inputClass}
                 />
               </div>
 
-              <div className="mt-6 flex justify-end gap-2">
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className={modalGhostButtonClass}
-                >
+              <div className="mt-[var(--space-6)] flex justify-end gap-[var(--space-2)]">
+                <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => void handleCreateProject()}
                   disabled={isCreating}
-                  className="rounded-[1.4rem] border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm text-blue-300 transition-all duration-300 hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-white disabled:opacity-50"
                 >
                   {isCreating ? "Creating..." : "Create Project"}
-                </button>
+                </Button>
               </div>
-            </div>
-          </div>
+            </Modal>
+          </Scrim>
         )}
 
         {showLimitModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+          <Scrim>
             <div
-              className={`absolute inset-0 backdrop-blur-sm ${isLight ? "bg-slate-200/70" : "bg-black/70"}`}
+              aria-hidden="true"
+              className="absolute inset-0"
               onClick={() => setShowLimitModal(false)}
             />
-            <div className={`${modalSurfaceClass} max-w-lg`}>
-              <div className={`mb-2 text-[11px] uppercase tracking-[0.26em] ${isLight ? "text-slate-500" : "text-neutral-500"}`}>
+            <Modal className="relative z-10 w-full max-w-lg">
+              <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                 Subscription Required
               </div>
               <TypingHeading
                 text="Project limit reached"
                 as="h2"
-                className={isLight ? "text-3xl text-slate-900" : "text-3xl text-white"}
+                className="text-[length:var(--text-3xl)] text-[var(--text-primary)]"
               />
-              <p className={`mt-3 text-sm leading-7 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
+              <p className="mt-[var(--space-3)] text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
                 Your {SUBSCRIPTION_META[activeTier].label} plan allows{" "}
                 {getProjectLimitLabel(activeTier)} project
                 {projectLimit === 1 ? "" : "s"}.
                 Upgrade your subscription to unlock more capacity.
               </p>
 
-              <div className="mt-5 rounded-[1.5rem] border border-amber-400/20 bg-amber-500/8 px-4 py-3 text-sm text-amber-300">
+              {/* Warning, not blocked: the plan is doing what it is meant to,
+                  and there is a way forward one button away. */}
+              <Callout tone="warning" className="mt-[var(--space-5)]">
                 Current plan: {SUBSCRIPTION_META[activeTier].label}
-              </div>
+              </Callout>
 
-              <div className="mt-6 flex justify-end gap-2">
-                <button
-                  onClick={() => setShowLimitModal(false)}
-                  className={modalGhostButtonClass}
-                >
+              <div className="mt-[var(--space-6)] flex justify-end gap-[var(--space-2)]">
+                <Button variant="secondary" onClick={() => setShowLimitModal(false)}>
                   Close
-                </button>
+                </Button>
                 <Link
                   href="/subscriptions"
-                  className="rounded-[1.4rem] border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm text-blue-300 transition-all duration-300 hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-white"
+                  className={cn(ACCENT_LINK_CLASS, ACCENT_LINK_SIZES.md)}
                 >
                   View Pricing
                 </Link>
               </div>
-            </div>
-          </div>
+            </Modal>
+          </Scrim>
         )}
       </PageFrame>
 

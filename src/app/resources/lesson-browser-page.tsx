@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ThemeToggleButton, useTheme } from "@/components/theme-provider";
+import { ThemeToggleButton } from "@/components/theme-provider";
+import { Button } from "@/design/primitives";
 import { cn } from "@/lib/cn";
 import { getSupabaseSession } from "@/lib/supabase/client";
 import {
@@ -61,112 +62,18 @@ const ENTRY_MODE_OPTIONS: Array<{
   { id: "pseudocode", label: "Pseudocode" },
 ];
 
-const ENTRY_MODE_ACCENTS: Record<
-  EntryMode,
-  {
-    text: string;
-    border: string;
-    bg: string;
-    hoverBorder: string;
-    hoverBg: string;
-    bar: string;
-    shadow: string;
-    borderColor: string;
-    glowColor: string;
-  }
-> = {
-  strict: {
-    text: "text-rose-100",
-    border: "border-rose-400/35",
-    bg: "bg-rose-500/10",
-    hoverBorder: "hover:border-rose-300/50",
-    hoverBg: "hover:bg-rose-500/15",
-    bar: "bg-rose-400",
-    shadow: "shadow-[0_0_34px_rgba(244,63,94,0.16)]",
-    borderColor: "rgba(244,63,94,0.32)",
-    glowColor: "rgba(244,63,94,0.18)",
-  },
-  standard: {
-    text: "text-blue-100",
-    border: "border-blue-300/35",
-    bg: "bg-blue-500/10",
-    hoverBorder: "hover:border-blue-300/50",
-    hoverBg: "hover:bg-blue-500/15",
-    bar: "bg-blue-400",
-    shadow: "shadow-[0_0_34px_rgba(79,141,253,0.16)]",
-    borderColor: "rgba(96,165,250,0.34)",
-    glowColor: "rgba(79,141,253,0.2)",
-  },
-  abstraction: {
-    text: "text-purple-100",
-    border: "border-purple-300/35",
-    bg: "bg-purple-500/10",
-    hoverBorder: "hover:border-purple-300/50",
-    hoverBg: "hover:bg-purple-500/15",
-    bar: "bg-purple-400",
-    shadow: "shadow-[0_0_34px_rgba(168,85,247,0.16)]",
-    borderColor: "rgba(192,132,252,0.34)",
-    glowColor: "rgba(168,85,247,0.2)",
-  },
-  pseudocode: {
-    text: "text-yellow-100",
-    border: "border-yellow-300/35",
-    bg: "bg-yellow-400/10",
-    hoverBorder: "hover:border-yellow-300/50",
-    hoverBg: "hover:bg-yellow-400/15",
-    bar: "bg-yellow-300",
-    shadow: "shadow-[0_0_34px_rgba(250,204,21,0.16)]",
-    borderColor: "rgba(250,204,21,0.34)",
-    glowColor: "rgba(250,204,21,0.18)",
-  },
-};
-
-const ENTRY_MODE_LIGHT_ACCENTS: typeof ENTRY_MODE_ACCENTS = {
-  strict: {
-    text: "text-rose-700",
-    border: "border-rose-300/80",
-    bg: "bg-rose-50",
-    hoverBorder: "hover:border-rose-400",
-    hoverBg: "hover:bg-rose-100",
-    bar: "bg-rose-500",
-    shadow: "shadow-[0_18px_44px_rgba(244,63,94,0.08)]",
-    borderColor: "rgba(244,63,94,0.26)",
-    glowColor: "rgba(244,63,94,0.12)",
-  },
-  standard: {
-    text: "text-blue-700",
-    border: "border-blue-300/80",
-    bg: "bg-blue-50",
-    hoverBorder: "hover:border-blue-400",
-    hoverBg: "hover:bg-blue-100",
-    bar: "bg-blue-500",
-    shadow: "shadow-[0_18px_44px_rgba(37,99,235,0.08)]",
-    borderColor: "rgba(37,99,235,0.26)",
-    glowColor: "rgba(37,99,235,0.12)",
-  },
-  abstraction: {
-    text: "text-purple-700",
-    border: "border-purple-300/80",
-    bg: "bg-purple-50",
-    hoverBorder: "hover:border-purple-400",
-    hoverBg: "hover:bg-purple-100",
-    bar: "bg-purple-500",
-    shadow: "shadow-[0_18px_44px_rgba(147,51,234,0.08)]",
-    borderColor: "rgba(147,51,234,0.26)",
-    glowColor: "rgba(147,51,234,0.12)",
-  },
-  pseudocode: {
-    text: "text-amber-700",
-    border: "border-amber-300/80",
-    bg: "bg-amber-50",
-    hoverBorder: "hover:border-amber-400",
-    hoverBg: "hover:bg-amber-100",
-    bar: "bg-amber-500",
-    shadow: "shadow-[0_18px_44px_rgba(217,119,6,0.08)]",
-    borderColor: "rgba(217,119,6,0.26)",
-    glowColor: "rgba(217,119,6,0.12)",
-  },
-};
+/*
+ * The four entry modes used to own a colour each -- rose, blue, purple, amber --
+ * in two parallel tables, one per theme, which the whole page then read from.
+ * Both tables are gone.
+ *
+ * A mode is a choice, not a status, and the system keeps colour for meaning: one
+ * accent for what is selected, and the state tokens reserved for success,
+ * warning and blocked. Selection is now carried by depth instead -- the chosen
+ * mode sits pressed into the toolbar while the others stay proud of it -- and by
+ * the label, which is what a student reads first and the only part of the cue
+ * that survives a washed-out projector.
+ */
 
 function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -191,9 +98,74 @@ function buildExampleStarterTree(content: string): ResourceExplorerNode[] {
   ];
 }
 
+/* ---- Surfaces -----------------------------------------------------------
+ *
+ * The lighting rule from design/tokens.css holds throughout this page: things
+ * you press sit raised, wells you read or scroll into are recessed, and labels
+ * set into a surface are inlaid. Every colour is a token, so nothing here
+ * branches on the theme -- the tokens swap on their own.
+ */
+
+const dividerClass = "border-[var(--border-subtle)]";
+
+/*
+ * A lesson row in the syllabus. It rests on the sunken sidebar, so it takes the
+ * base rung -- but it never travels, because it is a container wrapping two
+ * separate controls (open the lesson, toggle its topics). Lifting the whole row
+ * on hover would claim both were under the cursor.
+ */
+const softSurfaceClass =
+  "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised)]";
+
+const activeItemClass =
+  "border-[var(--accent-border)] bg-[var(--accent-subtle)] text-[var(--text-primary)] shadow-[var(--raised)]";
+
+/*
+ * --text-soft is deliberately absent from this page. It clears AA against the
+ * page itself but not against a raised card in dark or a sunken well in light,
+ * and this layout puts secondary text on both.
+ */
+const mutedTextClass = "text-[var(--text-muted)]";
+
+/*
+ * The example listing is a well. Code is read into it and it scrolls sideways,
+ * so it takes the opposite lighting to anything pressable.
+ */
+const codeSurfaceClass =
+  "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-primary)] shadow-[var(--recessed)]";
+
+/*
+ * Every standalone control on the page: proud at rest, rising toward the light
+ * on hover, then pushed in and inverted when held. Motion-reduce keeps the
+ * depth and drops only the travel, so a press is never signalled by movement
+ * alone.
+ */
+const pressableClass = cn(
+  "transition-[background-color,border-color,box-shadow,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+  "shadow-[var(--raised)] hover:shadow-[var(--lifted)] hover:-translate-y-[var(--lift-travel)]",
+  "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none"
+);
+
+/* A disabled control is not a thing you can press, so the depth goes with it. */
+const pressableDisabledClass = cn(
+  "disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none",
+  "disabled:hover:shadow-none disabled:hover:translate-y-0",
+  "disabled:active:shadow-none disabled:active:translate-y-0"
+);
+
+/*
+ * Rows inside a card -- syllabus segments and topic links. They press in rather
+ * than travelling: they are flush parts of the card, and moving one would drag
+ * its neighbours out of alignment.
+ */
+const flushRowClass =
+  "transition-[background-color,color,box-shadow] duration-[var(--duration-press)] active:shadow-[var(--pressed)]";
+
 export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
   const router = useRouter();
-  const { isLight } = useTheme();
   const {
     authResolved,
     currentTier,
@@ -262,39 +234,18 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
       : "Operators, Primitives and Logic Structures";
   const activeExampleMode =
     entryMode === "pseudocode" ? null : (entryMode as PlayableEntryMode);
-  const accentSet = isLight ? ENTRY_MODE_LIGHT_ACCENTS : ENTRY_MODE_ACCENTS;
-  const modeAccent = accentSet[entryMode];
-  const headerGlowStyle = {
-    boxShadow: `inset 0 -1px 0 ${modeAccent.borderColor}, 0 0 42px ${modeAccent.glowColor}`,
-  };
   const projectLimitReached =
     isAuthed &&
     projectCount !== null &&
     !canCreateProject(currentTier, projectCount);
 
-  const sidebarBorderClass = isLight ? "border-slate-200/90" : "border-white/[0.08]";
-  const sidebarBackgroundClass = isLight ? "bg-[#f6f9fc]" : "bg-[#090909]";
-  const softSurfaceClass = isLight
-    ? "border-slate-200/90 bg-white/90"
-    : "border-white/[0.08] bg-white/[0.025]";
-  const mutedTextClass = isLight ? "text-slate-600" : "text-neutral-400";
-  const activeItemClass = isLight
-    ? "border-blue-300 bg-blue-50 text-slate-950"
-    : "border-blue-300/30 bg-blue-400/10 text-white";
-  const inactiveItemClass =
-    isLight
-      ? "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950"
-      : "border-transparent text-neutral-400 hover:border-white/[0.08] hover:bg-white/[0.035] hover:text-white";
-  const codeSurfaceClass = isLight
-    ? "border-slate-200/90 bg-white text-slate-700"
-    : "border-white/[0.08] bg-[#050505] text-neutral-300";
-
   if (!authResolved || !isAuthed) {
     return (
       <main
         className={cn(
-          "flex h-screen w-screen items-center justify-center overflow-hidden text-sm",
-          isLight ? "bg-[#eef3f9] text-slate-500" : "bg-[#020202] text-neutral-400"
+          "flex h-screen w-screen items-center justify-center overflow-hidden",
+          "bg-[var(--surface-page)] text-[length:var(--text-sm)]",
+          mutedTextClass
         )}
       >
         Loading lessons...
@@ -453,30 +404,33 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
   }
 
   return (
-    <main
-      className={cn(
-        "relative flex h-screen w-screen overflow-hidden",
-        isLight ? "bg-[#eef3f9] text-slate-900" : "bg-[#020202] text-white"
-      )}
-    >
+    <main className="relative flex h-screen w-screen overflow-hidden bg-[var(--surface-page)] text-[var(--text-primary)]">
       <aside
         className={cn(
-          "absolute inset-y-0 left-0 z-30 h-screen shrink-0 overflow-y-auto border-r p-4 transition-[width,transform,opacity,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:relative",
+          "absolute inset-y-0 left-0 z-30 h-screen shrink-0 overflow-y-auto border-r p-4 lg:relative",
+          "transition-[width,transform,opacity,padding] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+          // Chrome beside the work rather than part of it, so the syllabus sits
+          // back into the page instead of competing with the lesson for depth.
+          "bg-[var(--surface-sunken)]",
+          dividerClass,
           sidebarOpen
             ? "w-[18rem] translate-x-0 opacity-100"
-            : "pointer-events-none w-0 -translate-x-full overflow-hidden p-0 opacity-0 lg:translate-x-0",
-          sidebarBorderClass,
-          sidebarBackgroundClass
+            : "pointer-events-none w-0 -translate-x-full overflow-hidden p-0 opacity-0 lg:translate-x-0"
         )}
         aria-hidden={!sidebarOpen}
       >
-        <div className={cn("mb-4 border-b pb-4", sidebarBorderClass)}>
+        <div className={cn("mb-4 border-b pb-4", dividerClass)}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className={cn("text-[10px] font-semibold uppercase tracking-[0.22em]", isLight ? "text-slate-500" : "text-neutral-500")}>
+              <div
+                className={cn(
+                  "text-[length:var(--text-xs)] font-semibold uppercase tracking-[var(--tracking-label)]",
+                  mutedTextClass
+                )}
+              >
                 Lessons
               </div>
-              <div className={cn("mt-2 text-[1.15rem] font-semibold leading-tight", isLight ? "text-slate-950" : "text-white")}>
+              <div className="mt-2 text-[length:var(--text-lg)] font-semibold leading-tight text-[var(--text-primary)]">
                 {activeTabMeta.shortTitle}
               </div>
             </div>
@@ -486,20 +440,19 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
               onClick={() => setSidebarOpen(false)}
               aria-label="Collapse syllabus"
               className={cn(
-                "group flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.85rem] border transition-colors",
-                isLight
-                  ? "border-slate-200 bg-white hover:bg-slate-50"
-                  : "border-white/[0.08] bg-[#0b0b0b] hover:bg-[#111111]"
+                "group flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] border",
+                "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                pressableClass
               )}
             >
               <div className="relative h-4 w-5">
-                <span className={cn("absolute left-0 top-0 h-[2px] w-5 rounded-full transition-colors duration-300", isLight ? "bg-slate-500 group-hover:bg-slate-900" : "bg-neutral-400 group-hover:bg-white")} />
-                <span className={cn("absolute left-0 top-1/2 h-[2px] w-5 -translate-y-1/2 rounded-full transition-colors duration-300", isLight ? "bg-slate-500 group-hover:bg-slate-900" : "bg-neutral-400 group-hover:bg-white")} />
-                <span className={cn("absolute bottom-0 left-0 h-[2px] w-5 rounded-full transition-colors duration-300", isLight ? "bg-slate-500 group-hover:bg-slate-900" : "bg-neutral-400 group-hover:bg-white")} />
+                <span className="absolute left-0 top-0 h-[2px] w-5 rounded-full bg-[var(--text-muted)] transition-colors duration-[var(--duration-base)] group-hover:bg-[var(--text-primary)]" />
+                <span className="absolute left-0 top-1/2 h-[2px] w-5 -translate-y-1/2 rounded-full bg-[var(--text-muted)] transition-colors duration-[var(--duration-base)] group-hover:bg-[var(--text-primary)]" />
+                <span className="absolute bottom-0 left-0 h-[2px] w-5 rounded-full bg-[var(--text-muted)] transition-colors duration-[var(--duration-base)] group-hover:bg-[var(--text-primary)]" />
               </div>
             </button>
           </div>
-          <div className={cn("mt-2 text-xs", isLight ? "text-slate-500" : "text-neutral-500")}>
+          <div className={cn("mt-2 text-[length:var(--text-xs)]", mutedTextClass)}>
             {lessons.length} lessons / {totalTopicCount} topics
           </div>
         </div>
@@ -513,7 +466,7 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
               <div
                 key={lesson.id}
                 className={cn(
-                  "overflow-hidden rounded-[1rem] border transition-colors",
+                  "overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-[var(--duration-base)]",
                   isLessonActive ? activeItemClass : softSurfaceClass
                 )}
               >
@@ -521,28 +474,45 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                   <button
                     type="button"
                     onClick={() => openLesson(lesson.id)}
-                    className="min-w-0 flex-1 px-3 py-3 text-left"
+                    className={cn(
+                      "min-w-0 flex-1 px-3 py-3 text-left",
+                      // An active card is accent-tinted, and an opaque sunken
+                      // hover would paint that tint out -- the card would stop
+                      // reading as active exactly while the cursor is on it.
+                      // Restating the translucent tint deepens it instead.
+                      isLessonActive
+                        ? "hover:bg-[var(--accent-subtle)]"
+                        : "hover:bg-[var(--surface-sunken)]",
+                      flushRowClass
+                    )}
                   >
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold",
+                          // The lesson number is a label set into the row, not a
+                          // control, so it is inlaid rather than raised.
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
+                          "text-[length:var(--text-xs)] font-semibold shadow-[var(--inlaid)]",
                           isLessonActive
-                            ? isLight
-                              ? "border-blue-300 bg-white text-blue-700"
-                              : "border-blue-300/30 bg-blue-400/10 text-blue-200"
-                            : isLight
-                            ? "border-slate-200 bg-white text-slate-500"
-                            : "border-white/[0.08] bg-white/[0.03] text-neutral-500"
+                            // Raised surface, not accent-subtle: the card behind
+                            // it is already tinted, and stacking the two tints
+                            // drops accent text to 3.9:1.
+                            ? "border-[var(--accent-border)] bg-[var(--surface-raised)] text-[var(--accent-text)]"
+                            : "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"
                         )}
                       >
                         {String(lesson.number).padStart(2, "0")}
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">
+                        <span className="block truncate text-[length:var(--text-sm)] font-medium">
                           {lesson.title}
                         </span>
-                        <span className={cn("mt-0.5 block text-xs", isLight ? "text-slate-500" : "text-neutral-500")}>
+                        <span
+                          className={cn(
+                            "mt-0.5 block text-[length:var(--text-xs)]",
+                            mutedTextClass
+                          )}
+                        >
                           {lesson.topics.length} topics
                         </span>
                       </span>
@@ -558,10 +528,15 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                     }
                     onClick={() => toggleLesson(lesson.id)}
                     className={cn(
-                      "flex w-11 items-center justify-center border-l transition-colors",
-                      isLight
-                        ? "border-slate-200 text-slate-500 hover:text-slate-950"
-                        : "border-white/[0.08] text-neutral-500 hover:text-white"
+                      "flex w-11 items-center justify-center border-l",
+                      "border-[var(--border-subtle)] text-[var(--text-muted)]",
+                      "hover:text-[var(--text-primary)]",
+                      // Same reason as the row beside it: keep the active card's
+                      // tint rather than covering it with an opaque hover.
+                      isLessonActive
+                        ? "hover:bg-[var(--accent-subtle)]"
+                        : "hover:bg-[var(--surface-sunken)]",
+                      flushRowClass
                     )}
                   >
                     <svg
@@ -583,31 +558,35 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                 </div>
 
                 {isExpanded ? (
-                  <div className={cn("mx-3 mb-3 space-y-1 border-l pl-3", sidebarBorderClass)}>
+                  <div className={cn("mx-3 mb-3 space-y-1 border-l pl-3", dividerClass)}>
                     {lesson.topics.map((topic) => (
                       <button
                         key={topic.id}
                         type="button"
                         onClick={() => selectTopic(topic.id)}
                         className={cn(
-                          "group flex w-full items-center gap-2 rounded-[0.75rem] px-2.5 py-2 text-left text-sm transition-colors",
+                          "group flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-left",
+                          "text-[length:var(--text-sm)]",
+                          flushRowClass,
                           activeTopicId === topic.id
-                            ? isLight
-                              ? "bg-white text-slate-950"
-                              : "bg-white/[0.06] text-white"
-                            : isLight
-                            ? "text-slate-600 hover:bg-white hover:text-slate-950"
-                            : "text-neutral-400 hover:bg-white/[0.035] hover:text-white"
+                            // "You are here": set into the card and held there.
+                            // The inlaid shading is what keeps it distinct from
+                            // a hovered row -- both used to land on the same
+                            // fill, so hovering any topic looked like selecting
+                            // it.
+                            ? "bg-[var(--surface-sunken)] shadow-[var(--inlaid)] text-[var(--text-primary)]"
+                            : cn(
+                                mutedTextClass,
+                                "hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]"
+                              )
                         )}
                       >
                         <span
                           className={cn(
                             "h-1.5 w-1.5 shrink-0 rounded-full",
                             activeTopicId === topic.id
-                              ? "bg-[#4f8dfd]"
-                              : isLight
-                              ? "bg-slate-300"
-                              : "bg-white/20"
+                              ? "bg-[var(--accent-solid)]"
+                              : "bg-[var(--border-strong)]"
                           )}
                         />
                         <span className="min-w-0 flex-1 truncate">{topic.title}</span>
@@ -621,13 +600,18 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
         </div>
       </aside>
 
-      <section className={cn("flex min-w-0 flex-1 flex-col", isLight ? "bg-[#f4f8fc]" : "bg-[#050505]")}>
+      <section className="flex min-w-0 flex-1 flex-col bg-[var(--surface-page)]">
+        {/*
+          The workspace bar rests on the page rather than floating over it: it
+          scrolls nothing and covers nothing, so --raised is the honest rung. The
+          old inline accent glow is gone with the per-mode palettes it came from.
+        */}
         <header
           className={cn(
-            "border-b px-4 py-3 backdrop-blur-md transition-shadow duration-300",
-            isLight ? "border-slate-200/90 bg-white/92" : "border-white/[0.08] bg-[#090909]/96"
+            "border-b px-4 py-3",
+            "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised)]",
+            dividerClass
           )}
-          style={headerGlowStyle}
         >
           <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div className="flex min-w-0 items-start gap-3">
@@ -636,26 +620,31 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                 onClick={() => setSidebarOpen((current) => !current)}
                 aria-label={sidebarOpen ? "Collapse syllabus" : "Expand syllabus"}
                 className={cn(
-                  "group flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] border transition-all duration-300",
-                  isLight ? "bg-white hover:bg-slate-50" : "bg-[#0b0b0b] hover:bg-[#111111]",
-                  sidebarOpen ? sidebarBorderClass : modeAccent.border
+                  "group flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] border",
+                  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                  pressableClass,
+                  // A collapsed syllabus is the one state worth flagging, so the
+                  // toggle borrows the accent border until it is opened again.
+                  sidebarOpen
+                    ? "border-[var(--border-strong)]"
+                    : "border-[var(--accent-border)]"
                 )}
               >
                 <div className="relative h-4 w-5">
-                  <span className={cn("absolute left-0 top-0 h-[2px] w-5 rounded-full transition-colors duration-300", isLight ? "bg-slate-500 group-hover:bg-slate-900" : "bg-neutral-400 group-hover:bg-white")} />
-                  <span className={cn("absolute left-0 top-1/2 h-[2px] w-5 -translate-y-1/2 rounded-full transition-colors duration-300", isLight ? "bg-slate-500 group-hover:bg-slate-900" : "bg-neutral-400 group-hover:bg-white")} />
-                  <span className={cn("absolute bottom-0 left-0 h-[2px] w-5 rounded-full transition-colors duration-300", isLight ? "bg-slate-500 group-hover:bg-slate-900" : "bg-neutral-400 group-hover:bg-white")} />
+                  <span className="absolute left-0 top-0 h-[2px] w-5 rounded-full bg-[var(--text-muted)] transition-colors duration-[var(--duration-base)] group-hover:bg-[var(--text-primary)]" />
+                  <span className="absolute left-0 top-1/2 h-[2px] w-5 -translate-y-1/2 rounded-full bg-[var(--text-muted)] transition-colors duration-[var(--duration-base)] group-hover:bg-[var(--text-primary)]" />
+                  <span className="absolute bottom-0 left-0 h-[2px] w-5 rounded-full bg-[var(--text-muted)] transition-colors duration-[var(--duration-base)] group-hover:bg-[var(--text-primary)]" />
                 </div>
               </button>
 
               <div className="min-w-0">
-                <div className={cn("text-[10px] font-semibold uppercase tracking-[0.22em]", modeAccent.text)}>
+                <div className="text-[length:var(--text-xs)] font-semibold uppercase tracking-[var(--tracking-label)] text-[var(--accent-text)]">
                   Learning workspace
                 </div>
-                <h1 className={cn("mt-1 truncate text-[1.35rem] font-semibold leading-tight", isLight ? "text-slate-950" : "text-white")}>
+                <h1 className="mt-1 truncate text-[length:var(--text-xl)] font-semibold leading-tight text-[var(--text-primary)]">
                   {activeTabMeta.title}
                 </h1>
-                <div className={cn("mt-1 text-xs", isLight ? "text-slate-500" : "text-neutral-500")}>
+                <div className={cn("mt-1 text-[length:var(--text-xs)]", mutedTextClass)}>
                   Topic {currentTopicPosition} of {totalTopicCount}
                 </div>
               </div>
@@ -666,10 +655,10 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
               <Link
                 href="/resources"
                 className={cn(
-                  "rounded-[0.95rem] border px-3 py-2 text-sm transition-colors",
-                  isLight
-                    ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
-                    : "border-neutral-900 bg-[#0a0a0a] text-neutral-300 hover:border-neutral-700 hover:bg-[#111111] hover:text-white"
+                  "rounded-[var(--radius-md)] border px-3 py-2 text-[length:var(--text-sm)]",
+                  "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                  "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                  pressableClass
                 )}
               >
                 Back
@@ -678,10 +667,10 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                 href={courseSwitchHref}
                 aria-label={`Open ${courseSwitchLabel}`}
                 className={cn(
-                  "rounded-[0.95rem] border px-3 py-2 text-sm transition-colors",
-                  isLight
-                    ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
-                    : "border-neutral-900 bg-[#0a0a0a] text-neutral-300 hover:border-neutral-700 hover:bg-[#111111] hover:text-white"
+                  "rounded-[var(--radius-md)] border px-3 py-2 text-[length:var(--text-sm)]",
+                  "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                  "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                  pressableClass
                 )}
               >
                 Switch course
@@ -689,9 +678,10 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
             </div>
           </div>
 
-          <div className={cn("mt-3 h-1.5 overflow-hidden rounded-full", isLight ? "bg-slate-200" : "bg-white/[0.08]")}>
+          {/* The track is a groove cut into the bar; only the fill sits in it. */}
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface-sunken)] shadow-[var(--recessed)]">
             <div
-              className={cn("h-full rounded-full transition-[width,background-color] duration-500", modeAccent.bar)}
+              className="h-full rounded-full bg-[var(--accent-solid)] transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]"
               style={{ width: `${courseProgressPercent}%` }}
             />
           </div>
@@ -700,80 +690,126 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
         <div className="flex min-h-0 flex-1">
           <article className="min-w-0 flex-1 overflow-y-auto">
             <div className="mx-auto max-w-5xl px-5 py-6 md:px-7 lg:px-8">
-              <header className={cn("border-b pb-6", sidebarBorderClass)}>
-                <div className={cn("text-[11px] uppercase tracking-[0.22em]", isLight ? "text-slate-500" : "text-neutral-500")}>
+              <header className={cn("border-b pb-6", dividerClass)}>
+                <div
+                  className={cn(
+                    "text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)]",
+                    mutedTextClass
+                  )}
+                >
                   Lesson {activeTopic.lesson.number} - {activeTopic.lesson.title}
                 </div>
-                <h2 className={cn("mt-2 text-3xl font-bold tracking-normal md:text-4xl", isLight ? "text-slate-950" : "text-white")}>
+                <h2 className="mt-2 text-[length:var(--text-2xl)] font-bold tracking-normal text-[var(--text-primary)] md:text-[length:var(--text-3xl)]">
                   {activeTopic.topic.title}
                 </h2>
-                <p className={cn("mt-3 max-w-3xl text-sm leading-7 md:text-base", mutedTextClass)}>
+                <p
+                  className={cn(
+                    "mt-3 max-w-3xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] md:text-[length:var(--text-base)]",
+                    mutedTextClass
+                  )}
+                >
                   {activeTopic.lesson.overview}
                 </p>
               </header>
 
               <div className="mt-6 space-y-6">
                 <div className="grid gap-4 xl:grid-cols-2">
-                  <section className={cn("rounded-[1.1rem] border p-5", softSurfaceClass)}>
-                    <div className={cn("text-[11px] uppercase tracking-[0.2em]", isLight ? "text-slate-500" : "text-neutral-500")}>
+                  <section className={cn("rounded-[var(--radius-lg)] border p-5", softSurfaceClass)}>
+                    <div
+                      className={cn(
+                        "text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)]",
+                        mutedTextClass
+                      )}
+                    >
                       Concept
                     </div>
-                    <p className={cn("mt-3 text-sm leading-7 md:text-base", mutedTextClass)}>
+                    <p
+                      className={cn(
+                        "mt-3 text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] md:text-[length:var(--text-base)]",
+                        mutedTextClass
+                      )}
+                    >
                       {activeTopic.topic.definition}
                     </p>
                   </section>
 
-                  <section className={cn("rounded-[1.1rem] border p-5", softSurfaceClass)}>
-                    <div className={cn("text-[11px] uppercase tracking-[0.2em]", isLight ? "text-slate-500" : "text-neutral-500")}>
+                  <section className={cn("rounded-[var(--radius-lg)] border p-5", softSurfaceClass)}>
+                    <div
+                      className={cn(
+                        "text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)]",
+                        mutedTextClass
+                      )}
+                    >
                       When to use it
                     </div>
-                    <p className={cn("mt-3 text-sm leading-7 md:text-base", mutedTextClass)}>
+                    <p
+                      className={cn(
+                        "mt-3 text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] md:text-[length:var(--text-base)]",
+                        mutedTextClass
+                      )}
+                    >
                       {activeTopic.topic.howAndWhy}
                     </p>
                   </section>
                 </div>
 
+                {/*
+                  The examples panel is the largest object in the column and the
+                  only one carrying its own toolbar, so it sits a rung above the
+                  concept cards rather than level with them.
+                */}
                 <section
                   className={cn(
-                    "rounded-[1.1rem] border transition-colors duration-300",
-                    isLight ? "bg-white/90" : "bg-white/[0.025]",
-                    modeAccent.border,
-                    modeAccent.shadow
+                    "rounded-[var(--radius-xl)] border",
+                    "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                    "shadow-[var(--raised-lg)]"
                   )}
                 >
-                  <div
-                    className={cn(
-                      "border-b px-4 py-4 md:px-5",
-                      isLight ? "border-slate-200/90 bg-white" : "border-white/[0.08] bg-[#090909]"
-                    )}
-                  >
+                  <div className={cn("border-b px-4 py-4 md:px-5", dividerClass)}>
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                      <div className={cn("text-[11px] uppercase tracking-[0.2em]", modeAccent.text)}>
+                      <div className="text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--accent-text)]">
                         Examples
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        {ENTRY_MODE_OPTIONS.map((mode) => {
-                          const itemAccent = accentSet[mode.id];
-
-                          return (
-                            <button
-                              key={mode.id}
-                              type="button"
-                              onClick={() => setEntryMode(mode.id)}
-                              className={cn(
-                                "rounded-full border px-3 py-2 text-xs transition-colors",
-                                entryMode === mode.id
-                                  ? `${itemAccent.border} ${itemAccent.bg} ${itemAccent.text}`
-                                  : isLight
-                                  ? `border-transparent text-slate-600 hover:text-slate-950 ${itemAccent.hoverBorder} ${itemAccent.hoverBg}`
-                                  : `border-transparent text-neutral-400 hover:bg-white/[0.035] hover:text-white ${itemAccent.hoverBorder} ${itemAccent.hoverBg}`
-                              )}
-                            >
-                              {mode.label}
-                            </button>
-                          );
-                        })}
+                        {ENTRY_MODE_OPTIONS.map((mode) => (
+                          <button
+                            key={mode.id}
+                            type="button"
+                            onClick={() => setEntryMode(mode.id)}
+                            aria-pressed={entryMode === mode.id}
+                            className={cn(
+                              "rounded-full border px-3 py-2 text-[length:var(--text-xs)]",
+                              "transition-[background-color,border-color,box-shadow,transform]",
+                              "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+                              entryMode === mode.id
+                                ? cn(
+                                    // The selected mode stays held down. Depth is
+                                    // what tells the four chips apart now that
+                                    // they no longer own a colour each.
+                                    "border-[var(--accent-border)] bg-[var(--accent-subtle)] text-[var(--accent-text)]",
+                                    "shadow-[var(--pressed)] translate-y-[var(--press-travel)]",
+                                    // Held down, so there is no depth left to
+                                    // give on hover -- the border firms up
+                                    // instead, so the chip still answers the
+                                    // cursor like every other control here.
+                                    "hover:border-[var(--accent-solid)]",
+                                    "motion-reduce:transform-none"
+                                  )
+                                : cn(
+                                    "border-[var(--border-strong)] bg-[var(--surface-raised)]",
+                                    "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                                    "shadow-[var(--raised)] hover:shadow-[var(--lifted)]",
+                                    "hover:-translate-y-[var(--lift-travel)]",
+                                    "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+                                    "motion-reduce:transform-none motion-reduce:hover:transform-none",
+                                    "motion-reduce:active:transform-none"
+                                  )
+                            )}
+                          >
+                            {mode.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -810,13 +846,22 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                       return (
                         <div key={example.id}>
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className={cn("text-[11px] uppercase tracking-[0.2em]", isLight ? "text-slate-500" : "text-neutral-500")}>
+                            <div
+                              className={cn(
+                                "text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)]",
+                                mutedTextClass
+                              )}
+                            >
                               Example {index + 1}
                             </div>
 
                             {activeExampleMode && buttonState ? (
-                              <button
+                              // The one action on the panel, so it takes the
+                              // accent. Button already carries the press.
+                              <Button
                                 type="button"
+                                variant="primary"
+                                size="md"
                                 disabled={buttonState.disabled || isCreating}
                                 onClick={() =>
                                   void handleTryItYourself(
@@ -827,25 +872,17 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                                     index + 1
                                   )
                                 }
-                                className={cn(
-                                  "rounded-[0.95rem] border px-4 py-2 text-sm transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50",
-                                  modeAccent.border,
-                                  modeAccent.bg,
-                                  modeAccent.text,
-                                  modeAccent.hoverBorder,
-                                  modeAccent.hoverBg
-                                )}
                               >
                                 {isCreating ? "Creating..." : "Try it Yourself"}
-                              </button>
+                              </Button>
                             ) : null}
                           </div>
 
                           <pre
                             className={cn(
-                              "mt-3 overflow-x-auto whitespace-pre-wrap rounded-[1rem] border px-4 py-4 text-sm leading-7",
-                              codeSurfaceClass,
-                              modeAccent.border
+                              "mt-3 overflow-x-auto whitespace-pre-wrap rounded-[var(--radius-lg)] border px-4 py-4",
+                              "text-[length:var(--text-sm)] leading-[var(--leading-relaxed)]",
+                              codeSurfaceClass
                             )}
                           >
                             {displayedExampleLines.join("\n")}
@@ -854,10 +891,10 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                           {inlineMessage ? (
                             <p
                               className={cn(
-                                "mt-2 text-xs leading-6",
+                                "mt-2 text-[length:var(--text-xs)] leading-[var(--leading-normal)]",
                                 exampleActionState?.id === example.id &&
                                   exampleActionState.tone === "error"
-                                  ? "text-rose-300"
+                                  ? "text-[var(--state-blocked)]"
                                   : mutedTextClass
                               )}
                             >
@@ -871,7 +908,7 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                 </section>
 
                 <nav
-                  className={cn("grid gap-3 border-t pt-5 sm:grid-cols-2", sidebarBorderClass)}
+                  className={cn("grid gap-3 border-t pt-5 sm:grid-cols-2", dividerClass)}
                   aria-label="Lesson topic navigation"
                 >
                   <button
@@ -879,12 +916,17 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                     disabled={!previousTopic}
                     onClick={() => previousTopic && selectTopic(previousTopic.topic.id)}
                     className={cn(
-                      "rounded-[1rem] border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-45",
-                      previousTopic ? inactiveItemClass : softSurfaceClass
+                      "rounded-[var(--radius-lg)] border p-4 text-left",
+                      "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                      "text-[var(--text-primary)]",
+                      pressableClass,
+                      pressableDisabledClass
                     )}
                   >
-                    <span className={cn("block text-xs", isLight ? "text-slate-500" : "text-neutral-500")}>Previous topic</span>
-                    <span className="mt-1 flex items-center gap-2 text-sm font-medium">
+                    <span className={cn("block text-[length:var(--text-xs)]", mutedTextClass)}>
+                      Previous topic
+                    </span>
+                    <span className="mt-1 flex items-center gap-2 text-[length:var(--text-sm)] font-medium">
                       <svg
                         viewBox="0 0 20 20"
                         fill="none"
@@ -902,19 +944,24 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                     </span>
                   </button>
 
+                  {/* Forward is the expected move, so it is the one that gets the accent. */}
                   <button
                     type="button"
                     disabled={!nextTopic}
                     onClick={() => nextTopic && selectTopic(nextTopic.topic.id)}
                     className={cn(
-                      "rounded-[1rem] border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-45 sm:text-right",
+                      "rounded-[var(--radius-lg)] border p-4 text-left sm:text-right",
+                      pressableClass,
+                      pressableDisabledClass,
                       nextTopic
-                        ? `${modeAccent.border} ${modeAccent.bg} ${modeAccent.text} ${modeAccent.hoverBorder} ${modeAccent.hoverBg}`
-                        : softSurfaceClass
+                        ? "border-[var(--accent-border)] bg-[var(--accent-subtle)] text-[var(--accent-text)]"
+                        : "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-[var(--text-primary)]"
                     )}
                   >
-                    <span className={cn("block text-xs", isLight ? "text-slate-500" : "text-neutral-500")}>Next topic</span>
-                    <span className="mt-1 flex items-center gap-2 text-sm font-medium sm:justify-end">
+                    <span className={cn("block text-[length:var(--text-xs)]", mutedTextClass)}>
+                      Next topic
+                    </span>
+                    <span className="mt-1 flex items-center gap-2 text-[length:var(--text-sm)] font-medium sm:justify-end">
                       <span>{nextTopic ? nextTopic.topic.title : "Course complete"}</span>
                       <svg
                         viewBox="0 0 20 20"

@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/cn";
 
 type PlaceholderIconKind =
@@ -23,6 +22,30 @@ const DEFAULT_SOCIAL_LINKS: FooterSocialLink[] = [
   { label: "Placeholder Instagram", href: "#", icon: "instagram" },
   { label: "Placeholder TikTok", href: "#", icon: "tiktok" },
 ];
+
+/*
+ * A social link is a control resting directly on the page, so it takes the base
+ * rung rather than the card one -- the bar controls in site-shell sit on a
+ * raised surface and need the stronger border to separate from it; here the page
+ * behind is flat, and the lit top edge alone is enough.
+ *
+ * It is a link, but it is shaped like a button, so it has to behave like one:
+ * up toward the light on hover, down and inverted when held. Same physics as the
+ * Button primitive, which it deliberately mirrors.
+ */
+const SOCIAL_CONTROL = cn(
+  "flex h-10 w-10 items-center justify-center rounded-[var(--radius-full)]",
+  "border border-[var(--border-subtle)]",
+  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+  "text-[var(--text-muted)] shadow-[var(--raised)]",
+  "transition-[background-color,border-color,box-shadow,color,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+  "hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]",
+  "hover:shadow-[var(--lifted)] hover:-translate-y-[var(--lift-travel)]",
+  "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none"
+);
 
 function PlaceholderSocialIcon({ kind }: { kind: PlaceholderIconKind }) {
   if (kind === "x") {
@@ -131,29 +154,25 @@ export function SiteFooter({
   socialLinks?: FooterSocialLink[];
   requireAuthForLinks?: boolean;
 }) {
-  const { isLight } = useTheme();
-
   return (
-    <footer className={cn("relative z-10 mt-8", className)}>
-      <div className="mx-auto w-full max-w-7xl px-4 pb-8 md:px-6 md:pb-10">
-        <div className="px-1 py-2 md:px-0">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-end">
-            <div
-              className={cn(
-                "flex flex-wrap items-center gap-3 md:gap-4",
-                isLight ? "text-slate-500" : "text-neutral-400"
-              )}
-            >
+    <footer className={cn("relative z-10 mt-[var(--space-8)]", className)}>
+      <div
+        className={cn(
+          "mx-auto w-full max-w-7xl",
+          // Matches PageFrame's gutters so the footer rules line up with the
+          // content above them.
+          "px-[var(--space-4)] pb-[var(--space-8)]",
+          "md:px-[var(--space-6)] md:pb-[var(--space-10)]"
+        )}
+      >
+        <div className="px-[var(--space-1)] py-[var(--space-2)] md:px-0">
+          <div className="flex flex-col gap-[var(--space-5)] md:flex-row md:items-center md:justify-end">
+            <div className="flex flex-wrap items-center gap-[var(--space-3)] md:gap-[var(--space-4)]">
               {socialLinks.map((link) => (
                 <a
                   key={link.label}
                   href={requireAuthForLinks ? "/login" : link.href}
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-300",
-                    isLight
-                      ? "border-slate-200/90 bg-white/72 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-900"
-                      : "border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white"
-                  )}
+                  className={SOCIAL_CONTROL}
                   aria-label={link.label}
                 >
                   <PlaceholderSocialIcon kind={link.icon} />
@@ -162,19 +181,24 @@ export function SiteFooter({
             </div>
           </div>
 
+          {/* A hairline that fades out at both ends, so only its midpoint is ever
+              at full strength -- it takes --border-strong to still read as a
+              line there, where --border-subtle would disappear. */}
           <div
             className={cn(
-              "mt-5 h-px w-full",
-              isLight
-                ? "bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.35),transparent)]"
-                : "bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)]"
+              "mt-[var(--space-5)] h-px w-full",
+              "bg-[linear-gradient(90deg,transparent,var(--border-strong),transparent)]"
             )}
           />
 
+          {/* Muted rather than soft, to hold the same weight as the icon row
+              above -- those sit on a raised surface, where soft falls under AA
+              in the dark theme. */}
           <div
             className={cn(
-              "mt-4 flex flex-col gap-2 text-sm md:flex-row md:items-end md:justify-between",
-              isLight ? "text-slate-500" : "text-neutral-400"
+              "mt-[var(--space-4)] flex flex-col gap-[var(--space-2)]",
+              "text-[length:var(--text-sm)] text-[var(--text-muted)]",
+              "md:flex-row md:items-end md:justify-between"
             )}
           >
             <p>© 2026 All rights reserved.</p>

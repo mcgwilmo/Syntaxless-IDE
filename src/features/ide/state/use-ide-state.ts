@@ -1682,7 +1682,9 @@ export function useIdeState() {
   const subsectionSurfaceClass =
     "border-b border-[var(--border-subtle)] bg-[var(--surface-raised)]";
 
-  // The well the editor sits in. Recessed, because the work goes into it.
+  // The tint of the well the editor sits in. Colour only: the recess belongs on
+  // the editor frame, which is the element that actually has the cut edge, and
+  // this class is also used on the plain column around it.
   const workspaceBgClass = "bg-[var(--surface-sunken)]";
   const panelBgClass = "bg-[var(--surface-raised)]";
   const panelBorderClass = "border-[var(--border-subtle)]";
@@ -1704,11 +1706,16 @@ export function useIdeState() {
       ? "border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)] bg-[var(--state-warning-subtle)] text-[var(--state-warning)]"
       : "border-[color-mix(in_srgb,var(--state-success)_30%,transparent)] bg-[var(--state-success-subtle)] text-[var(--state-success)]";
 
+  // The dark panels re-declare their text colour inline so a forced-colors pass
+  // or a page-darkening extension cannot repaint them mid-run. Each one names
+  // the same token as the class it accompanies -- the job here is to pin a
+  // colour down, not to choose a second one, and a literal would silently stop
+  // matching the class the first time a token moved.
   const protectedDarkSurfaceStyle = getProtectedDarkSurfaceStyle(theme);
-  const protectedDarkLabelStyle = getProtectedDarkTextStyle(theme, "#a3a3a3");
-  const protectedDarkMetaStyle = getProtectedDarkTextStyle(theme, "#d4d4d8");
-  const protectedDarkTitleStyle = getProtectedDarkTextStyle(theme, "#ffffff");
-  const protectedDarkTerminalTextStyle = getProtectedDarkTextStyle(theme, "#7dd3fc");
+  const protectedDarkLabelStyle = getProtectedDarkTextStyle(theme, "var(--text-muted)");
+  const protectedDarkMetaStyle = getProtectedDarkTextStyle(theme, "var(--text-muted)");
+  const protectedDarkTitleStyle = getProtectedDarkTextStyle(theme, "var(--text-primary)");
+  const protectedDarkTerminalTextStyle = getProtectedDarkTextStyle(theme, "var(--accent-text)");
   const modeBarGlowStyle = getModeBarGlowStyle(theme, mode, "soft");
   const modePanelGlowStyle = getModeBarGlowStyle(theme, mode, "medium");
 
@@ -1718,34 +1725,67 @@ export function useIdeState() {
 
   // Inlaid: a label set into the surface, not a control.
   const subtleChipClass =
-    "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)] shadow-[inset_0_1px_1px_rgba(28,26,23,0.07)]";
+    "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)] shadow-[var(--inlaid)]";
 
   const pricingCardClass =
     "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised)]";
-  const pricingCardHoverClass =
-    "hover:border-[var(--border-strong)] hover:shadow-[var(--raised-lg)]";
+  // A plan is a card you pick, so hover rises rather than jumping a whole rung:
+  // --raised-lg would read as the card growing, not as the cursor reaching it.
+  // The rise is a shadow AND a travel, because --lifted is the shading of an
+  // object that has actually moved; without the transform the card only gets a
+  // bigger shadow while staying put, which reads as a glow.
+  const pricingCardHoverClass = joinClasses(
+    "transition-[border-color,box-shadow,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
+    "hover:border-[var(--border-strong)] hover:shadow-[var(--lifted)]",
+    "hover:-translate-y-[var(--lift-travel)]",
+    // The hover-state guard has to carry the hover variant too: a bare
+    // motion-reduce:transform-none is a plain class selector and loses to
+    // hover:-translate-y-* on specificity, so it would silently fail to hold
+    // the card still. Depth still reads with motion off; only travel is
+    // dropped.
+    "motion-reduce:transform-none motion-reduce:hover:transform-none"
+  );
 
-  // Toolbar buttons are objects: raised at rest, pressed in when held.
+  // Toolbar buttons are objects: raised at rest, rising toward the light on
+  // hover, pressed in and travelling down when held. Same press duration as the
+  // Button primitive, because a menu bar that acknowledges a click more slowly
+  // than the buttons beside it reads as lag rather than as a different control.
   const menuButtonClass = (active: boolean) =>
     joinClasses(
       "inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] border px-3 text-[12px] font-semibold",
-      "transition-[background-color,box-shadow,transform] duration-150",
-      "shadow-[var(--raised)] active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+      // colour and border-color are in the list because the inactive branch
+      // brightens its text and the active branch carries an accent border:
+      // if only the material eased, the label would snap while the button
+      // under it was still rising.
+      "transition-[background-color,border-color,color,box-shadow,transform] duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+      "shadow-[var(--raised)] hover:shadow-[var(--lifted)] hover:-translate-y-[var(--lift-travel)]",
+      "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+      // The depth still reads with motion off; only the travel is dropped, so a
+      // press is never announced by movement alone.
+      "motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none",
       active
         ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-[var(--text-primary)]`
         : "border-[var(--border-strong)] bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
     );
 
-  // Floating above everything, so the largest elevation in the IDE.
+  // A dropped menu is detached from the page rather than lying on it, so it
+  // takes the floating rung: no contact shadow, and a long cast one.
   const menuPanelClass =
-    "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-[var(--text-primary)] shadow-[var(--raised-lg)]";
+    "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-[var(--text-primary)] shadow-[var(--floating)]";
 
+  // Rows inside the menu tint on hover and sink when held, but never rise: the
+  // panel is already off the page, and a row that lifted too would read as a
+  // second object floating on top of the menu.
   const menuItemBaseClass =
-    "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-[12px] transition-colors duration-150";
+    "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-[12px] transition-[background-color,color,box-shadow] duration-[var(--duration-fast)]";
 
   const menuItemClass = (item: IdeMenuItem) =>
     joinClasses(
       menuItemBaseClass,
+      // Only a row that can actually be chosen acknowledges the click. Let a
+      // disabled one sink and "unavailable" and "selected" feel identical under
+      // the cursor, which is the moment the menu stops being trustworthy.
+      !item.disabled && "active:shadow-[var(--pressed)]",
       item.disabled
         ? "cursor-not-allowed text-[var(--text-soft)]"
         : item.danger
@@ -1759,7 +1799,7 @@ export function useIdeState() {
     joinClasses(
       "flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border text-[12px] font-semibold",
       // Inlaid, like a key cap set into the menu row.
-      "shadow-[inset_0_1px_1px_rgba(28,26,23,0.07)]",
+      "shadow-[var(--inlaid)]",
       item?.danger
         ? "border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)] bg-[var(--state-blocked-subtle)] text-[var(--state-blocked)]"
         : "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"

@@ -69,8 +69,12 @@ export function Field({
         {...props}
       />
 
+      {/* Muted, not soft, for the same reason as the placeholder above: a Field
+          is almost always sitting on a raised card, and soft is only measured
+          against --surface-page. On a sheened card in the dark theme soft drops
+          to 4.90:1 -- nominally AA, but with no margin left. */}
       {hint && !error && (
-        <p id={`${fieldId}-hint`} className="text-[length:var(--text-sm)] text-[var(--text-soft)]">
+        <p id={`${fieldId}-hint`} className="text-[length:var(--text-sm)] text-[var(--text-muted)]">
           {hint}
         </p>
       )}

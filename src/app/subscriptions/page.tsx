@@ -18,71 +18,11 @@ import {
 } from "@/lib/subscriptions";
 import { SiteFooter } from "@/components/site-footer";
 import { AppPageBackground, SiteHeader, TypingHeading } from "@/components/site-shell";
-import { useTheme } from "@/components/theme-provider";
+import { Badge, Button, Callout } from "@/design/primitives";
 
 const TIERS: SubscriptionTier[] = ["free", "student", "plus", "pro"];
 const MOST_POPULAR_TIER: SubscriptionTier = "plus";
 type BillingCycle = "monthly" | "yearly";
-
-const CARD_META: Record<
-  SubscriptionTier,
-  {
-    spotlight: string;
-    badge: string;
-    button: string;
-    buttonSecondary: string;
-    ring: string;
-  }
-> = {
-  free: {
-    spotlight: "from-blue-500/40 via-cyan-400/18 to-transparent",
-    badge: "text-sky-300",
-    button:
-      "bg-cyan-400 text-slate-950 hover:bg-cyan-300",
-    buttonSecondary:
-      "border-white/14 bg-white/[0.06] text-white hover:border-white/20 hover:bg-white/[0.1]",
-    ring: "ring-sky-400/20",
-  },
-  plus: {
-    spotlight: "from-cyan-400/55 via-sky-400/20 to-transparent",
-    badge: "text-cyan-300",
-    button:
-      "bg-cyan-400 text-slate-950 hover:bg-cyan-300",
-    buttonSecondary:
-      "border-cyan-300/30 bg-cyan-400/12 text-cyan-100 hover:border-cyan-200/40 hover:bg-cyan-400/18",
-    ring: "ring-cyan-300/30",
-  },
-  student: {
-    spotlight: "from-indigo-400/50 via-cyan-300/18 to-transparent",
-    badge: "text-indigo-200",
-    button:
-      "bg-cyan-400 text-slate-950 hover:bg-cyan-300",
-    buttonSecondary:
-      "border-white/14 bg-white/[0.06] text-white hover:border-white/20 hover:bg-white/[0.1]",
-    ring: "ring-indigo-300/25",
-  },
-  pro: {
-    spotlight: "from-teal-300/50 via-cyan-300/18 to-transparent",
-    badge: "text-teal-200",
-    button:
-      "bg-cyan-400 text-slate-950 hover:bg-cyan-300",
-    buttonSecondary:
-      "border-white/14 bg-white/[0.06] text-white hover:border-white/20 hover:bg-white/[0.1]",
-    ring: "ring-teal-300/25",
-  },
-};
-
-function getPrimaryButtonClass(isLight: boolean) {
-  return isLight
-    ? "border-blue-200 bg-white text-slate-700 hover:border-blue-300 hover:text-slate-900 hover:shadow-[0_16px_32px_rgba(59,130,246,0.12)]"
-    : "border-blue-400/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.014))] text-neutral-300 hover:border-blue-300/28 hover:text-white hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_22px_rgba(66,146,255,0.07)]";
-}
-
-function getAccentButtonClass(isLight: boolean) {
-  return isLight
-    ? "border-cyan-300 bg-cyan-400 text-slate-950 hover:border-cyan-300 hover:bg-cyan-300 hover:shadow-[0_16px_32px_rgba(34,211,238,0.18)]"
-    : "border-cyan-300/30 bg-cyan-400/90 text-slate-950 hover:border-cyan-200/40 hover:bg-cyan-300";
-}
 
 function CheckIcon({ className = "" }: { className?: string }) {
   return (
@@ -220,7 +160,6 @@ function getFeatureList(
 export default function SubscriptionsPage() {
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const { isLight } = useTheme();
 
   const [isAuthed, setIsAuthed] = useState(false);
   const [userId, setUserId] = useState("");
@@ -382,56 +321,55 @@ export default function SubscriptionsPage() {
 
   function renderAction(tier: SubscriptionTier) {
     const isCurrent = currentTier === tier;
-    const secondaryClass = getPrimaryButtonClass(isLight);
-    const primaryClass =
-      tier === MOST_POPULAR_TIER || isCurrent
-        ? getAccentButtonClass(isLight)
-        : secondaryClass;
 
     if (!isAuthed) {
       return (
-        <button
+        <Button
+          variant="secondary"
+          size="lg"
+          fullWidth
           onClick={() => router.push("/signup")}
-          className={`group relative mt-auto w-full overflow-hidden rounded-full border px-4 py-3 text-sm uppercase tracking-[0.22em] transition-all duration-300 ${secondaryClass}`}
+          className="mt-auto uppercase tracking-[var(--tracking-label)]"
         >
-          <span className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(110deg,transparent_18%,rgba(255,255,255,0.05)_38%,rgba(23,111,255,0.15)_50%,rgba(23,223,255,0.12)_60%,rgba(255,255,255,0.05)_68%,transparent_82%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:animate-[metalSweep_1.15s_ease]" />
-          <span className="pointer-events-none absolute inset-[1px] rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(255,255,255,0.004))]" />
-          <span className="relative z-10">Create account to choose</span>
-        </button>
+          Create account to choose
+        </Button>
       );
     }
 
     if (isCurrent) {
+      /*
+       * The plan you are already on is a statement, not an offer, so it is
+       * inlaid into the card instead of sitting proud of it like the other
+       * cards' buttons. Nothing here is pressable, so nothing here moves --
+       * that absence is most of what tells the two apart at a glance.
+       */
       return (
         <div
-          className={`mt-auto w-full rounded-full border px-4 py-3 text-center text-sm uppercase tracking-[0.22em] ${isLight ? "border-blue-200 bg-blue-50 text-blue-700" : "border-blue-300/30 bg-blue-400/12 text-blue-200"}`}
+          className="mt-auto w-full rounded-[var(--radius-md)] border border-[var(--accent-border)] bg-[var(--accent-subtle)] px-[var(--space-5)] py-[var(--space-3)] text-center text-[length:var(--text-base)] font-medium uppercase tracking-[var(--tracking-label)] text-[var(--accent-text)] shadow-[var(--inlaid)]"
         >
           Current Plan
         </div>
       );
     }
 
+    /* The most popular tier is the one recommendation the page makes, so it is
+       the only accent-filled CTA in the row. */
     return (
-      <button
+      <Button
+        variant={tier === MOST_POPULAR_TIER ? "primary" : "secondary"}
+        size="lg"
+        fullWidth
         onClick={() => handleSelectTier(tier)}
         disabled={isUpdating}
-        className={`group relative mt-auto w-full overflow-hidden rounded-full border px-4 py-3 text-sm uppercase tracking-[0.22em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${primaryClass}`}
+        className="mt-auto uppercase tracking-[var(--tracking-label)]"
       >
-        <span className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(110deg,transparent_18%,rgba(255,255,255,0.05)_38%,rgba(23,111,255,0.15)_50%,rgba(23,223,255,0.12)_60%,rgba(255,255,255,0.05)_68%,transparent_82%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:animate-[metalSweep_1.15s_ease]" />
-        <span className="pointer-events-none absolute inset-[1px] rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(255,255,255,0.004))]" />
-        <span className="relative z-10">
-          {isUpdating ? "Updating..." : `Choose ${SUBSCRIPTION_META[tier].label}`}
-        </span>
-      </button>
+        {isUpdating ? "Updating..." : `Choose ${SUBSCRIPTION_META[tier].label}`}
+      </Button>
     );
   }
 
   return (
-    <main
-      className={`relative min-h-screen overflow-hidden ${
-        isLight ? "bg-[#eef4fb] text-slate-900" : "bg-[#050608] text-white"
-      }`}
-    >
+    <main className="relative min-h-screen overflow-hidden bg-[var(--surface-page)] text-[var(--text-primary)]">
       <AppPageBackground />
 
       <SiteHeader
@@ -440,12 +378,7 @@ export default function SubscriptionsPage() {
         authLabel={isAuthed ? "Dashboard" : "Login"}
         learningCenterHref={isAuthed ? "/resources" : "/login"}
         showSignOut={isAuthed}
-        className="page-enter-soft"
-        surfaceClassName={
-          isLight
-            ? "border-slate-200/90 bg-white/80"
-            : "border-white/[0.08] bg-black/55"
-        }
+        surfaceClassName="border-[var(--border-subtle)] bg-[var(--surface-raised)]"
       />
 
       <section className="relative z-10 px-4 pb-24 pt-32 md:px-6 md:pt-36">
@@ -454,28 +387,37 @@ export default function SubscriptionsPage() {
             <TypingHeading
               text="Pricing"
               as="h1"
-              className={`mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] ${
-                isLight ? "text-slate-950" : "text-white"
-              }`}
+              className="mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]"
             />
 
-            <p className={`mx-auto mt-4 max-w-xl text-[0.88rem] leading-6 md:text-[0.95rem] md:leading-7 ${isLight ? "text-slate-600" : "text-neutral-400"}`}>
+            <p className="mx-auto mt-4 max-w-xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)] md:text-[length:var(--text-base)]">
               Choose the plan that unlocks the workflow you want. This is still an alpha framework pass, so plan changes update immediately in the UI with no payment flow yet.
             </p>
 
             <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
               {isAuthed ? (
-                <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.2em] ${isLight ? "border-cyan-200 bg-cyan-50 text-cyan-700" : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200"}`}>
+                <Badge tone="accent" className="uppercase tracking-[var(--tracking-label)]">
                   {SUBSCRIPTION_META[currentTier].label}
-                </div>
+                </Badge>
               ) : null}
 
-              <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.2em] ${isLight ? "border-slate-200 bg-white/90 text-slate-500" : "border-white/10 bg-white/[0.04] text-neutral-400"}`}>
+              <Badge tone="neutral" className="uppercase tracking-[var(--tracking-label)]">
                 {status}
-              </div>
+              </Badge>
             </div>
 
-            <div className={`mx-auto mt-7 inline-flex items-center gap-1 rounded-full border p-1 ${isLight ? "border-slate-200 bg-white/90 shadow-[0_14px_32px_rgba(15,23,42,0.08)]" : "border-white/10 bg-white/[0.04]"}`}>
+            {/*
+              A segmented control is a groove with a thumb in it: the track is
+              recessed, and only the selected cycle is raised out of it. Colour
+              alone would leave both options looking equally selected.
+
+              The transition lists `translate`, not `transform`: Tailwind v4
+              compiles translate-y-* to the standalone `translate` property, so
+              naming `transform` here transitions nothing and the lift snaps.
+              Same reason the card below lists `scale`. See globals.css, which
+              documents the same trap for motion-reduce:transform-none.
+            */}
+            <div className="mx-auto mt-7 inline-flex items-center gap-1 rounded-[var(--radius-full)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-1 shadow-[var(--recessed)]">
               {(["monthly", "yearly"] as const).map((cycle) => {
                 const isSelected = billingCycle === cycle;
 
@@ -485,14 +427,10 @@ export default function SubscriptionsPage() {
                     type="button"
                     onClick={() => setBillingCycle(cycle)}
                     aria-pressed={isSelected}
-                    className={`flex h-10 items-center gap-2 rounded-full px-4 text-xs uppercase tracking-[0.2em] transition-all duration-300 ${
+                    className={`flex h-10 items-center gap-2 rounded-[var(--radius-full)] px-4 text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] transition-[background-color,box-shadow,translate,color] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none ${
                       isSelected
-                        ? isLight
-                          ? "bg-slate-950 text-white"
-                          : "bg-cyan-300 text-slate-950"
-                        : isLight
-                        ? "text-slate-500 hover:text-slate-900"
-                        : "text-neutral-400 hover:text-white"
+                        ? "bg-[var(--accent-solid)] bg-[image:var(--material-sheen)] text-[var(--text-inverted)] shadow-[var(--raised)] hover:bg-[var(--accent-hover)] hover:shadow-[var(--lifted)]"
+                        : "text-[var(--text-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] hover:shadow-[var(--lifted)]"
                     }`}
                   >
                     {cycle === "yearly" ? <SwitchIcon className="h-4 w-4" /> : null}
@@ -504,112 +442,100 @@ export default function SubscriptionsPage() {
           </div>
 
           {partneredEligible && !partneredVerified && isAuthed ? (
-            <div
-              className={`mx-auto mt-10 max-w-4xl rounded-[1.6rem] border p-4 md:p-5 ${
-                isLight
-                  ? "border-emerald-300/60 bg-emerald-50/90"
-                  : "border-emerald-400/20 bg-emerald-500/[0.06]"
-              }`}
+            <Callout
+              tone="success"
+              title="Partner-school email detected"
+              className="mx-auto mt-10 max-w-4xl md:px-[var(--space-5)] md:py-[var(--space-4)]"
             >
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className={`text-sm leading-7 ${isLight ? "text-emerald-900" : "text-emerald-100"}`}>
-                  Partner-school email detected. Verify it to unlock free Student access.
-                </div>
-                <button
+                <p>Verify it to unlock free Student access.</p>
+                <Button
+                  variant="secondary"
                   onClick={handleVerifyPartnerSchool}
                   disabled={isVerifying}
-                  className={`group relative overflow-hidden rounded-full border px-5 py-3 text-sm uppercase tracking-[0.2em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    isLight
-                      ? "border-blue-200 bg-white text-slate-700 hover:border-blue-300 hover:text-slate-900 hover:shadow-[0_16px_32px_rgba(59,130,246,0.12)]"
-                      : "border-blue-400/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.014))] text-neutral-300 hover:border-blue-300/28 hover:text-white hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_22px_rgba(66,146,255,0.07)]"
-                  }`}
+                  className="uppercase tracking-[var(--tracking-label)]"
                 >
-                  <span className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(110deg,transparent_18%,rgba(255,255,255,0.05)_38%,rgba(23,111,255,0.15)_50%,rgba(23,223,255,0.12)_60%,rgba(255,255,255,0.05)_68%,transparent_82%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:animate-[metalSweep_1.15s_ease]" />
-                  <span className="pointer-events-none absolute inset-[1px] rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(255,255,255,0.004))]" />
-                  <span className="relative z-10">
-                    {isVerifying ? "Verifying..." : "Verify school email"}
-                  </span>
-                </button>
+                  {isVerifying ? "Verifying..." : "Verify school email"}
+                </Button>
               </div>
-            </div>
+            </Callout>
           ) : null}
 
           <div className="relative mt-14">
             <div className="relative z-10 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-              {TIERS.map((tier, index) => {
+              {TIERS.map((tier) => {
                 const meta = SUBSCRIPTION_META[tier];
-                const card = CARD_META[tier];
                 const isCurrent = currentTier === tier;
                 const price = getPriceContent(tier, email, subscription, billingCycle);
                 const features = getFeatureList(tier, email, subscription);
 
                 return (
+                  /*
+                   * Every tier is a card lifted off the page. The plan you are
+                   * on goes one rung further, up to the detached shadow: losing
+                   * the contact shadow is what makes it read as pulled out of
+                   * the row rather than merely tinted differently, which is the
+                   * whole point of a selected state you can see from across a
+                   * classroom. The accent border only confirms it.
+                   *
+                   * The card itself is not pressable, so it does not travel on
+                   * hover -- the button inside it is the thing you press.
+                   */
                   <section
                     key={tier}
-                    className={`group relative flex min-h-[38rem] flex-col overflow-hidden rounded-[2rem] border p-6 transition-all duration-500 hover:-translate-y-1 ${
-                      isLight
-                        ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] text-slate-900 shadow-[0_18px_44px_rgba(15,23,42,0.08)] hover:border-slate-300 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(241,245,249,0.96))]"
-                        : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.01))] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.01)] hover:border-white/[0.14] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))]"
-                    } ${
-                      isCurrent ? `scale-[1.015] ring-2 ${card.ring}` : ""
-                    } page-enter-soft`}
-                    style={{ animationDelay: `${index * 95}ms` }}
+                    className={`group relative flex min-h-[38rem] flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-6 transition-[box-shadow,scale] duration-[var(--duration-slow)] ease-[var(--ease-spring)] motion-reduce:transition-[box-shadow] ${
+                      isCurrent
+                        ? "scale-[1.015] border-[var(--accent-border)] shadow-[var(--floating)]"
+                        : "border-[var(--border-subtle)] shadow-[var(--raised-lg)]"
+                    }`}
                   >
-                    <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${card.spotlight} opacity-50`} />
                     <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                      <div className="absolute -left-[30%] top-0 h-full w-[34%] -skew-x-[16deg] bg-[linear-gradient(90deg,transparent,rgba(76,212,255,0.16),transparent)] animate-[cardSweep_8s_ease-in-out_infinite]" />
+                      <div className="absolute -left-[30%] top-0 h-full w-[34%] -skew-x-[16deg] bg-[linear-gradient(90deg,transparent,var(--accent-subtle),transparent)] animate-[cardSweep_8s_ease-in-out_infinite]" />
                     </div>
 
                     <div className="relative z-10 flex h-full flex-col">
                       <div className="mb-6">
                         <div className="mb-3 flex items-center justify-between gap-3">
-                          <div className={`text-[11px] uppercase tracking-[0.24em] ${isLight ? "text-slate-500" : "text-neutral-400"} ${card.badge}`}>
+                          <div className="text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                             {meta.label}
                           </div>
-                          <div
-                            className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.18em] ${
-                              isCurrent
-                                ? isLight
-                                  ? "border-cyan-300 bg-cyan-50 text-cyan-700"
-                                  : "border-cyan-300/25 bg-cyan-400/10 text-cyan-200"
-                                : isLight
-                                ? "border-slate-200 bg-white text-slate-500"
-                                : "border-white/10 bg-white/[0.04] text-neutral-500"
-                            }`}
+                          <Badge
+                            tone={isCurrent ? "accent" : "neutral"}
+                            className="uppercase tracking-[var(--tracking-label)]"
                           >
                             {isCurrent ? "Active" : "Available"}
-                          </div>
+                          </Badge>
                         </div>
 
-                        <h2 className={`text-[2.65rem] font-bold leading-[0.95] tracking-[-0.045em] ${isLight ? "text-slate-950" : "text-white"}`}>
+                        <h2 className="text-[length:var(--text-3xl)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]">
                           {meta.label}
                         </h2>
 
-                        <p className={`mt-4 min-h-[5.5rem] text-sm leading-7 ${isLight ? "text-slate-600" : "text-neutral-300"}`}>
+                        <p className="mt-4 min-h-[5.5rem] text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
                           {getDescription(tier)}
                         </p>
                       </div>
 
                       <div className="mb-6">
                         <div className="flex items-end gap-2">
-                          <span className={`text-[3rem] font-semibold leading-none tracking-[-0.045em] ${isLight ? "text-slate-950" : "text-white"}`}>
+                          <span className="text-[length:var(--text-3xl)] font-semibold leading-none tracking-[-0.045em] text-[var(--text-primary)]">
                             {price.amount}
                           </span>
-                          <span className={`pb-2 text-sm ${isLight ? "text-slate-500" : "text-neutral-400"}`}>
+                          <span className="pb-2 text-[length:var(--text-sm)] text-[var(--text-muted)]">
                             {price.suffix}
                           </span>
                         </div>
-                        <div className={`mt-2 text-xs uppercase tracking-[0.18em] ${card.badge}`}>
+                        <div className="mt-2 text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--accent-text)]">
                           {price.note}
                         </div>
                       </div>
 
-                      <div className={`mb-6 h-px w-full ${isLight ? "bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.35),transparent)]" : "bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent)]"}`} />
+                      <div className="mb-6 h-px w-full bg-[var(--border-subtle)]" />
 
-                      <ul className={`mb-7 flex flex-col gap-3 text-sm ${isLight ? "text-slate-700" : "text-neutral-200"}`}>
+                      <ul className="mb-7 flex flex-col gap-3 text-[length:var(--text-sm)] text-[var(--text-muted)]">
                         {features.map((feature) => (
                           <li key={`${tier}-${feature}`} className="flex items-start gap-3">
-                            <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
+                            <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent-text)]" />
                             <span>{feature}</span>
                           </li>
                         ))}
@@ -641,15 +567,6 @@ export default function SubscriptionsPage() {
           88% {
             transform: translateX(320%) skewX(-16deg);
             opacity: 0.06;
-          }
-        }
-
-        @keyframes metalSweep {
-          0% {
-            transform: translateX(-35%);
-          }
-          100% {
-            transform: translateX(35%);
           }
         }
       `}</style>
