@@ -424,7 +424,12 @@ export const MODE_META: Record<
 
 export type TerminalEntry = {
   id: string;
-  stream: "stdout" | "stderr" | "system" | "input" | "runtime";
+  /**
+   * `explanation` is the localized account of a runtime failure. It always
+   * accompanies the `stderr` entry carrying the real traceback and never
+   * stands in for it.
+   */
+  stream: "stdout" | "stderr" | "system" | "input" | "runtime" | "explanation";
   text: string;
   symbol?: string;
 };

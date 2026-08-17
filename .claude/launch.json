@@ -6,6 +6,15 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "trace-backend",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /Users/danielleknutson/Syntaxless-IDE-Backend && exec .venv/bin/uvicorn main:app --reload --port 8000"
+      ],
+      "port": 8000
     }
   ]
 }

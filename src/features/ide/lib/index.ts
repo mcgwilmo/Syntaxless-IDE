@@ -274,11 +274,41 @@ export function formatIntentLabel(line: InterpretationLine) {
   return action;
 }
 
+/**
+ * The language to report runtime errors in.
+ *
+ * `?locale=es` wins when present; otherwise the browser's own preference, which
+ * is the best signal available until the IDE has an explicit language setting.
+ * The backend narrows whatever it gets to a locale it can actually speak, so a
+ * regional tag like `es-MX` or an unsupported one is safe to send as-is and
+ * needs no validation here.
+ *
+ * The query parameter exists because the browser preference is otherwise the
+ * only input, and changing it means changing an OS or browser setting -- far too
+ * much friction to check that a translation reads well. It is deliberately not
+ * persisted: a URL you can hand to someone, and that stops applying the moment
+ * you drop it, is the right shape for something used to compare languages.
+ *
+ * Read from `window` rather than `useSearchParams` because this is called inside
+ * the run handler, at the moment the request is built, and nothing re-renders on
+ * the answer. Returns null during server rendering rather than guessing, which
+ * the backend reads the same way as an unsupported locale: English.
+ */
+export function getRequestLocale(): string | null {
+  if (typeof window === "undefined") return null;
+
+  const override = new URLSearchParams(window.location.search).get("locale");
+  if (override?.trim()) return override.trim();
+
+  return navigator.language || null;
+}
+
 export function terminalStreamLabel(stream: TerminalEntry["stream"]) {
   if (stream === "stdout") return "Output";
   if (stream === "stderr") return "Error";
   if (stream === "input") return "Input";
   if (stream === "runtime") return "Runtime";
+  if (stream === "explanation") return "What went wrong";
   return "System";
 }
 

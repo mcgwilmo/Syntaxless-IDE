@@ -52,11 +52,18 @@ export function Field({
         className={cn(
           "w-full rounded-[var(--radius-md)] border px-[var(--space-4)] py-[var(--space-3)]",
           "text-[length:var(--text-base)] text-[var(--text-primary)]",
-          "bg-[var(--surface-raised)] placeholder:text-[var(--text-soft)]",
-          "transition-colors duration-[var(--duration-fast)] outline-none",
+          // Placeholder uses muted, not soft: the recessed well is darker than a
+          // card, and soft text measures 4.22:1 against it.
+          "bg-[var(--surface-sunken)] placeholder:text-[var(--text-muted)]",
+          // Recessed, not raised. An input is a well you put something into, so
+          // it takes the opposite lighting to a button -- shadow at the top,
+          // catch of light along the bottom. Getting this backwards is what
+          // makes a form look like a row of unpressed buttons.
+          "shadow-[var(--recessed)]",
+          "transition-[border-color,box-shadow] duration-[var(--duration-fast)] outline-none",
           error
             ? "border-[var(--state-blocked)]"
-            : "border-[var(--border-subtle)] hover:border-[var(--border-strong)] focus:border-[var(--accent-solid)]",
+            : "border-[var(--border-strong)] hover:border-[color-mix(in_srgb,var(--border-strong)_140%,transparent)] focus:border-[var(--accent-solid)]",
           className
         )}
         {...props}

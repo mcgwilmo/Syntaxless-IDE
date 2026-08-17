@@ -63,6 +63,27 @@ Treat this layout as accurate today, not as a stable contract.
 
 ---
 
+## Runtime errors in another language
+
+When a run fails, the backend returns a plain-language explanation of the error in the language the
+run asked for, and the IDE shows it in the terminal beneath the raw traceback. The language comes
+from the browser's own preference, so there is nothing to configure.
+
+To see another language without changing a browser or OS setting, add `?locale=` to the IDE URL:
+
+```
+http://localhost:3000/ide?locale=es
+```
+
+Supported today are `en` and `es`; anything else falls back to English rather than failing the run.
+The override is not persisted — drop the parameter and the browser preference applies again.
+
+Every word of the explanation is composed by the backend, the line label included. The IDE has no
+locale catalog of its own yet, so any string added on this side would arrive in English and undo the
+translation.
+
+---
+
 ## Scripts
 
 ```bash

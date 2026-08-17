@@ -52,7 +52,17 @@ html {
 
 body {
   min-height: 100%;
-  background: var(--surface-page);
+  /* The objects need something to sit on. A completely flat fill makes raised
+     surfaces look pasted; a very slight vertical falloff gives the page a top
+     and a bottom, which is what the highlights on everything else refer to.
+     Under 2% -- if you can see it as a gradient it is too strong. */
+  background: var(--surface-page)
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--surface-page) 97%, white),
+      var(--surface-page) 42%
+    )
+    fixed;
   color: var(--text-primary);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   font-size: var(--text-base);
@@ -150,7 +160,14 @@ body {
     opacity: 1 !important;
     transform: none !important;
   }
+
+  /* The press travel is motion too. Depth and shading stay -- those are how a
+     control says what it is -- but nothing moves. */
+  :root {
+    --press-travel: 0px;
+  }
 }
+
 
 /* Legacy surface helpers. Superseded by design/primitives -- do not extend. */
 .theme-page-surface {
@@ -231,6 +248,9 @@ body {
 .monaco-editor .glyph-margin .ide-diagnostic-glyph--problem::before {
   background: var(--state-warning-subtle);
   border: 1px solid var(--state-warning);
+  /* Set into the gutter rather than floating above it, so the marker reads as
+     part of the editor chrome instead of an overlay. */
+  box-shadow: inset 0 1px 1px rgba(28, 26, 23, 0.12);
   color: var(--state-warning);
   content: "!";
 }

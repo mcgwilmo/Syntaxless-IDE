@@ -25,6 +25,11 @@ import {
 } from "@/lib/supabase/client";
 import { useTheme } from "@/components/theme-provider";
 import { STORAGE_KEYS } from "@/config/brand";
+import {
+  applyRunEvent,
+  runStreamFailureEffects,
+  type RunStreamEffect,
+} from "@/features/ide/lib/run-events";
 import type {
   ActionableDiagnostic,
   BackendArtifact,
@@ -77,6 +82,7 @@ import {
   getProblemStatusLabel,
   getProtectedDarkSurfaceStyle,
   getProtectedDarkTextStyle,
+  getRequestLocale,
   getSeverity,
   isBackendConnectionError,
   isSynthFileName,
@@ -1268,6 +1274,50 @@ export function useIdeState() {
     }
   }
 
+  /*
+   * Perform one decision from `applyRunEvent`. The decisions live in
+   * features/ide/lib/run-events.ts so they can be tested without a WebSocket,
+   * a rendered hook, or a Supabase session; this is the half that touches
+   * state, and it deliberately contains no branching on event type.
+   */
+  function performRunEffect(effect: RunStreamEffect) {
+    switch (effect.kind) {
+      case "status":
+        setStatusMessage(effect.message);
+        return;
+      case "terminal":
+        appendTerminal(effect.text, effect.stream);
+        return;
+      case "runtime_indicator":
+        appendRuntimeIndicator(effect.symbol);
+        return;
+      case "show_panel":
+        setShowBottomPanel(true);
+        setActiveBottomTab(effect.tab);
+        return;
+      case "input_prompt":
+        setInputPrompt(effect.prompt);
+        return;
+      case "running":
+        setIsRunning(effect.value);
+        return;
+      case "active_run":
+        setActiveRunId(effect.runId);
+        return;
+      case "dev_metrics":
+        setDevMetrics(effect.metrics);
+        return;
+      case "add_artifact":
+        addLiveArtifact(effect.runId, effect.artifact);
+        return;
+      case "replace_artifacts":
+        replaceVisualArtifacts(effect.runId, effect.artifacts, "persisted");
+        return;
+      case "reload_runs":
+        void loadRuns();
+    }
+  }
+
   function connectRunStream(runId: string) {
     wsRef.current?.close();
 
@@ -1275,76 +1325,8 @@ export function useIdeState() {
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-
-      if (payload.type === "run_started") {
-        setStatusMessage("Execution started.");
-        if (payload.executor_mode === "subprocess") {
-          appendRuntimeIndicator("SP");
-          setShowBottomPanel(true);
-          setActiveBottomTab("terminal");
-        }
-        return;
-      }
-
-      if (payload.type === "stdout") {
-        appendTerminal(payload.text || "", "stdout");
-        return;
-      }
-
-      if (payload.type === "stderr") {
-        appendTerminal(payload.text || "", "stderr");
-        return;
-      }
-
-      if (payload.type === "input_requested") {
-        setInputPrompt(payload.prompt || "Input:");
-        setShowBottomPanel(true);
-        setActiveBottomTab("terminal");
-        if (payload.prompt) {
-          appendTerminal(payload.prompt, "system");
-        }
-        return;
-      }
-
-      if (payload.type === "artifact_created") {
-        addLiveArtifact(runId, {
-          name: payload.name,
-          artifact_type: payload.artifact_type || "file",
-          label: payload.label || payload.name,
-        });
-        setShowBottomPanel(true);
-        setActiveBottomTab("visual");
-        return;
-      }
-
-      if (payload.type === "completed") {
-        setIsRunning(false);
-        setInputPrompt(null);
-        setActiveRunId(payload.run_id || runId);
-
-        const persistedRun = payload.persisted_run;
-        if (persistedRun?.dev_metrics) {
-          setDevMetrics(persistedRun.dev_metrics);
-        }
-        if (persistedRun?.artifacts) {
-          replaceVisualArtifacts(persistedRun.id || runId, persistedRun.artifacts, "persisted");
-          if (persistedRun.artifacts.length > 0) {
-            setShowBottomPanel(true);
-            setActiveBottomTab("visual");
-          }
-        }
-
-        setStatusMessage(`Run ${payload.status}.`);
-        void loadRuns();
-        return;
-      }
-
-      if (payload.type === "error") {
-        appendTerminal((payload.message || "Run stream error.") + "\n", "system");
-        setIsRunning(false);
-        setInputPrompt(null);
-        setStatusMessage("Run failed.");
+      for (const effect of applyRunEvent(JSON.parse(event.data), runId)) {
+        performRunEffect(effect);
       }
     };
 
@@ -1353,10 +1335,9 @@ export function useIdeState() {
     };
 
     ws.onerror = () => {
-      appendTerminal("WebSocket stream error.\n", "system");
-      setIsRunning(false);
-      setInputPrompt(null);
-      setStatusMessage("Run stream failed.");
+      for (const effect of runStreamFailureEffects()) {
+        performRunEffect(effect);
+      }
     };
   }
 
@@ -1397,6 +1378,7 @@ export function useIdeState() {
           project_context: referenceFiles,
           mode,
           subscription_tier: activeTier,
+          locale: getRequestLocale(),
         }),
       });
 
@@ -1671,39 +1653,57 @@ export function useIdeState() {
     pill?: boolean;
     danger?: boolean;
   }) => getModeButtonClass(currentModeMeta, options, theme);
-  const shellSurfaceClass = isLight
-    ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.94))] shadow-[0_32px_100px_rgba(15,23,42,0.10)]"
-    : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(10,10,10,0.985),rgba(5,5,5,0.985))] shadow-[0_24px_90px_rgba(0,0,0,0.42),0_0_0_1px_rgba(255,255,255,0.02)]";
-  const sidebarSurfaceClass = isLight
-    ? "border-r border-slate-200/90 bg-[#f6f9fc]"
-    : "border-r border-white/[0.08] bg-[#090909]";
-  const sidebarCardClass = isLight
-    ? "mb-3 rounded-[1.2rem] border border-slate-200/90 bg-white/92 px-3.5 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.05)]"
-    : "mb-3 rounded-[2rem] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.01))] px-4 py-3.5 shadow-[0_0_0_1px_rgba(255,255,255,0.01)]";
-  const headerSurfaceClass = isLight
-    ? "border-b border-slate-200/90 bg-white/92"
-    : "border-b border-white/[0.08] bg-[#090909]/96";
-  const subsectionSurfaceClass = isLight
-    ? "border-b border-slate-200/90 bg-white/88"
-    : "border-b border-white/[0.08] bg-[#0b0b0b]";
-  const workspaceBgClass = isLight ? "bg-[#f4f8fc]" : "bg-[#050505]";
-  const panelBgClass = isLight ? "bg-white/96" : "bg-[#070707]";
-  const panelBorderClass = isLight ? "border-slate-200/90" : "border-white/[0.08]";
-  const softTextClass = isLight ? "text-slate-500" : "!text-neutral-400";
-  const mutedTextClass = isLight ? "text-slate-600" : "!text-neutral-300";
-  const strongTextClass = isLight ? "text-slate-900" : "!text-white";
-  const strongTextAltClass = isLight ? "text-slate-800" : "!text-neutral-100";
-  const sectionLabelClass = isLight ? "text-slate-500" : "!text-neutral-400";
-  const sectionMetaClass = isLight ? "text-slate-500" : "!text-neutral-300";
-  const sectionTitleClass = isLight ? "text-slate-900" : "!text-white";
-  const sidebarDividerClass = isLight ? "border-slate-200/90" : "border-white/[0.08]";
-  const terminalTextClass = isLight ? currentModeMeta.terminalText : "!text-sky-300";
+  // ---- IDE surfaces -----------------------------------------------------
+  //
+  // Every surface in the IDE is defined here, so the whole editor picks up the
+  // material without touching the JSX. Colours come from tokens and swap with
+  // the theme on their own, which is why almost none of these branch on isLight
+  // any more -- what is left branches on something that genuinely differs
+  // between themes, not on colour.
+  //
+  // The lighting rule from design/tokens.css applies throughout: things you
+  // press are raised, things you put content into are recessed, and things that
+  // are neither are flat.
+
+  // The editor shell: the largest object on the page, lifted off it.
+  const shellSurfaceClass =
+    "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised-lg)]";
+
+  // Chrome beside the work rather than part of it, so it sits back.
+  const sidebarSurfaceClass =
+    "border-r border-[var(--border-subtle)] bg-[var(--surface-sunken)]";
+
+  const sidebarCardClass =
+    "mb-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-3.5 py-3 shadow-[var(--raised)]";
+
+  const headerSurfaceClass =
+    "border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]";
+
+  const subsectionSurfaceClass =
+    "border-b border-[var(--border-subtle)] bg-[var(--surface-raised)]";
+
+  // The well the editor sits in. Recessed, because the work goes into it.
+  const workspaceBgClass = "bg-[var(--surface-sunken)]";
+  const panelBgClass = "bg-[var(--surface-raised)]";
+  const panelBorderClass = "border-[var(--border-subtle)]";
+
+  const softTextClass = "text-[var(--text-soft)]";
+  const mutedTextClass = "text-[var(--text-muted)]";
+  const strongTextClass = "text-[var(--text-primary)]";
+  const strongTextAltClass = "text-[var(--text-primary)]";
+  const sectionLabelClass = "text-[var(--text-soft)]";
+  const sectionMetaClass = "text-[var(--text-muted)]";
+  const sectionTitleClass = "text-[var(--text-primary)]";
+  const sidebarDividerClass = "border-[var(--border-subtle)]";
+  const terminalTextClass = "text-[var(--accent-text)]";
+
   const validationSeverityClass = (severity: "ok" | "warning" | "blocked") =>
     severity === "blocked"
-      ? "border-red-500/30 bg-red-500/10 text-red-300"
+      ? "border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)] bg-[var(--state-blocked-subtle)] text-[var(--state-blocked)]"
       : severity === "warning"
-      ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
-      : "border-green-500/30 bg-green-500/10 text-green-300";
+      ? "border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)] bg-[var(--state-warning-subtle)] text-[var(--state-warning)]"
+      : "border-[color-mix(in_srgb,var(--state-success)_30%,transparent)] bg-[var(--state-success-subtle)] text-[var(--state-success)]";
+
   const protectedDarkSurfaceStyle = getProtectedDarkSurfaceStyle(theme);
   const protectedDarkLabelStyle = getProtectedDarkTextStyle(theme, "#a3a3a3");
   const protectedDarkMetaStyle = getProtectedDarkTextStyle(theme, "#d4d4d8");
@@ -1711,63 +1711,58 @@ export function useIdeState() {
   const protectedDarkTerminalTextStyle = getProtectedDarkTextStyle(theme, "#7dd3fc");
   const modeBarGlowStyle = getModeBarGlowStyle(theme, mode, "soft");
   const modePanelGlowStyle = getModeBarGlowStyle(theme, mode, "medium");
-  const inputSurfaceClass = isLight
-    ? "border border-slate-200/90 bg-white/96 text-slate-900 placeholder:text-slate-400"
-    : "border border-white/[0.08] bg-[#0b0b0b] text-white placeholder:text-neutral-500";
-  const subtleChipClass = isLight
-    ? "border-slate-200/90 bg-white/90 text-slate-500"
-    : "border-white/[0.08] bg-white/[0.04] text-neutral-400";
-  const pricingCardClass = isLight
-    ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
-    : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.01))] shadow-[0_0_0_1px_rgba(255,255,255,0.01)]";
-  const pricingCardHoverClass = isLight
-    ? "hover:border-slate-300 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(241,245,249,0.96))]"
-    : "hover:border-white/[0.14] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))]";
+
+  // Recessed: you type into these.
+  const inputSurfaceClass =
+    "border border-[var(--border-strong)] bg-[var(--surface-sunken)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] shadow-[var(--recessed)]";
+
+  // Inlaid: a label set into the surface, not a control.
+  const subtleChipClass =
+    "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)] shadow-[inset_0_1px_1px_rgba(28,26,23,0.07)]";
+
+  const pricingCardClass =
+    "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised)]";
+  const pricingCardHoverClass =
+    "hover:border-[var(--border-strong)] hover:shadow-[var(--raised-lg)]";
+
+  // Toolbar buttons are objects: raised at rest, pressed in when held.
   const menuButtonClass = (active: boolean) =>
     joinClasses(
-      "inline-flex h-9 items-center gap-2 rounded-[0.85rem] border px-3 text-[12px] font-semibold transition-all duration-200",
+      "inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] border px-3 text-[12px] font-semibold",
+      "transition-[background-color,box-shadow,transform] duration-150",
+      "shadow-[var(--raised)] active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
       active
-        ? isLight
-          ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)]`
-          : `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]`
-        : isLight
-        ? "border-slate-200/90 bg-white/80 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-950"
-        : "border-white/[0.08] bg-white/[0.035] text-neutral-300 hover:border-white/[0.15] hover:bg-white/[0.065] hover:text-white"
+        ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-[var(--text-primary)]`
+        : "border-[var(--border-strong)] bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
     );
-  const menuPanelClass = isLight
-    ? "border-slate-200 bg-white/98 text-slate-800 shadow-[0_20px_60px_rgba(15,23,42,0.14)]"
-    : "border-white/[0.1] bg-[#080808]/98 text-neutral-200 shadow-[0_24px_70px_rgba(0,0,0,0.48)]";
+
+  // Floating above everything, so the largest elevation in the IDE.
+  const menuPanelClass =
+    "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-[var(--text-primary)] shadow-[var(--raised-lg)]";
+
   const menuItemBaseClass =
-    "flex w-full items-center gap-2.5 rounded-[0.75rem] px-2.5 py-2 text-left text-[12px] transition-colors duration-150";
+    "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-[12px] transition-colors duration-150";
+
   const menuItemClass = (item: IdeMenuItem) =>
     joinClasses(
       menuItemBaseClass,
       item.disabled
-        ? isLight
-          ? "cursor-not-allowed text-slate-400"
-          : "cursor-not-allowed text-neutral-600"
+        ? "cursor-not-allowed text-[var(--text-soft)]"
         : item.danger
-        ? isLight
-          ? "text-rose-700 hover:bg-rose-50"
-          : "text-rose-200 hover:bg-rose-500/[0.12]"
+        ? "text-[var(--state-blocked)] hover:bg-[var(--state-blocked-subtle)]"
         : item.active
-        ? isLight
-          ? `${currentModeMeta.accentBg} text-slate-950`
-          : `${currentModeMeta.accentBg} text-white`
-        : isLight
-        ? "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-        : "text-neutral-300 hover:bg-white/[0.06] hover:text-white"
+        ? `${currentModeMeta.accentBg} text-[var(--text-primary)]`
+        : "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
     );
+
   const menuSymbolClass = (item?: IdeMenuItem) =>
     joinClasses(
-      "flex h-6 w-6 shrink-0 items-center justify-center rounded-[0.6rem] border text-[12px] font-semibold",
+      "flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border text-[12px] font-semibold",
+      // Inlaid, like a key cap set into the menu row.
+      "shadow-[inset_0_1px_1px_rgba(28,26,23,0.07)]",
       item?.danger
-        ? isLight
-          ? "border-rose-200 bg-rose-50 text-rose-700"
-          : "border-rose-400/25 bg-rose-500/[0.1] text-rose-200"
-        : isLight
-        ? "border-slate-200 bg-white text-slate-600"
-        : "border-white/[0.08] bg-white/[0.04] text-neutral-300"
+        ? "border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)] bg-[var(--state-blocked-subtle)] text-[var(--state-blocked)]"
+        : "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"
     );
   const desktopIdeMenus: IdeMenuGroup[] = [
     {
