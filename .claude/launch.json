@@ -5,7 +5,8 @@
       "name": "trace-frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
     },
     {
       "name": "trace-backend",
@@ -14,7 +15,8 @@
         "-c",
         "cd /Users/danielleknutson/Syntaxless-IDE-Backend && exec .venv/bin/uvicorn main:app --reload --port 8000"
       ],
-      "port": 8000
+      "port": 8000,
+      "autoPort": false
     }
   ]
 }
