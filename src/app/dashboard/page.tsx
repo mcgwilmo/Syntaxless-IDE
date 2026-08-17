@@ -274,6 +274,27 @@ export default function DashboardPage() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
+  /*
+   * Escape closes whichever modal is open.
+   *
+   * Both dialogs could already be dismissed by clicking the scrim, which is a
+   * pointer-only affordance -- so a keyboard user who opened one had no way out
+   * except tabbing around to find Cancel. Escape is the expected exit from a
+   * dialog, and the mobile nav in SiteHeader already handles it the same way.
+   */
+  useEffect(() => {
+    if (!showCreateModal && !showLimitModal) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setShowCreateModal(false);
+      setShowLimitModal(false);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showCreateModal, showLimitModal]);
+
   const activeTier: SubscriptionTier = subscription?.tier ?? "free";
   const projectLimit = getProjectLimit(activeTier);
   const projectCount = projects.length;
@@ -540,6 +561,19 @@ export default function DashboardPage() {
             </button>
 
             {filteredProjects.map((project) => (
+              /*
+               * The card-wide click is a pointer shortcut, not the only way in:
+               * the Open link inside it is a real anchor, so the keyboard path
+               * and cmd-click both already work and this stays a <div> rather
+               * than becoming a button wrapping a link.
+               *
+               * What was missing is that the card dresses itself as a pressable
+               * object -- it lifts on hover and pushes in when held -- while
+               * showing nothing at all when the keyboard is inside it. The
+               * focus-within ring gives the tile the same "you are here" the
+               * mouse already got, using the same colour as the global
+               * :focus-visible ring so the two read as one system.
+               */
               <div
                 key={project.id}
                 onClick={() => router.push(`/ide?project=${project.id}`)}
@@ -548,6 +582,8 @@ export default function DashboardPage() {
                   "border border-[var(--border-subtle)]",
                   "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
                   "p-[var(--space-6)]",
+                  "focus-within:outline focus-within:outline-2",
+                  "focus-within:outline-offset-2 focus-within:outline-[var(--accent-solid)]",
                   PRESSABLE_CARD_CLASS
                 )}
               >
@@ -643,7 +679,7 @@ export default function DashboardPage() {
               className="absolute inset-0"
               onClick={() => setShowCreateModal(false)}
             />
-            <Modal className="relative z-10 w-full max-w-md">
+            <Modal label="New Project" className="relative z-10 w-full max-w-md">
               <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                 T.R.A.C.E.
               </div>
@@ -693,7 +729,10 @@ export default function DashboardPage() {
               className="absolute inset-0"
               onClick={() => setShowLimitModal(false)}
             />
-            <Modal className="relative z-10 w-full max-w-lg">
+            <Modal
+              label="Project limit reached"
+              className="relative z-10 w-full max-w-lg"
+            >
               <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
                 Subscription Required
               </div>

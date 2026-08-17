@@ -347,7 +347,7 @@ export function useIdeState() {
     );
   }, [actionableDiagnostics, activeFile?.content, diagnosticPopup]);
   const diagnosticPopupLineNumber = diagnosticPopup?.lineNumber ?? null;
-  const selectedDiagnosticTone = getDiagnosticToneClasses(selectedDiagnostic?.severity ?? "warning", isLight);
+  const selectedDiagnosticTone = getDiagnosticToneClasses(selectedDiagnostic?.severity ?? "warning");
 
   useEffect(() => {
     if (diagnosticPopup && !selectedDiagnostic) {
@@ -1750,6 +1750,19 @@ export function useIdeState() {
   // hover, pressed in and travelling down when held. Same press duration as the
   // Button primitive, because a menu bar that acknowledges a click more slowly
   // than the buttons beside it reads as lag rather than as a different control.
+  //
+  // `active` here means the button's menu is hanging open, and an open toggle
+  // is held down everywhere else in this app: getModeButtonClass's active
+  // branch, the explorer's own + and tree buttons two panels away, the nav
+  // items in site-shell, the entry-mode chips in the Learning Center. This one
+  // stayed raised and went on lifting toward the light on hover, so the one
+  // control in the toolbar that was switched on was also the one standing
+  // furthest off it.
+  //
+  // The material cannot be shared between the branches to fix that: joinClasses
+  // is a plain join, so `shadow-[var(--pressed)]` after `shadow-[var(--raised)]`
+  // would be settled by stylesheet order rather than by which one is meant.
+  // Each branch states its own, the same way getModeButtonClass does.
   const menuButtonClass = (active: boolean) =>
     joinClasses(
       "inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] border px-3 text-[12px] font-semibold",
@@ -1758,14 +1771,23 @@ export function useIdeState() {
       // if only the material eased, the label would snap while the button
       // under it was still rising.
       "transition-[background-color,border-color,color,box-shadow,transform] duration-[var(--duration-press)] ease-[var(--ease-spring)]",
-      "shadow-[var(--raised)] hover:shadow-[var(--lifted)] hover:-translate-y-[var(--lift-travel)]",
-      "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
       // The depth still reads with motion off; only the travel is dropped, so a
       // press is never announced by movement alone.
       "motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none",
       active
-        ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-[var(--text-primary)]`
-        : "border-[var(--border-strong)] bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        ? joinClasses(
+            `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-[var(--text-primary)]`,
+            // Already in, and staying in while the menu is open. There is
+            // nowhere left to rise to, so hover firms the border instead --
+            // the same answer the held-down chips in lesson-browser give.
+            "shadow-[var(--pressed)] translate-y-[var(--press-travel)]",
+            "hover:border-[var(--accent-solid)]"
+          )
+        : joinClasses(
+            "border-[var(--border-strong)] bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+            "shadow-[var(--raised)] hover:shadow-[var(--lifted)] hover:-translate-y-[var(--lift-travel)]",
+            "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]"
+          )
     );
 
   // A dropped menu is detached from the page rather than lying on it, so it

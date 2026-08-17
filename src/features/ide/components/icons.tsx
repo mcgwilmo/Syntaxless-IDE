@@ -307,7 +307,12 @@ export function MinimalIconLabel({
     <span className="inline-flex items-center justify-center gap-1.5">
       <MinimalControlIcon name={icon} />
       {typeof count === "number" && count > 0 ? (
-        <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-[1px] text-[9px] leading-none text-neutral-300">
+        // Inlaid, not raised: the count is a chip set flush into the face of
+        // the button that owns it, and the button is the only thing here that
+        // presses. Its own opaque surface is what keeps it legible -- the tab
+        // underneath swaps fill and text colour when it goes active, and a
+        // translucent chip inherited that and lost contrast with it.
+        <span className="rounded-[var(--radius-full)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-1.5 py-[1px] text-[9px] leading-none text-[var(--text-muted)] shadow-[var(--inlaid)]">
           {count}
         </span>
       ) : null}

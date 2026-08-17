@@ -474,6 +474,11 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                   <button
                     type="button"
                     onClick={() => openLesson(lesson.id)}
+                    // Which lesson is open was carried entirely by the accent
+                    // tint and the inlaid number badge. Both are invisible to a
+                    // screen reader, and the tint alone is the sole signal for
+                    // anyone who cannot separate it from the resting surface.
+                    aria-current={isLessonActive ? "true" : undefined}
                     className={cn(
                       "min-w-0 flex-1 px-3 py-3 text-left",
                       // An active card is accent-tinted, and an opaque sunken
@@ -521,6 +526,7 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
 
                   <button
                     type="button"
+                    aria-expanded={isExpanded}
                     aria-label={
                       isExpanded
                         ? `Collapse ${lesson.title}`
@@ -564,6 +570,10 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                         key={topic.id}
                         type="button"
                         onClick={() => selectTopic(topic.id)}
+                        // "You are here" was the inlaid recess plus an accent
+                        // dot -- depth and colour, and nothing else. aria-current
+                        // is what makes the selection survive both.
+                        aria-current={activeTopicId === topic.id ? "true" : undefined}
                         className={cn(
                           "group flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-left",
                           "text-[length:var(--text-sm)]",

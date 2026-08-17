@@ -323,8 +323,10 @@ function ExplorerTree({
   activeFileId: string | null;
   onSelectFile: (fileId: string) => void;
   onToggleFolder: (folderId: string) => void;
+  // HTMLElement, not HTMLDivElement: both rows are <button> now, and the
+  // handler only ever reads preventDefault/clientX/clientY off the event.
   onContextMenu: (
-    e: React.MouseEvent<HTMLDivElement>,
+    e: React.MouseEvent<HTMLElement>,
     nodeId: string,
     nodeType: "file" | "folder"
   ) => void;
@@ -340,21 +342,36 @@ function ExplorerTree({
           return (
             <div key={node.id}>
               {/* Rows live inside a recessed well, so they do not travel on
-                  press -- they darken into it instead. */}
-              <div
+                  press -- they darken into it instead.
+
+                  A real <button>, not a clickable <div>. The explorer is how
+                  you choose what to edit and what to run, and as divs none of
+                  it could be reached from the keyboard at all: no tab stop, no
+                  Enter/Space, and no focus ring for the global :focus-visible
+                  rule to attach to. The chevron already showed open/closed, but
+                  only visually, so aria-expanded states it too. */}
+              <button
+                type="button"
+                aria-expanded={node.isOpen}
                 onClick={() => onToggleFolder(node.id)}
                 onContextMenu={(e) => onContextMenu(e, node.id, "folder")}
-                className="group flex cursor-pointer items-center rounded-[var(--radius-sm)] px-[var(--space-2)] py-1.5 text-[length:var(--text-xs)] text-[var(--text-muted)] transition-[background-color,box-shadow,color] duration-[var(--duration-fast)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] active:shadow-[var(--pressed)]"
+                className="group flex w-full cursor-pointer items-center rounded-[var(--radius-sm)] px-[var(--space-2)] py-1.5 text-left text-[length:var(--text-xs)] text-[var(--text-muted)] transition-[background-color,box-shadow,color] duration-[var(--duration-fast)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] active:shadow-[var(--pressed)]"
                 style={{ paddingLeft }}
               >
-                <span className="mr-[var(--space-2)] text-[length:var(--text-xs)] text-[var(--text-muted)]">
+                <span aria-hidden="true" className="mr-[var(--space-2)] text-[length:var(--text-xs)] text-[var(--text-muted)]">
                   {node.isOpen ? "▾" : "▸"}
                 </span>
-                <span className="mr-[var(--space-2)] text-[var(--text-muted)]">⊟</span>
+                <span aria-hidden="true" className="mr-[var(--space-2)] text-[var(--text-muted)]">⊟</span>
                 <span className="truncate">{node.name}</span>
-              </div>
+              </button>
 
+              {/* inert while collapsed. The rows inside are <button>s now, and
+                  a closed folder is only closed visually -- the grid collapses
+                  to 0fr and clips, but every child stays in the DOM. Without
+                  this, tabbing through the explorer walks into files that are
+                  not on screen, and a click lands on a zero-height target. */}
               <div
+                inert={!node.isOpen}
                 className={`grid overflow-hidden transition-all duration-[var(--duration-slow)] ${
                   node.isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-60"
                 }`}
@@ -378,12 +395,20 @@ function ExplorerTree({
         const isActive = activeFileId === node.id;
 
         return (
-          <div
+          <button
             key={node.id}
+            type="button"
+            /*
+             * Which file is selected decides what Run runs, and it was said
+             * three ways that a screen reader sees none of: an inlaid recess, a
+             * mode tint, and an accent-coloured bullet. aria-current is the
+             * fourth, and the only one that is not depth or colour.
+             */
+            aria-current={isActive ? "true" : undefined}
             onClick={() => onSelectFile(node.id)}
             onContextMenu={(e) => onContextMenu(e, node.id, "file")}
             className={joinClasses(
-              "group flex cursor-pointer items-center border-l px-[var(--space-2)] py-1.5 text-[length:var(--text-xs)]",
+              "group flex w-full cursor-pointer items-center border-l px-[var(--space-2)] py-1.5 text-left text-[length:var(--text-xs)]",
               "transition-[background-color,border-color,box-shadow,color] duration-[var(--duration-fast)]",
               isActive
                 ? // The selected file is set into the well rather than sitting
@@ -394,12 +419,13 @@ function ExplorerTree({
             style={{ paddingLeft }}
           >
             <span
+              aria-hidden="true"
               className={`mr-[var(--space-2)] ${isActive ? "text-[var(--accent-text)]" : "text-[var(--text-muted)]"}`}
             >
               •
             </span>
             <span className="truncate">{node.name}</span>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -504,12 +530,19 @@ function BugReportModal({
 
   return (
     <div className="fixed inset-0 z-[180] overflow-y-auto">
+      {/* Click-outside is a pointer-only convenience and the dialog has its own
+          Cancel, so the scrim is hidden from assistive tech rather than
+          presented as a nameless clickable region. */}
       <div
+        aria-hidden="true"
         className="absolute inset-0 bg-[var(--surface-overlay)]"
         onClick={onClose}
       />
       <div className="relative z-10 flex min-h-full items-start justify-center px-[var(--space-6)] py-[var(--space-6)] md:py-[var(--space-8)]">
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ide-bug-report-title"
           className={joinClasses(
             "w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-y-auto",
             "rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-[var(--space-6)]",
@@ -523,6 +556,7 @@ function BugReportModal({
         </div>
 
         <h2
+          id="ide-bug-report-title"
           className={`${PAGE_HEADING_CLASS} text-[length:var(--text-3xl)] text-[var(--text-primary)]`}
         >
           {targetKind === "run" ? "Report this run" : "Report IDE issue"}
@@ -620,7 +654,16 @@ function BugReportModal({
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className={`${getModeButtonClass(modeMeta, undefined, theme)} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)] disabled:opacity-50`}
+              /*
+               * The disabled flag has to reach getModeButtonClass, not just the
+               * element. Passing undefined here meant Cancel kept the full
+               * pressable material while submitting -- raised, and still rising
+               * toward the light on hover -- with a 50% opacity wash as the only
+               * hint it was inert. The Submit button beside it already does this
+               * correctly; this one silently did not, so the pair disagreed
+               * about what "disabled" looks like.
+               */
+              className={`${getModeButtonClass(modeMeta, { disabled: isSubmitting }, theme)} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
             >
               Cancel
             </button>
@@ -629,7 +672,7 @@ function BugReportModal({
               disabled={isSubmitting || !title.trim() || !description.trim()}
               className={`${getModeButtonClass(modeMeta, {
                 disabled: isSubmitting || !title.trim() || !description.trim(),
-              }, theme)} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)] disabled:opacity-50`}
+              }, theme)} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
             >
               {isSubmitting ? "Submitting..." : "Submit Report"}
             </button>
@@ -1055,9 +1098,17 @@ function IdePageContent() {
                               // Each run is a card resting on the sidebar and
                               // rises when pointed at, because clicking it
                               // restores that run's whole output.
+                              //
+                              // And it goes back down when clicked. It used to
+                              // lift on hover and then do nothing at all under
+                              // the press -- a card that offers itself and then
+                              // ignores being taken, which is the one thing
+                              // every other pressable card here (the dashboard
+                              // grid, the learning-center cards, the mode and
+                              // layout pickers) completes.
                               <div
                                 key={run.id}
-                                className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-2.5 py-2 shadow-[var(--raised)] transition-[box-shadow,transform] duration-[var(--duration-fast)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] hover:shadow-[var(--lifted)] motion-reduce:hover:transform-none"
+                                className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-2.5 py-2 shadow-[var(--raised)] transition-[box-shadow,transform] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] hover:shadow-[var(--lifted)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none"
                               >
                                 <div className="flex items-start gap-2">
                                   <button
@@ -1112,14 +1163,19 @@ function IdePageContent() {
           </aside>
 
           <section className={`flex min-w-0 flex-1 flex-col ${workspaceBgClass}`}>
+            {/* No backdrop blur: modeBarGlowStyle mixes the mode tint into
+                --surface-raised, an opaque fill, so there is never anything
+                behind this header to blur -- it only cost a compositing pass
+                per frame. */}
             <header
-              className={`relative z-[120] overflow-visible px-4 py-3 backdrop-blur-md ${headerSurfaceClass}`}
+              className={`relative z-[120] overflow-visible px-4 py-3 ${headerSurfaceClass}`}
               style={modeBarGlowStyle}
             >
               <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <button
                     onClick={() => setSidebarOpen((prev) => !prev)}
+                    aria-expanded={sidebarOpen}
                     aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
                     className={joinClasses(
                       "group h-10 w-10 rounded-[var(--radius-md)]",
@@ -1140,6 +1196,10 @@ function IdePageContent() {
 
                   <Link
                     href="/dashboard"
+                    // The mark's alt text named the product, not the
+                    // destination, so this link announced as "T.R.A.C.E., link"
+                    // -- which says what it is a picture of, not where it goes.
+                    aria-label="Go to dashboard"
                     className={joinClasses(
                       "group h-10 w-10 rounded-[var(--radius-md)]",
                       SIDEBAR_ICON_BUTTON_CLASS,
@@ -1149,7 +1209,7 @@ function IdePageContent() {
                     <div className="relative h-5 w-5">
                       <Image
                         src="/brand/logo-mark.png"
-                        alt="T.R.A.C.E."
+                        alt=""
                         fill
                         sizes="20px"
                         className="object-contain opacity-90 transition-opacity duration-[var(--duration-base)] group-hover:opacity-100"
@@ -1996,8 +2056,20 @@ function IdePageContent() {
                         "bg-[var(--state-warning-subtle)] bg-[image:var(--material-sheen)]",
                         "text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] text-[var(--state-warning)]",
                         "shadow-[var(--raised)] transition-[background-color,box-shadow] duration-[var(--duration-base)]",
-                        "hover:shadow-[var(--lifted)] active:shadow-[var(--pressed)]"
+                        // Hover answers in colour, not in depth. --lifted is
+                        // the shading of an object that has actually moved, and
+                        // this one deliberately does not move (see above), so
+                        // pairing them gave the spine a bigger shadow while it
+                        // stood still -- which is exactly what reads as a glow
+                        // rather than a lift. pricingCardHoverClass in
+                        // use-ide-state names the same trap from the other
+                        // side. Deepening the warning wash is how the other
+                        // non-travelling controls in this app answer the
+                        // cursor.
+                        "hover:bg-[color-mix(in_srgb,var(--state-warning)_16%,transparent)]",
+                        "active:shadow-[var(--pressed)]"
                       )}
+                      aria-expanded={problemPanelOpen}
                       aria-label={problemPanelOpen ? "Collapse problem panel" : "Expand problem panel"}
                     >
                       <span className="-rotate-90 whitespace-nowrap">Problem</span>
@@ -2482,7 +2554,22 @@ function IdePageContent() {
         </div>
       </div>
 
+      {/*
+       * inert while closed.
+       *
+       * This overlay is never unmounted -- it is faded out and set to
+       * pointer-events-none instead, so the open/close can transition. But
+       * pointer-events and opacity are both purely visual: every control inside
+       * stayed in the tab order and in the accessibility tree while invisible,
+       * so tabbing through the IDE dropped focus into a dialog nobody could see
+       * -- including, here, an autoFocus password input.
+       *
+       * inert is the one attribute that removes a subtree from focus AND from
+       * assistive tech, which is exactly the state "closed but still mounted"
+       * is meant to be.
+       */}
       <div
+        inert={!showDevVisionPrompt}
         className={`absolute inset-0 z-[130] transition-all duration-[var(--duration-slow)] ${
           showDevVisionPrompt ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
@@ -2503,7 +2590,12 @@ function IdePageContent() {
             showDevVisionPrompt ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"
           }`}
         >
-          <div className={`relative w-full max-w-md p-5 ${MODAL_SURFACE_CLASS}`}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Developer access required"
+            className={`relative w-full max-w-md p-5 ${MODAL_SURFACE_CLASS}`}
+          >
             <div className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
               Dev Vision
             </div>
@@ -2623,12 +2715,16 @@ function IdePageContent() {
         </div>
       )}
 
+      {/* inert while closed -- see the Dev Vision prompt above. */}
       <div
+        inert={!showModeOverlay}
         className={`absolute inset-0 z-[120] transition-all duration-[var(--duration-slow)] ${
           showModeOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
+        {/* Pointer-only convenience; the dialog has its own Close button. */}
         <div
+          aria-hidden="true"
           className={SCRIM_CLASS}
           onClick={() => setShowModeOverlay(false)}
         />
@@ -2639,6 +2735,9 @@ function IdePageContent() {
           }`}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Select IDE mode"
             className={`relative w-full max-w-7xl p-6 ${MODAL_SURFACE_CLASS}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2750,12 +2849,16 @@ function IdePageContent() {
         </div>
       </div>
 
+      {/* inert while closed -- see the Dev Vision prompt above. */}
       <div
+        inert={!showLayoutOverlay}
         className={`absolute inset-0 z-[120] transition-all duration-[var(--duration-slow)] ${
           showLayoutOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
+        {/* Pointer-only convenience; the dialog has its own Close button. */}
         <div
+          aria-hidden="true"
           className={SCRIM_CLASS}
           onClick={() => setShowLayoutOverlay(false)}
         />
@@ -2766,6 +2869,9 @@ function IdePageContent() {
           }`}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Select layout"
             className={`relative w-full max-w-5xl p-6 ${MODAL_SURFACE_CLASS}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2839,9 +2945,16 @@ function IdePageContent() {
                           selected ? "opacity-70" : "opacity-0 group-hover:opacity-55"
                         }`}
                       />
+                      {/* Same catch of light as the mode cards, and brought up
+                          the same way: on hover, so the card reads as rising
+                          toward the source rather than just moving. It was
+                          painted permanently here, which put a second, brighter
+                          top edge on top of the one --raised already draws and
+                          left the two pickers -- the same OVERLAY_CARD object,
+                          two panels apart -- lit differently at rest. */}
                       <div
                         aria-hidden="true"
-                        className="absolute inset-x-0 top-0 h-px bg-[var(--material-highlight)]"
+                        className="absolute inset-x-0 top-0 h-px bg-[var(--material-highlight)] opacity-0 transition-opacity duration-[var(--duration-base)] group-hover:opacity-100"
                       />
                     </div>
 
@@ -2908,15 +3021,26 @@ function IdePageContent() {
 
       {upgradeModal.open && (
         <div className="fixed inset-0 z-[170] flex items-center justify-center px-6">
+          {/* Pointer-only convenience; the dialog has its own Close button. */}
           <div
+            aria-hidden="true"
             className={SCRIM_CLASS}
             onClick={() => setUpgradeModal((prev) => ({ ...prev, open: false }))}
           />
-          <div className={`relative z-10 w-full max-w-lg p-6 ${MODAL_SURFACE_CLASS}`}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ide-upgrade-modal-title"
+            className={`relative z-10 w-full max-w-lg p-6 ${MODAL_SURFACE_CLASS}`}
+          >
             <div className={`mb-2 text-[11px] uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
               Subscription Required
             </div>
+            {/* labelledby rather than a duplicated aria-label: this heading is
+                plain text, so the visible title and the announced one cannot
+                drift apart. */}
             <h2
+              id="ide-upgrade-modal-title"
               className={`${PAGE_HEADING_CLASS} text-3xl text-[var(--text-primary)]`}
             >
               {upgradeModal.title}
@@ -2945,15 +3069,36 @@ function IdePageContent() {
         </div>
       )}
 
+      {/*
+       * The toast is the IDE's only transient feedback channel -- it is what
+       * confirms a save, a copy, a deleted file. It announced none of that:
+       * with no live region the text simply appeared and vanished, so the
+       * confirmation existed for sighted users only.
+       *
+       * polite, not assertive: these are acknowledgements, not emergencies, and
+       * assertive would interrupt whatever the reader is in the middle of.
+       * aria-atomic so the message is read as one sentence rather than as a
+       * diff against the previous toast.
+       *
+       * The live region is the always-mounted wrapper, not the message: a
+       * region that mounts at the same moment its content arrives is not
+       * reliably announced, because there was no prior state to compare to.
+       */}
       <div
-        className={`pointer-events-none absolute right-6 top-6 z-[160] transition-all duration-[var(--duration-slow)] motion-reduce:transform-none ${
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        // motion-reduce:translate-y-0, not transform-none -- Tailwind v4
+        // compiles -translate-y-2 to the `translate` property, which
+        // `transform: none` does not touch. The fade still carries the change.
+        className={`pointer-events-none absolute right-6 top-6 z-[160] transition-all duration-[var(--duration-slow)] motion-reduce:transition-none motion-reduce:translate-y-0 ${
           toast.visible ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
         }`}
       >
         {/* A toast is not touching the page either, so it takes the same
             elevation as a menu rather than a card's contact shadow. */}
         <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-sm)] text-[var(--text-muted)] shadow-[var(--floating)]">
-          {toast.text}
+          {toast.visible ? toast.text : ""}
         </div>
       </div>
 

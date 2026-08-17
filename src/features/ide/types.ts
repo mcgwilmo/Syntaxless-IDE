@@ -262,6 +262,39 @@ export type BugReportFormValues = {
   reproducible: boolean;
 };
 
+/*
+ * How each mode paints the IDE.
+ *
+ * The tint is not confined to the mode picker: the armed Run button, the active
+ * menu item, and the open file in the explorer all take it, so this table is
+ * what answers "which mode am I in" without anyone reading a label.
+ *
+ * Because it carries meaning, the tint is not a free hue. Each mode borrows the
+ * token whose meaning already matches what the mode does to your code. Strict
+ * is the mode that refuses lines, so --state-blocked; Problem Solving is the
+ * mode that flags them, so --state-warning; Vibe refuses nothing, so
+ * --state-success; Standard is the ordinary path and takes the accent.
+ * Abstraction neither refuses nor flags, so it has no state to borrow and is
+ * tinted with ink instead of hue -- which still reads as emphasis in both
+ * themes, since --text-primary is near-black on the light page and near-white
+ * on the dark one.
+ *
+ * `glow` and `accentGlow` used to be coloured 50-60px halos. A halo is a second
+ * light source, and the material system has exactly one -- above and slightly
+ * forward, with every surface only reflecting it. They are elevation rungs now,
+ * and the same rung for every mode, because depth says what a surface IS rather
+ * than which mode is selected. The identity those halos carried moved into the
+ * border and fill fields, where half of it already lived.
+ *
+ * Strengths keep the states ordered: hover tints with the -subtle token, and
+ * selected mixes the same colour to 16% behind a 45% border, which still
+ * outweighs hover in the dark theme where the -subtle tokens sit at 12%.
+ * Elevation and press travel stay with the call site -- two shadow utilities on
+ * one element resolve by stylesheet order rather than by intent.
+ *
+ * Every class is written out rather than composed, because Tailwind only emits
+ * the class names it can literally see in the source.
+ */
 export const MODE_META: Record<
   IdeMode,
   {
@@ -296,25 +329,27 @@ export const MODE_META: Record<
     description:
       "Strict mode allows natural English, but expects you to be explicit about logic, functions, loops, and control flow when those are important.",
     icon: "◇",
-    border: "border-rose-500/25",
-    glow: "shadow-[0_0_50px_rgba(244,63,94,0.12)]",
-    hover: "hover:border-rose-400/40 hover:bg-rose-500/[0.08]",
-    active: "border-rose-400/50 bg-rose-500/[0.14]",
-    badge: "text-rose-300",
-    accentText: "text-rose-300",
-    accentBorder: "border-rose-400/40",
-    accentBg: "bg-rose-500/[0.14]",
-    accentSoftBg: "bg-rose-500/[0.08]",
-    accentHoverText: "hover:text-rose-300",
-    accentHoverBorder: "hover:border-rose-400/40",
-    accentHoverBg: "hover:bg-rose-500/[0.1]",
-    accentEditorBar: "bg-rose-400/80",
-    accentRing: "ring-rose-400/30",
-    accentGlow: "shadow-[0_0_60px_rgba(244,63,94,0.12)]",
-    accentSurface: "from-rose-500/[0.12] to-transparent",
-    accentLine: "bg-rose-400/60",
-    terminalText: "text-rose-200",
-    terminalBorder: "border-t-rose-400",
+    border: "border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)]",
+    glow: "shadow-[var(--raised)]",
+    hover:
+      "hover:border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)] hover:bg-[var(--state-blocked-subtle)]",
+    active:
+      "border-[color-mix(in_srgb,var(--state-blocked)_45%,transparent)] bg-[color-mix(in_srgb,var(--state-blocked)_16%,transparent)]",
+    badge: "text-[var(--state-blocked)]",
+    accentText: "text-[var(--state-blocked)]",
+    accentBorder: "border-[color-mix(in_srgb,var(--state-blocked)_45%,transparent)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--state-blocked)_16%,transparent)]",
+    accentSoftBg: "bg-[var(--state-blocked-subtle)]",
+    accentHoverText: "hover:text-[var(--state-blocked)]",
+    accentHoverBorder: "hover:border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)]",
+    accentHoverBg: "hover:bg-[var(--state-blocked-subtle)]",
+    accentEditorBar: "bg-[var(--state-blocked)]",
+    accentRing: "ring-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)]",
+    accentGlow: "shadow-[var(--raised-lg)]",
+    accentSurface: "from-[var(--state-blocked-subtle)] to-transparent",
+    accentLine: "bg-[color-mix(in_srgb,var(--state-blocked)_60%,transparent)]",
+    terminalText: "text-[var(--state-blocked)]",
+    terminalBorder: "border-t-[var(--state-blocked)]",
   },
   standard: {
     label: "Standard",
@@ -322,25 +357,28 @@ export const MODE_META: Record<
     description:
       "Standard mode allows ordinary English statements and resolves obvious intended meaning without treating routine inference as a problem.",
     icon: "◫",
-    border: "border-sky-500/25",
-    glow: "shadow-[0_0_50px_rgba(56,189,248,0.12)]",
-    hover: "hover:border-sky-400/40 hover:bg-sky-500/[0.08]",
-    active: "border-sky-400/50 bg-sky-500/[0.14]",
-    badge: "text-sky-300",
-    accentText: "text-sky-300",
-    accentBorder: "border-sky-400/40",
-    accentBg: "bg-sky-500/[0.14]",
-    accentSoftBg: "bg-sky-500/[0.08]",
-    accentHoverText: "hover:text-sky-300",
-    accentHoverBorder: "hover:border-sky-400/40",
-    accentHoverBg: "hover:bg-sky-500/[0.1]",
-    accentEditorBar: "bg-sky-400/80",
-    accentRing: "ring-sky-400/30",
-    accentGlow: "shadow-[0_0_60px_rgba(56,189,248,0.14)]",
-    accentSurface: "from-sky-500/[0.13] to-transparent",
-    accentLine: "bg-sky-400/60",
-    terminalText: "text-sky-300",
-    terminalBorder: "border-t-sky-400",
+    // The default mode is the one place the accent is the honest choice: it is
+    // the ordinary path, and the accent is what the system uses for emphasis.
+    border: "border-[var(--accent-border)]",
+    glow: "shadow-[var(--raised)]",
+    hover: "hover:border-[var(--accent-border)] hover:bg-[var(--accent-subtle)]",
+    active:
+      "border-[color-mix(in_srgb,var(--accent-solid)_45%,transparent)] bg-[color-mix(in_srgb,var(--accent-solid)_16%,transparent)]",
+    badge: "text-[var(--accent-text)]",
+    accentText: "text-[var(--accent-text)]",
+    accentBorder: "border-[color-mix(in_srgb,var(--accent-solid)_45%,transparent)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--accent-solid)_16%,transparent)]",
+    accentSoftBg: "bg-[var(--accent-subtle)]",
+    accentHoverText: "hover:text-[var(--accent-text)]",
+    accentHoverBorder: "hover:border-[var(--accent-border)]",
+    accentHoverBg: "hover:bg-[var(--accent-subtle)]",
+    accentEditorBar: "bg-[var(--accent-solid)]",
+    accentRing: "ring-[var(--accent-border)]",
+    accentGlow: "shadow-[var(--raised-lg)]",
+    accentSurface: "from-[var(--accent-subtle)] to-transparent",
+    accentLine: "bg-[color-mix(in_srgb,var(--accent-solid)_60%,transparent)]",
+    terminalText: "text-[var(--accent-text)]",
+    terminalBorder: "border-t-[var(--accent-solid)]",
   },
   abstraction: {
     label: "Abstraction",
@@ -348,25 +386,30 @@ export const MODE_META: Record<
     description:
       "Abstraction mode allows non-specific executable requests and infers methodology/details freely. It mainly blocks non-functional or qualitative requests.",
     icon: "◎",
-    border: "border-violet-500/25",
-    glow: "shadow-[0_0_50px_rgba(168,85,247,0.12)]",
-    hover: "hover:border-violet-400/40 hover:bg-violet-500/[0.08]",
-    active: "border-violet-400/50 bg-violet-500/[0.14]",
-    badge: "text-violet-300",
-    accentText: "text-violet-300",
-    accentBorder: "border-violet-400/40",
-    accentBg: "bg-violet-500/[0.14]",
-    accentSoftBg: "bg-violet-500/[0.08]",
-    accentHoverText: "hover:text-violet-300",
-    accentHoverBorder: "hover:border-violet-400/40",
-    accentHoverBg: "hover:bg-violet-500/[0.1]",
-    accentEditorBar: "bg-violet-400/80",
-    accentRing: "ring-violet-400/30",
-    accentGlow: "shadow-[0_0_60px_rgba(168,85,247,0.14)]",
-    accentSurface: "from-violet-500/[0.13] to-transparent",
-    accentLine: "bg-violet-400/60",
-    terminalText: "text-violet-200",
-    terminalBorder: "border-t-violet-400",
+    // Ink rather than hue, for the reason above. The fill is mixed a little
+    // lighter than the tinted modes because a neutral wash at their strength
+    // reads as the surface being dimmed rather than chosen.
+    border: "border-[var(--border-strong)]",
+    glow: "shadow-[var(--raised)]",
+    hover:
+      "hover:border-[var(--border-strong)] hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]",
+    active:
+      "border-[color-mix(in_srgb,var(--text-primary)_35%,transparent)] bg-[color-mix(in_srgb,var(--text-primary)_12%,transparent)]",
+    badge: "text-[var(--text-primary)]",
+    accentText: "text-[var(--text-primary)]",
+    accentBorder: "border-[color-mix(in_srgb,var(--text-primary)_35%,transparent)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--text-primary)_12%,transparent)]",
+    accentSoftBg: "bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]",
+    accentHoverText: "hover:text-[var(--text-primary)]",
+    accentHoverBorder: "hover:border-[var(--border-strong)]",
+    accentHoverBg: "hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]",
+    accentEditorBar: "bg-[var(--text-primary)]",
+    accentRing: "ring-[var(--border-strong)]",
+    accentGlow: "shadow-[var(--raised-lg)]",
+    accentSurface: "from-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] to-transparent",
+    accentLine: "bg-[color-mix(in_srgb,var(--text-primary)_45%,transparent)]",
+    terminalText: "text-[var(--text-primary)]",
+    terminalBorder: "border-t-[var(--text-primary)]",
   },
   problem_solving: {
     label: "Problem Solving",
@@ -374,25 +417,27 @@ export const MODE_META: Record<
     description:
       "Problem Solving mode keeps the governed strict pipeline, but also compares your evolving solution against an attached prompt to catch likely logic and format mismatches.",
     icon: "PS",
-    border: "border-amber-500/25",
-    glow: "shadow-[0_0_50px_rgba(245,158,11,0.14)]",
-    hover: "hover:border-amber-400/40 hover:bg-amber-500/[0.08]",
-    active: "border-amber-400/50 bg-amber-500/[0.14]",
-    badge: "text-amber-300",
-    accentText: "text-amber-300",
-    accentBorder: "border-amber-400/40",
-    accentBg: "bg-amber-500/[0.14]",
-    accentSoftBg: "bg-amber-500/[0.08]",
-    accentHoverText: "hover:text-amber-300",
-    accentHoverBorder: "hover:border-amber-400/40",
-    accentHoverBg: "hover:bg-amber-500/[0.1]",
-    accentEditorBar: "bg-amber-400/80",
-    accentRing: "ring-amber-400/30",
-    accentGlow: "shadow-[0_0_60px_rgba(245,158,11,0.15)]",
-    accentSurface: "from-amber-500/[0.13] to-transparent",
-    accentLine: "bg-amber-400/60",
-    terminalText: "text-amber-200",
-    terminalBorder: "border-t-amber-400",
+    border: "border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)]",
+    glow: "shadow-[var(--raised)]",
+    hover:
+      "hover:border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)] hover:bg-[var(--state-warning-subtle)]",
+    active:
+      "border-[color-mix(in_srgb,var(--state-warning)_45%,transparent)] bg-[color-mix(in_srgb,var(--state-warning)_16%,transparent)]",
+    badge: "text-[var(--state-warning)]",
+    accentText: "text-[var(--state-warning)]",
+    accentBorder: "border-[color-mix(in_srgb,var(--state-warning)_45%,transparent)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--state-warning)_16%,transparent)]",
+    accentSoftBg: "bg-[var(--state-warning-subtle)]",
+    accentHoverText: "hover:text-[var(--state-warning)]",
+    accentHoverBorder: "hover:border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)]",
+    accentHoverBg: "hover:bg-[var(--state-warning-subtle)]",
+    accentEditorBar: "bg-[var(--state-warning)]",
+    accentRing: "ring-[color-mix(in_srgb,var(--state-warning)_30%,transparent)]",
+    accentGlow: "shadow-[var(--raised-lg)]",
+    accentSurface: "from-[var(--state-warning-subtle)] to-transparent",
+    accentLine: "bg-[color-mix(in_srgb,var(--state-warning)_60%,transparent)]",
+    terminalText: "text-[var(--state-warning)]",
+    terminalBorder: "border-t-[var(--state-warning)]",
   },
   vibe: {
     label: "Vibe",
@@ -400,25 +445,27 @@ export const MODE_META: Record<
     description:
       "Vibe mode is the loosest mode. High-level requests are allowed and the system may infer substantial structure and implementation details.",
     icon: "✦",
-    border: "border-emerald-500/25",
-    glow: "shadow-[0_0_50px_rgba(16,185,129,0.12)]",
-    hover: "hover:border-emerald-400/40 hover:bg-emerald-500/[0.08]",
-    active: "border-emerald-400/50 bg-emerald-500/[0.14]",
-    badge: "text-emerald-300",
-    accentText: "text-emerald-300",
-    accentBorder: "border-emerald-400/40",
-    accentBg: "bg-emerald-500/[0.14]",
-    accentSoftBg: "bg-emerald-500/[0.08]",
-    accentHoverText: "hover:text-emerald-300",
-    accentHoverBorder: "hover:border-emerald-400/40",
-    accentHoverBg: "hover:bg-emerald-500/[0.1]",
-    accentEditorBar: "bg-emerald-400/80",
-    accentRing: "ring-emerald-400/30",
-    accentGlow: "shadow-[0_0_60px_rgba(16,185,129,0.14)]",
-    accentSurface: "from-emerald-500/[0.13] to-transparent",
-    accentLine: "bg-emerald-400/60",
-    terminalText: "text-emerald-200",
-    terminalBorder: "border-t-emerald-400",
+    border: "border-[color-mix(in_srgb,var(--state-success)_30%,transparent)]",
+    glow: "shadow-[var(--raised)]",
+    hover:
+      "hover:border-[color-mix(in_srgb,var(--state-success)_30%,transparent)] hover:bg-[var(--state-success-subtle)]",
+    active:
+      "border-[color-mix(in_srgb,var(--state-success)_45%,transparent)] bg-[color-mix(in_srgb,var(--state-success)_16%,transparent)]",
+    badge: "text-[var(--state-success)]",
+    accentText: "text-[var(--state-success)]",
+    accentBorder: "border-[color-mix(in_srgb,var(--state-success)_45%,transparent)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--state-success)_16%,transparent)]",
+    accentSoftBg: "bg-[var(--state-success-subtle)]",
+    accentHoverText: "hover:text-[var(--state-success)]",
+    accentHoverBorder: "hover:border-[color-mix(in_srgb,var(--state-success)_30%,transparent)]",
+    accentHoverBg: "hover:bg-[var(--state-success-subtle)]",
+    accentEditorBar: "bg-[var(--state-success)]",
+    accentRing: "ring-[color-mix(in_srgb,var(--state-success)_30%,transparent)]",
+    accentGlow: "shadow-[var(--raised-lg)]",
+    accentSurface: "from-[var(--state-success-subtle)] to-transparent",
+    accentLine: "bg-[color-mix(in_srgb,var(--state-success)_60%,transparent)]",
+    terminalText: "text-[var(--state-success)]",
+    terminalBorder: "border-t-[var(--state-success)]",
   },
 };
 
@@ -434,6 +481,18 @@ export type TerminalEntry = {
   symbol?: string;
 };
 
+/*
+ * Layouts are a density ladder, not a set of states -- there is nothing
+ * successful about Normal or blocked about Minimalist -- so they do not borrow
+ * the state colours the way modes do. They share the one accent and separate by
+ * how much of it they carry: Minimalist the least, Developer the most, which is
+ * the thing the choice is actually about.
+ *
+ * `halo` is the soft disc behind a layout card. It is a flat token tint rather
+ * than a coloured light: blurred at these alphas it reads as the card's own
+ * surface being tinted, where the amber/sky/violet discs it replaces read as a
+ * lamp switched on inside the card. `glow` follows the mode table onto a rung.
+ */
 export const LAYOUT_META: Record<
   LayoutMode,
   {
@@ -454,36 +513,36 @@ export const LAYOUT_META: Record<
     short: "Beginner-friendly. Advanced panes hidden by default.",
     detail: "Core controls first, advanced panes tucked away.",
     icon: "MIN",
-    accentText: "text-amber-300",
-    accentBorder: "border-amber-400/35",
-    accentBg: "bg-amber-500/[0.12]",
-    hover: "hover:border-amber-400/40 hover:bg-amber-500/[0.08]",
-    glow: "shadow-[0_0_65px_rgba(251,191,36,0.14)]",
-    halo: "bg-amber-400/20",
+    accentText: "text-[var(--accent-text)]",
+    accentBorder: "border-[var(--accent-border)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--accent-solid)_16%,transparent)]",
+    hover: "hover:border-[var(--accent-border)] hover:bg-[var(--accent-subtle)]",
+    glow: "shadow-[var(--raised-lg)]",
+    halo: "bg-[color-mix(in_srgb,var(--accent-solid)_8%,transparent)]",
   },
   normal: {
     label: "Normal",
     short: "Balanced full layout.",
     detail: "Balanced visibility for everyday use.",
     icon: "NRM",
-    accentText: "text-sky-300",
-    accentBorder: "border-sky-400/35",
-    accentBg: "bg-sky-500/[0.12]",
-    hover: "hover:border-sky-400/40 hover:bg-sky-500/[0.08]",
-    glow: "shadow-[0_0_65px_rgba(56,189,248,0.14)]",
-    halo: "bg-sky-400/20",
+    accentText: "text-[var(--accent-text)]",
+    accentBorder: "border-[color-mix(in_srgb,var(--accent-solid)_38%,transparent)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--accent-solid)_22%,transparent)]",
+    hover: "hover:border-[var(--accent-border)] hover:bg-[var(--accent-subtle)]",
+    glow: "shadow-[var(--raised-lg)]",
+    halo: "bg-[color-mix(in_srgb,var(--accent-solid)_14%,transparent)]",
   },
   developer: {
     label: "Developer",
     short: "Everything expanded and visible.",
     detail: "Everything expanded for full control and visibility.",
     icon: "DEV",
-    accentText: "text-violet-300",
-    accentBorder: "border-violet-400/35",
-    accentBg: "bg-violet-500/[0.12]",
-    hover: "hover:border-violet-400/40 hover:bg-violet-500/[0.08]",
-    glow: "shadow-[0_0_65px_rgba(168,85,247,0.14)]",
-    halo: "bg-violet-400/20",
+    accentText: "text-[var(--accent-text)]",
+    accentBorder: "border-[color-mix(in_srgb,var(--accent-solid)_52%,transparent)]",
+    accentBg: "bg-[color-mix(in_srgb,var(--accent-solid)_28%,transparent)]",
+    hover: "hover:border-[var(--accent-border)] hover:bg-[var(--accent-subtle)]",
+    glow: "shadow-[var(--raised-lg)]",
+    halo: "bg-[color-mix(in_srgb,var(--accent-solid)_20%,transparent)]",
   },
 };
 

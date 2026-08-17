@@ -198,7 +198,22 @@ export function TypingHeading({
   return (
     <>
       <Tag ref={ref} className={cn("font-bold", className)} style={style}>
-        {visibleText}
+        {/*
+         * The heading's accessible name must not depend on an animation.
+         *
+         * visibleText is "" until the heading scrolls into view and only fills
+         * in a character at a time after that, so exposing it directly gave
+         * this element -- the <h1> on nearly every page, via PageHero and
+         * AuthPanel -- an empty or half-typed name for as long as the effect
+         * was running. A screen reader announcing "heading, N" (or "P... Pr...
+         * Pri") is not a cosmetic problem: headings are the primary way
+         * non-visual users navigate a page.
+         *
+         * So the real text is always in the tree, and the typed copy is
+         * decorative. Sighted users see exactly what they saw before.
+         */}
+        <span className="sr-only">{text}</span>
+        <span aria-hidden="true">{visibleText}</span>
         {/* The caret is the one place a heading is allowed the accent, and it
             gets the flat color with no glow: a halo around it would be a second
             light source, and the material system only has the one. */}
@@ -208,7 +223,12 @@ export function TypingHeading({
             !showCursor
               ? "opacity-0"
               : cursorBlink
-              ? "animate-[typedCursorBlink_1s_steps(1)_infinite]"
+              // motion-reduce:animate-none, and not just a shorter duration:
+              // when motion is reduced the typing effect is skipped, which put
+              // the caret straight into its blink branch and left it flashing
+              // once a second forever. An indefinite blink is the one piece of
+              // motion on the page with no end state to settle into.
+              ? "animate-[typedCursorBlink_1s_steps(1)_infinite] motion-reduce:animate-none"
               : "opacity-100"
           )}
           aria-hidden="true"

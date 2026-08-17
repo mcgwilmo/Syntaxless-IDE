@@ -106,10 +106,32 @@ export function Floating({ children, className }: SurfaceProps) {
  *
  * Pair it with Scrim. The long shadow falloff only reads as distance when
  * there is something dimmed behind it to be distant from.
+ *
+ * The dialog semantics are not optional decoration. Depth is the only thing
+ * that said "this is in front and the page behind it is inert", and depth is
+ * exactly what a screen reader cannot see: without role="dialog" this was an
+ * anonymous <div> that happened to appear in the middle of the document, and
+ * nothing told a non-visual user that a modal had opened, what it was called,
+ * or that the content behind it no longer applied.
+ *
+ * `label` names the dialog. Pass it whenever the visible title is rendered by
+ * something whose text is not a stable, plain string -- TypingHeading types its
+ * heading in a character at a time, so pointing aria-labelledby at it is not
+ * safe. When the title IS a plain element, pass labelledBy instead and skip the
+ * duplicate string.
  */
-export function Modal({ children, className }: SurfaceProps) {
+export function Modal({
+  children,
+  className,
+  label,
+  labelledBy,
+}: SurfaceProps & { label?: string; labelledBy?: string }) {
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={labelledBy ? undefined : label}
+      aria-labelledby={labelledBy}
       className={cn(
         "rounded-[var(--radius-xl)] border border-[var(--border-subtle)]",
         "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",

@@ -51,14 +51,20 @@ export function TestimonialsColumn({
           <article
             key={name}
             /* A quote is read, not pressed, so the card lies off the page on the
-               card rung and stays put on hover -- only the sweep answers the
-               cursor. */
-            className="group relative mx-auto w-full max-w-sm overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-6)] shadow-[var(--raised-lg)] md:p-[var(--space-8)]"
+               card rung and stays put on hover.
+               It also no longer answers the cursor with a swept band of light.
+               That band was a -16deg gradient travelling across the card on a
+               loop -- a second light source, and a moving one, over a card
+               whose every other edge is lit from directly above. site-shell
+               deleted the same treatment from the nav bar and named the reason
+               there; docs/page.tsx deleted the decorative glows behind the
+               changelog and cited tokens.css, which reserves the accent for
+               interactive emphasis and says outright it is never decoration.
+               The static top-down tint below is the card's own colour and
+               stays. */
+            className="relative mx-auto w-full max-w-sm overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-6)] shadow-[var(--raised-lg)] md:p-[var(--space-8)]"
           >
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,var(--accent-subtle),transparent_60%)]" />
-            <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:opacity-100">
-              <div className="absolute -left-[34%] top-0 h-full w-[28%] -skew-x-[16deg] bg-[linear-gradient(90deg,transparent,var(--accent-subtle),transparent)] animate-[cardSweep_8s_ease-in-out_infinite] motion-reduce:animate-none" />
-            </div>
 
             <div className="relative z-10">
               <p className="text-[length:var(--text-base)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">

@@ -427,10 +427,20 @@ export default function SubscriptionsPage() {
                     type="button"
                     onClick={() => setBillingCycle(cycle)}
                     aria-pressed={isSelected}
-                    className={`flex h-10 items-center gap-2 rounded-[var(--radius-full)] px-4 text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] transition-[background-color,box-shadow,translate,color] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none ${
+                    className={`flex h-10 items-center gap-2 rounded-[var(--radius-full)] px-4 text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] transition-[background-color,box-shadow,translate,color] duration-[var(--duration-press)] ease-[var(--ease-spring)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none ${
                       isSelected
-                        ? "bg-[var(--accent-solid)] bg-[image:var(--material-sheen)] text-[var(--text-inverted)] shadow-[var(--raised)] hover:bg-[var(--accent-hover)] hover:shadow-[var(--lifted)]"
-                        : "text-[var(--text-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] hover:shadow-[var(--lifted)]"
+                        // The thumb is the only thing in the groove with any
+                        // depth, so it is the only thing that can rise: raised
+                        // at rest, --lifted and a travel on hover.
+                        ? "bg-[var(--accent-solid)] bg-[image:var(--material-sheen)] text-[var(--text-inverted)] shadow-[var(--raised)] hover:-translate-y-[var(--lift-travel)] hover:bg-[var(--accent-hover)] hover:shadow-[var(--lifted)]"
+                        // The unselected cycle is flat in the track. It used to
+                        // answer hover with --lifted and a travel, jumping from
+                        // no shadow at all straight to the hover of a rung it
+                        // was never on -- so an unselected segment read as more
+                        // raised than the selected one under the cursor. Flat
+                        // things in this app answer with colour and press in;
+                        // same rule as the menu rows and the syllabus rows.
+                        : "text-[var(--text-muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)]"
                     }`}
                   >
                     {cycle === "yearly" ? <SwitchIcon className="h-4 w-4" /> : null}
@@ -479,20 +489,21 @@ export default function SubscriptionsPage() {
                    * classroom. The accent border only confirms it.
                    *
                    * The card itself is not pressable, so it does not travel on
-                   * hover -- the button inside it is the thing you press.
+                   * hover -- the button inside it is the thing you press. It
+                   * does not answer hover at all now: the only thing that used
+                   * to was a skewed band of accent light sweeping across it on
+                   * a loop, which is a second and moving light source on a card
+                   * lit from above like everything else. Gone, along with the
+                   * `group` that existed only to trigger it.
                    */
                   <section
                     key={tier}
-                    className={`group relative flex min-h-[38rem] flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-6 transition-[box-shadow,scale] duration-[var(--duration-slow)] ease-[var(--ease-spring)] motion-reduce:transition-[box-shadow] ${
+                    className={`relative flex min-h-[38rem] flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-6 transition-[box-shadow,scale] duration-[var(--duration-slow)] ease-[var(--ease-spring)] motion-reduce:transition-[box-shadow] ${
                       isCurrent
                         ? "scale-[1.015] border-[var(--accent-border)] shadow-[var(--floating)]"
                         : "border-[var(--border-subtle)] shadow-[var(--raised-lg)]"
                     }`}
                   >
-                    <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                      <div className="absolute -left-[30%] top-0 h-full w-[34%] -skew-x-[16deg] bg-[linear-gradient(90deg,transparent,var(--accent-subtle),transparent)] animate-[cardSweep_8s_ease-in-out_infinite]" />
-                    </div>
-
                     <div className="relative z-10 flex h-full flex-col">
                       <div className="mb-6">
                         <div className="mb-3 flex items-center justify-between gap-3">
@@ -552,24 +563,6 @@ export default function SubscriptionsPage() {
       </section>
 
       <SiteFooter />
-
-      <style jsx global>{`
-        @keyframes cardSweep {
-          0%,
-          64%,
-          100% {
-            transform: translateX(0) skewX(-16deg);
-            opacity: 0;
-          }
-          72% {
-            opacity: 0.45;
-          }
-          88% {
-            transform: translateX(320%) skewX(-16deg);
-            opacity: 0.06;
-          }
-        }
-      `}</style>
     </main>
   );
 }

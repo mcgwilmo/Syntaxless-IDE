@@ -94,7 +94,14 @@ export function InteractiveImageAccordion({
                     "bg-[var(--surface-raised)]",
                     // Card rung: these are panels lifted off the page, not
                     // toolbar controls resting on it.
-                    "shadow-[var(--raised-lg)] hover:shadow-[var(--lifted)] active:shadow-[var(--pressed)]",
+                    //
+                    // So hover goes to --floating, not --lifted. --lifted is
+                    // the hover of --raised and is a SMALLER shadow than
+                    // --raised-lg: pairing it with an upward travel moved the
+                    // panel toward the light while its shadow said it had
+                    // dropped. Detaching is what rising means from this rung --
+                    // same step the selected plan card takes in subscriptions.
+                    "shadow-[var(--raised-lg)] hover:shadow-[var(--floating)] active:shadow-[var(--pressed)]",
                     "hover:-translate-y-[var(--lift-travel)] active:translate-y-[var(--press-travel)]",
                     "motion-reduce:transform-none motion-reduce:hover:transform-none",
                     "motion-reduce:active:transform-none",

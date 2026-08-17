@@ -281,7 +281,18 @@ function Reveal({
 }) {
   return (
     <div
-      className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform ${className} ${
+      /*
+       * motion-reduce:translate-y-0, NOT motion-reduce:transform-none.
+       *
+       * Tailwind v4 compiles translate-y-* to the standalone `translate`
+       * property, so `transform: none` does not cancel it -- they are different
+       * properties. The travel tokens are zeroed in globals.css under
+       * prefers-reduced-motion, but translate-y-5 is a literal, so nothing was
+       * switching it off: this 20px slide ran at full strength for every reader
+       * who had asked the OS for less motion. See testimonials-columns.tsx,
+       * which already documents the same trap.
+       */
+      className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${className} ${
         inView
           ? "translate-y-0 opacity-100"
           : "translate-y-5 opacity-0"
@@ -306,7 +317,10 @@ function CardEntrance({
 }) {
   return (
     <div
-      className={`h-full transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform ${className} ${
+      // Same trap as Reveal above: the literal translate-y-5 needs
+      // motion-reduce:translate-y-0, because transform-none is a different
+      // property from the `translate` these compile to.
+      className={`h-full transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${className} ${
         inView
           ? "translate-y-0 opacity-100"
           : "translate-y-5 opacity-0"
@@ -335,12 +349,12 @@ function ReviewCard({
   return (
     <Reveal inView={inView} delay={delay}>
       {/* A quote is read, not pressed, so the card lies off the page and stays
-          put on hover -- only the sweep responds. */}
-      <div className="group relative h-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-6)] shadow-[var(--raised-lg)]">
+          put on hover. The top-down accent wash is the card's own tint; the
+          skewed sweep that used to rake across it on hover is gone. See
+          testimonials-columns.tsx, which is the same card and lost the same
+          band for the same reason. */}
+      <div className="relative h-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-6)] shadow-[var(--raised-lg)]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,var(--accent-subtle),transparent_60%)]" />
-        <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:opacity-100">
-          <div className="absolute -left-[40%] top-0 h-full w-[38%] -skew-x-[16deg] bg-[linear-gradient(90deg,transparent,var(--accent-subtle),transparent)] animate-[cardSweep_7.5s_ease-in-out_infinite]" />
-        </div>
 
         <div className="relative z-10 mb-[var(--space-4)] flex items-center gap-[var(--space-1)] text-[length:var(--text-base)] text-[var(--accent-text)]">
           <span>★</span>
@@ -393,7 +407,8 @@ function HeroStage({
   return (
     <div className="pointer-events-none relative z-0 -mb-20 mt-6 w-full md:-mb-24 md:mt-8 lg:-mb-28 lg:mt-10">
       <div
-        className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform ${
+        // See Reveal: literal translate needs translate-y-0 to be cancelled.
+        className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${
           inView ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
         }`}
         style={{ transitionDelay: "160ms" }}
@@ -593,8 +608,23 @@ export default function HomePage() {
         className="relative px-6 pb-8 pt-32 md:pb-10 md:pt-36 lg:pb-12"
       >
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-[46%] h-[32rem] w-[32rem] max-w-[88vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl animate-[orbPulse_16s_ease-in-out_infinite] bg-[radial-gradient(circle,var(--accent-subtle),transparent_66%)]" />
-          <div className="absolute left-1/2 top-[48%] h-[18rem] w-[18rem] max-w-[58vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[56px] animate-[orbPulse_12s_ease-in-out_infinite_reverse] bg-[radial-gradient(circle,var(--accent-subtle),transparent_68%)]" />
+          {/* The wash stays; the pulse does not.
+              PageBackdrop in site-shell states the rule these were breaking:
+              the material system is lit by exactly one source, above and
+              slightly forward, and an animated background is a second, moving
+              light. Every other ambient wash in the app -- the accordion strip,
+              the testimonial band, the learning-center header -- is a static
+              accent-subtle radial, so these two were also the only ones of
+              their kind. Brightening and swelling on a 16s cycle is what made
+              them read as a lamp behind the page rather than as the page
+              catching the light everything else on it catches.
+
+              Not merely stopped under prefers-reduced-motion: a second light
+              source is a lighting error, not a motion preference, so it has to
+              go for everyone rather than only for the people who asked for
+              less movement. */}
+          <div className="absolute left-1/2 top-[46%] h-[32rem] w-[32rem] max-w-[88vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl bg-[radial-gradient(circle,var(--accent-subtle),transparent_66%)]" />
+          <div className="absolute left-1/2 top-[48%] h-[18rem] w-[18rem] max-w-[58vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[56px] bg-[radial-gradient(circle,var(--accent-subtle),transparent_68%)]" />
         </div>
 
         <div
@@ -1350,18 +1380,6 @@ export default function HomePage() {
           }
         }
 
-        @keyframes orbPulse {
-          0%,
-          100% {
-            opacity: 0.38;
-            scale: 1;
-          }
-          50% {
-            opacity: 0.58;
-            scale: 1.04;
-          }
-        }
-
         @keyframes ambientDrift {
           0%,
           100% {
@@ -1523,22 +1541,6 @@ export default function HomePage() {
           }
           85% {
             opacity: 0;
-          }
-        }
-
-        @keyframes cardSweep {
-          0%,
-          64%,
-          100% {
-            transform: translateX(0) skewX(-16deg);
-            opacity: 0;
-          }
-          72% {
-            opacity: 0.42;
-          }
-          88% {
-            transform: translateX(320%) skewX(-16deg);
-            opacity: 0.05;
           }
         }
 
