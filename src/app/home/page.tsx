@@ -218,7 +218,12 @@ function useActiveInView<T extends HTMLElement>(
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setInView(entry.isIntersecting);
+        // Latch. isIntersecting goes false again the moment the section
+        // scrolls away, which previously un-played everything behind the
+        // reader -- scroll back up and the page had reset itself.
+        if (!entry.isIntersecting) return;
+        setInView(true);
+        observer.disconnect();
       },
       {
         rootMargin,
@@ -293,9 +298,7 @@ function Reveal({
        * which already documents the same trap.
        */
       className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${className} ${
-        inView
-          ? "translate-y-0 opacity-100"
-          : "translate-y-5 opacity-0"
+        inView ? "translate-y-0" : "translate-y-2"
       }`}
       style={{ transitionDelay: `${delay}ms` }}
     >
@@ -321,9 +324,7 @@ function CardEntrance({
       // motion-reduce:translate-y-0, because transform-none is a different
       // property from the `translate` these compile to.
       className={`h-full transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${className} ${
-        inView
-          ? "translate-y-0 opacity-100"
-          : "translate-y-5 opacity-0"
+        inView ? "translate-y-0" : "translate-y-2"
       }`}
       style={{ transitionDelay: `${delay}ms` }}
     >
@@ -409,7 +410,7 @@ function HeroStage({
       <div
         // See Reveal: literal translate needs translate-y-0 to be cancelled.
         className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${
-          inView ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
+          inView ? "translate-y-0" : "translate-y-2"
         }`}
         style={{ transitionDelay: "160ms" }}
       >
@@ -500,7 +501,6 @@ export default function HomePage() {
   const [isLeaving, setIsLeaving] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [currentTier, setCurrentTier] = useState<SubscriptionTier>("free");
-  const mounted = true;
 
   const [heroRef, heroInView] = useActiveInView<HTMLElement>();
   const [overviewRevealRef, overviewRevealInView] =
@@ -628,9 +628,14 @@ export default function HomePage() {
         </div>
 
         <div
+          /* No mount gate. `mounted` had already been pinned to a constant
+             `true` upstream, so the opacity branch it fed could only ever
+             resolve one way -- this drops the vestige rather than leaving a
+             conditional that reads as if it still decides something. The leave
+             transition stays: that one responds to an action the reader took. */
           className={`relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center text-center transition-all duration-700 ease-[var(--ease-out)] ${
-            mounted ? "opacity-100" : "opacity-0"
-          } ${isLeaving ? "scale-[1.03] opacity-0 blur-md" : "scale-100 blur-0"}`}
+            isLeaving ? "scale-[1.03] opacity-0 blur-md" : "scale-100 opacity-100 blur-0"
+          }`}
         >
           <Reveal inView={heroInView} delay={70}>
             <div className="mx-auto max-w-3xl pt-2">
