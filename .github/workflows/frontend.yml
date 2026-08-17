@@ -1,0 +1,57 @@
+name: frontend
+
+# Reporting-only for now: this runs on every push and PR but is not a required
+# check on main. Make it required once it has been green for a while -- a new
+# workflow that blocks merges on day one blocks them for the wrong reasons.
+
+on:
+  push:
+  pull_request:
+
+# A new push to the same branch makes the previous run irrelevant.
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    env:
+      # Not secrets. These are obviously-fake placeholders that exist only so
+      # `createClient` constructs during the prerender pass -- every page is a
+      # client component, but Next still renders them at build time, and
+      # /dashboard calls getSupabaseBrowserClient() while it does.
+      #
+      # Nothing in CI talks to a real Supabase project, and nothing should. If
+      # a check ever needs a real key, that check belongs somewhere else.
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key-not-a-real-credential
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 22 LTS. Local development is on 26, which is not an LTS line.
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # Gates on errors only. There are 10 pre-existing warnings; failing on
+      # them would mean fixing unrelated code before CI could ever pass.
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # Last, because it is the slowest and the cheaper checks above catch most
+      # of what it would. `prebuild` self-hosts Monaco.
+      - name: Build
+        run: npm run build

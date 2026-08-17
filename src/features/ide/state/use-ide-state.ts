@@ -25,7 +25,11 @@ import {
 } from "@/lib/supabase/client";
 import { useTheme } from "@/components/theme-provider";
 import { STORAGE_KEYS } from "@/config/brand";
-import type { RuntimeErrorExplanation } from "@/lib/api/types";
+import {
+  applyRunEvent,
+  runStreamFailureEffects,
+  type RunStreamEffect,
+} from "@/features/ide/lib/run-events";
 import type {
   ActionableDiagnostic,
   BackendArtifact,
@@ -75,10 +79,10 @@ import {
   getModeBarGlowStyle,
   getModeButtonClass,
   getProblemNoticeSeverity,
-  getBrowserLocale,
   getProblemStatusLabel,
   getProtectedDarkSurfaceStyle,
   getProtectedDarkTextStyle,
+  getRequestLocale,
   getSeverity,
   isBackendConnectionError,
   isSynthFileName,
@@ -1270,6 +1274,50 @@ export function useIdeState() {
     }
   }
 
+  /*
+   * Perform one decision from `applyRunEvent`. The decisions live in
+   * features/ide/lib/run-events.ts so they can be tested without a WebSocket,
+   * a rendered hook, or a Supabase session; this is the half that touches
+   * state, and it deliberately contains no branching on event type.
+   */
+  function performRunEffect(effect: RunStreamEffect) {
+    switch (effect.kind) {
+      case "status":
+        setStatusMessage(effect.message);
+        return;
+      case "terminal":
+        appendTerminal(effect.text, effect.stream);
+        return;
+      case "runtime_indicator":
+        appendRuntimeIndicator(effect.symbol);
+        return;
+      case "show_panel":
+        setShowBottomPanel(true);
+        setActiveBottomTab(effect.tab);
+        return;
+      case "input_prompt":
+        setInputPrompt(effect.prompt);
+        return;
+      case "running":
+        setIsRunning(effect.value);
+        return;
+      case "active_run":
+        setActiveRunId(effect.runId);
+        return;
+      case "dev_metrics":
+        setDevMetrics(effect.metrics);
+        return;
+      case "add_artifact":
+        addLiveArtifact(effect.runId, effect.artifact);
+        return;
+      case "replace_artifacts":
+        replaceVisualArtifacts(effect.runId, effect.artifacts, "persisted");
+        return;
+      case "reload_runs":
+        void loadRuns();
+    }
+  }
+
   function connectRunStream(runId: string) {
     wsRef.current?.close();
 
@@ -1277,94 +1325,8 @@ export function useIdeState() {
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-
-      if (payload.type === "run_started") {
-        setStatusMessage("Execution started.");
-        if (payload.executor_mode === "subprocess") {
-          appendRuntimeIndicator("SP");
-          setShowBottomPanel(true);
-          setActiveBottomTab("terminal");
-        }
-        return;
-      }
-
-      if (payload.type === "stdout") {
-        appendTerminal(payload.text || "", "stdout");
-        return;
-      }
-
-      if (payload.type === "stderr") {
-        appendTerminal(payload.text || "", "stderr");
-        return;
-      }
-
-      if (payload.type === "error_explanation") {
-        // Arrives after the raw traceback has already been streamed, so this
-        // reads as a plain-language summary of the error above it rather than
-        // a replacement for it.
-        //
-        // Every string here is composed by the backend, `location` included --
-        // the IDE has no locale catalog of its own yet, so any text added on
-        // this side would arrive in English and undo the translation.
-        const explanation = payload as unknown as RuntimeErrorExplanation;
-        const parts = [
-          explanation.location,
-          explanation.explanation,
-          explanation.hint,
-        ].filter(Boolean);
-        appendTerminal(parts.join("\n") + "\n", "explanation");
-        return;
-      }
-
-      if (payload.type === "input_requested") {
-        setInputPrompt(payload.prompt || "Input:");
-        setShowBottomPanel(true);
-        setActiveBottomTab("terminal");
-        if (payload.prompt) {
-          appendTerminal(payload.prompt, "system");
-        }
-        return;
-      }
-
-      if (payload.type === "artifact_created") {
-        addLiveArtifact(runId, {
-          name: payload.name,
-          artifact_type: payload.artifact_type || "file",
-          label: payload.label || payload.name,
-        });
-        setShowBottomPanel(true);
-        setActiveBottomTab("visual");
-        return;
-      }
-
-      if (payload.type === "completed") {
-        setIsRunning(false);
-        setInputPrompt(null);
-        setActiveRunId(payload.run_id || runId);
-
-        const persistedRun = payload.persisted_run;
-        if (persistedRun?.dev_metrics) {
-          setDevMetrics(persistedRun.dev_metrics);
-        }
-        if (persistedRun?.artifacts) {
-          replaceVisualArtifacts(persistedRun.id || runId, persistedRun.artifacts, "persisted");
-          if (persistedRun.artifacts.length > 0) {
-            setShowBottomPanel(true);
-            setActiveBottomTab("visual");
-          }
-        }
-
-        setStatusMessage(`Run ${payload.status}.`);
-        void loadRuns();
-        return;
-      }
-
-      if (payload.type === "error") {
-        appendTerminal((payload.message || "Run stream error.") + "\n", "system");
-        setIsRunning(false);
-        setInputPrompt(null);
-        setStatusMessage("Run failed.");
+      for (const effect of applyRunEvent(JSON.parse(event.data), runId)) {
+        performRunEffect(effect);
       }
     };
 
@@ -1373,10 +1335,9 @@ export function useIdeState() {
     };
 
     ws.onerror = () => {
-      appendTerminal("WebSocket stream error.\n", "system");
-      setIsRunning(false);
-      setInputPrompt(null);
-      setStatusMessage("Run stream failed.");
+      for (const effect of runStreamFailureEffects()) {
+        performRunEffect(effect);
+      }
     };
   }
 
@@ -1417,7 +1378,7 @@ export function useIdeState() {
           project_context: referenceFiles,
           mode,
           subscription_tier: activeTier,
-          locale: getBrowserLocale(),
+          locale: getRequestLocale(),
         }),
       });
 

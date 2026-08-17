@@ -130,10 +130,48 @@ Do you want CI to be a required status check on `main` (blocking merges), or rep
 **5. The stress suite in CI.**
 `scripts/run_stress_suite.py` runs 43 fixtures through real code execution — currently 33/33 on the ones it asserts. It is the check that caught the Docker probe regression. But it executes Python in a sandbox, so in CI it would fall back to the subprocess sandbox and take real wall-clock. Default: **keep it local/manual**, documented in the README. Alternative: a separate non-blocking CI job so drift is at least visible. **Which?**
 
+## Decisions taken
+
+All four were approved as recommended:
+
+1. **Vitest + Testing Library for the primitives.** Three devDependencies: `vitest`, `jsdom`, `@testing-library/react`. Default environment is `node`; only `primitives.test.tsx` opts into jsdom.
+2. **Extract a pure `applyRunEvent` reducer.** Done — see findings.
+3. **Scope to `main`.** Lesson schema tests wait for phase 5 to merge.
+4. **Reporting-only CI**, not a required check.
+
+Stress suite stays local/manual, as defaulted.
+
+## What actually happened vs. the plan
+
+| Planned | Outcome |
+|---|---|
+| Backend gaps: gate, vibe, references, detector, routes, bug_store | All but **the stage-1 detector** — see below |
+| Free-name check + API shape regression | Both done, both with self-tests |
+| Frontend: ide/lib, subscriptions, api, primitives | All four |
+| CI builds without secrets | **Wrong** — see findings |
+
+**Not done: `stage_01_intent/detector.py`.** It is still untested. The other five backend targets and all four frontend targets went further than planned (parametrization pushed the count well past what I expected), and I stopped rather than rush the last one. It is the single largest remaining gap and the obvious first item for a follow-up.
+
+## Findings
+
+**The build does not work without Supabase env, contrary to what this plan predicted.** I reasoned that because every consumer is a `"use client"` component and the client constructs lazily, nothing would touch Supabase during the build. That was wrong: Next still prerenders client components, and `/dashboard` calls `getSupabaseBrowserClient()` during that pass. Caught only because the plan committed to verifying it by moving `.env.local` aside instead of asserting it. CI supplies obviously-fake placeholder values — not secrets, and nothing in CI reaches a real project.
+
+**Three branches in `references.py` are unreachable.** Each is shadowed by an earlier branch matching on a strictly weaker condition:
+
+- `raw == "the numbers" and "numbers" in defined_symbols` — the earlier `without_article in defined_symbols` fires first, and emits `local_reference_carryover` where this would have emitted `canonical_naming`.
+- `raw == "numbers" and "numbers" in defined_symbols` — shadowed by the very first branch.
+- The trailing `mode in {"standard", "abstraction"} and raw in context_symbols` — shadowed by the earlier unguarded `raw in context_symbols`, so the mode gate does nothing.
+
+Pinned as unreachable in `tests/pipeline/test_references.py` rather than deleted; phase 6 adds tests, it does not change behavior. Same open decision as `rule_while_true`.
+
+**`routes/bugs.py` returns `str(exc)` to the browser as a 500 detail.** That is the raw Supabase error body and URL. The `service_role` key is not in it — there are now two tests holding that line — but returning backend internals to a client is worth revisiting.
+
+**A malformed WebSocket frame throws.** `JSON.parse` sits in `ws.onmessage` and always did; the extraction left it there deliberately rather than changing behavior under cover of a refactor. `applyRunEvent` itself tolerates any payload, so the fix is a one-line try/catch when someone wants it.
+
+**Two different `BackendArtifact` types exist** — `@/lib/api/types` (loose, index-signature) and `@/features/ide/types` (strict). The compiler caught this during the extraction. Not reconciled here.
+
+**The store-leak guard is now session-scoped** in `tests/conftest.py`. Verified by planting a deliberate leak: it fails and names the files. The suite itself is clean — the `.codeless_store` entries dated today were from my own manual verification, not from tests.
+
 ## Wrap-up
 
 Per the prompt, phase 6 ends by writing `restructure/SUMMARY.md` covering all six phases.
-
----
-
-**Stopping here for approval.** Nothing has been installed, no workflow written, no test added.

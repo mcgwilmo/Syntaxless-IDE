@@ -9,7 +9,9 @@
     "lint": "eslint",
     "copy:monaco": "node scripts/copy-monaco.mjs",
     "predev": "npm run copy:monaco",
-    "prebuild": "npm run copy:monaco"
+    "prebuild": "npm run copy:monaco",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
