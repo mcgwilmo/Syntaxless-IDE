@@ -54,13 +54,23 @@ export function Button({
     <button
       className={cn(
         "relative inline-flex items-center justify-center gap-[var(--space-2)] font-medium",
-        "transition-[background-color,box-shadow,transform] duration-[var(--duration-fast)]",
-        // The material: raised at rest, travelling down and inverting its
-        // shading when held. Ghost buttons stay flat -- they are not objects,
-        // they are text that responds.
+        // Press has its own duration because it must land instantly; the
+        // spring is what makes the release feel like a real object settling
+        // rather than a value being interpolated.
+        "transition-[background-color,box-shadow,transform]",
+        "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+        // The material: raised at rest, rising toward the light on hover, then
+        // travelling down and inverting its shading when held. Ghost buttons
+        // stay flat -- they are not objects, they are text that responds.
         !isGhost && "shadow-[var(--raised)]",
+        !isGhost && "hover:shadow-[var(--lifted)]",
+        !isGhost && "hover:-translate-y-[var(--lift-travel)]",
         !isGhost && "active:shadow-[var(--pressed)]",
         !isGhost && "active:translate-y-[var(--press-travel)]",
+        // Depth still reads with motion off; only the travel is dropped, so a
+        // press is never communicated by movement alone.
+        !isGhost && "motion-reduce:transform-none motion-reduce:hover:transform-none",
+        !isGhost && "motion-reduce:active:transform-none",
         // Disabled means "not a thing you can press", so the depth goes away
         // rather than just the color.
         "disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none",

@@ -11,7 +11,8 @@
     "predev": "npm run copy:monaco",
     "prebuild": "npm run copy:monaco",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

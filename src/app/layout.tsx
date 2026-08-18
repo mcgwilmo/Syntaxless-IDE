@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ScrollRevealManager } from "@/components/scroll-reveal-manager";
 import { ThemeProvider, ThemeScript } from "@/components/theme-provider";
 import { BRAND } from "@/config/brand";
 import "./globals.css";
@@ -36,10 +35,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans text-[var(--foreground)]">
         <ThemeScript />
-        <ThemeProvider>
-          <ScrollRevealManager />
-          {children}
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

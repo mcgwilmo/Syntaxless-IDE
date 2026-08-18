@@ -48,6 +48,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Contrast is measured against composited surfaces, not token values --
+      # the sheen sits over every filled surface and has broken white-on-accent
+      # before. Gating here means it cannot break again unnoticed.
+      - name: Contrast
+        run: npm run check:contrast
+
       - name: Test
         run: npm test
 

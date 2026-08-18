@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { BRAND } from "@/config/brand";
+import { Button } from "@/design/primitives";
+import { cn } from "@/lib/cn";
 
 type InteractiveAccordionItem = {
   id: number;
@@ -11,7 +13,6 @@ type InteractiveAccordionItem = {
 };
 
 type InteractiveImageAccordionProps = {
-  isLight: boolean;
   title: string;
   description: string;
   ctaLabel: string;
@@ -20,7 +21,6 @@ type InteractiveImageAccordionProps = {
 };
 
 export function InteractiveImageAccordion({
-  isLight,
   title,
   description,
   ctaLabel,
@@ -30,58 +30,47 @@ export function InteractiveImageAccordion({
   const [activeIndex, setActiveIndex] = useState(items.length - 1);
 
   return (
-    <div className="relative px-6 py-8 md:px-8 md:py-10">
+    <div className="relative px-[var(--space-6)] py-[var(--space-8)] md:px-[var(--space-8)] md:py-[var(--space-10)]">
+      {/* Ambient wash behind the strip. The accent at its subtle strength is the
+          only decorative color the section gets -- one accent, and it is warming
+          the page rather than competing with the panels for attention. */}
       <div
-        className={`pointer-events-none absolute inset-x-[18%] top-1/2 h-56 -translate-y-1/2 rounded-full blur-3xl ${
-          isLight
-            ? "bg-[radial-gradient(circle,rgba(14,165,233,0.1),transparent_68%)]"
-            : "bg-[radial-gradient(circle,rgba(34,211,238,0.08),transparent_68%)]"
-        }`}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-[18%] top-1/2 h-56 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,var(--accent-subtle),transparent_68%)] blur-3xl"
       />
 
-      <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
+      <div className="relative grid items-center gap-[var(--space-10)] lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-[var(--space-12)]">
         <div className="max-w-xl">
-          <div
-            className={`text-[9px] uppercase tracking-[0.24em] md:text-[10px] ${
-              isLight ? "text-slate-500" : "text-neutral-500"
-            }`}
-          >
+          <div className="text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
             Features
           </div>
-          <h2
-            className={`mt-3 text-4xl font-bold leading-[0.95] tracking-[-0.045em] md:text-5xl ${
-              isLight ? "text-slate-950" : "text-white"
-            }`}
-          >
+          <h2 className="mt-[var(--space-3)] text-4xl font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)] md:text-5xl">
             {title}
           </h2>
-          <p
-            className={`mt-5 max-w-lg text-[0.95rem] leading-7 ${
-              isLight ? "text-slate-600" : "text-neutral-400"
-            }`}
-          >
+          {/* Muted, not soft: this paragraph can land on the page or on a card
+              depending on the section around it, and soft has no headroom left
+              against a raised surface in dark. */}
+          <p className="mt-[var(--space-5)] max-w-lg text-[length:var(--text-base)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
             {description}
           </p>
 
-          <button
+          {/* The same Button primitive, size and treatment as the hero call to
+              action, because it is literally the same call to action. Nothing
+              here overrides the primitive's own radius, padding or type: `cn`
+              is a plain join, so a second `rounded-[...]` on the same element
+              would leave the winner to stylesheet order rather than intent. */}
+          <Button
+            size="lg"
             onClick={onCtaClick}
-            className={`group relative mt-8 overflow-hidden rounded-full border px-6 py-3 text-sm uppercase tracking-[0.24em] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_rgba(66,146,255,0)] transition-all duration-300 ${
-              isLight
-                ? "border-blue-200 bg-white text-slate-700 hover:border-blue-300 hover:text-slate-900 hover:shadow-[0_16px_32px_rgba(59,130,246,0.12)]"
-                : "border-blue-400/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.014))] text-neutral-300 hover:border-blue-300/28 hover:text-white hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_22px_rgba(66,146,255,0.07)]"
-            }`}
+            className="mt-[var(--space-8)] uppercase tracking-[var(--tracking-label)]"
           >
-            <span className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(110deg,transparent_18%,rgba(255,255,255,0.05)_38%,rgba(23,111,255,0.15)_50%,rgba(23,223,255,0.12)_60%,rgba(255,255,255,0.05)_68%,transparent_82%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:animate-[metalSweep_1.15s_ease]" />
-            <span className="pointer-events-none absolute inset-[1px] rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(255,255,255,0.004))]" />
-            <span className="relative z-10 transition-all duration-300 group-hover:tracking-[0.28em] group-hover:text-[#eef8ff]">
-              {ctaLabel}
-            </span>
-          </button>
+            {ctaLabel}
+          </Button>
         </div>
 
         <div className="min-w-0">
           <div
-            className="flex items-stretch justify-start gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            className="flex items-stretch justify-start gap-[var(--space-3)] overflow-x-auto pb-[var(--space-2)] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             role="tablist"
             aria-label={`${BRAND.name} feature previews`}
           >
@@ -98,15 +87,35 @@ export function InteractiveImageAccordion({
                   onMouseEnter={() => setActiveIndex(index)}
                   onFocus={() => setActiveIndex(index)}
                   onClick={() => setActiveIndex(index)}
-                  className={`group relative h-[30rem] shrink-0 overflow-hidden rounded-[1.85rem] border transition-[width,transform,border-color,background-color,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+                  className={cn(
+                    "relative h-[30rem] shrink-0 overflow-hidden rounded-[var(--radius-xl)] border",
+                    // The panel behind the photograph, so a slow image never
+                    // opens a hole in the strip.
+                    "bg-[var(--surface-raised)]",
+                    // Card rung: these are panels lifted off the page, not
+                    // toolbar controls resting on it.
+                    //
+                    // So hover goes to --floating, not --lifted. --lifted is
+                    // the hover of --raised and is a SMALLER shadow than
+                    // --raised-lg: pairing it with an upward travel moved the
+                    // panel toward the light while its shadow said it had
+                    // dropped. Detaching is what rising means from this rung --
+                    // same step the selected plan card takes in subscriptions.
+                    "shadow-[var(--raised-lg)] hover:shadow-[var(--floating)] active:shadow-[var(--pressed)]",
+                    "hover:-translate-y-[var(--lift-travel)] active:translate-y-[var(--press-travel)]",
+                    "motion-reduce:transform-none motion-reduce:hover:transform-none",
+                    "motion-reduce:active:transform-none",
+                    // One spring, on the width. The old version tweened five
+                    // properties on a hand-written curve; a panel opening is a
+                    // single physical motion and should read as one.
+                    "transition-[width,box-shadow,transform,border-color]",
+                    "duration-[var(--duration-slow)] ease-[var(--ease-spring)]",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-solid)]",
+                    "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]",
                     isActive
-                      ? "w-[15rem] sm:w-[18rem] lg:w-[21rem]"
-                      : "w-[3.8rem] sm:w-[4.25rem]"
-                  } ${
-                    isLight
-                      ? "border-slate-200 bg-[linear-gradient(180deg,#111827,#0f172a_58%,#020617)] shadow-[0_18px_45px_rgba(15,23,42,0.16)] hover:border-slate-300"
-                      : "border-white/[0.1] bg-[linear-gradient(180deg,rgba(4,10,22,0.9),rgba(1,5,16,0.96))] shadow-[0_24px_55px_rgba(0,0,0,0.28)] hover:border-cyan-300/20"
-                  }`}
+                      ? "w-[15rem] border-[var(--accent-border)] sm:w-[18rem] lg:w-[21rem]"
+                      : "w-[3.8rem] border-[var(--border-subtle)] sm:w-[4.25rem]",
+                  )}
                 >
                   <Image
                     src={item.imageSrc}
@@ -119,25 +128,51 @@ export function InteractiveImageAccordion({
                     }
                     className="object-cover"
                   />
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_42%)]" />
-                  <div
-                    className={`absolute inset-0 ${
-                      isActive ? "bg-black/28" : "bg-black/44"
-                    }`}
-                  />
-                  <div className="absolute inset-0 opacity-70">
-                    <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),transparent_30%,transparent_70%,rgba(56,189,248,0.08))]" />
-                    <div className="absolute inset-y-6 left-1/2 w-px -translate-x-1/2 bg-white/10" />
-                    <div className="absolute inset-x-6 top-1/2 h-px -translate-y-1/2 bg-white/10" />
-                  </div>
-                  <div className="absolute inset-[1px] rounded-[calc(1.85rem-1px)] border border-white/6" />
 
+                  {/* The collapsed rails are veiled and the open one is not.
+                      That contrast is the whole selection signal here, since
+                      every panel is otherwise the same material. */}
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      "absolute inset-0 bg-[var(--surface-overlay)]",
+                      "transition-opacity duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+                      isActive ? "opacity-0" : "opacity-100",
+                    )}
+                  />
+
+                  {/* The photograph still has to sit under the page's light. The
+                      sheen is what keeps it a panel rather than a picture
+                      pasted on top of one. */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-[image:var(--material-sheen)]"
+                  />
+
+                  {/* The caption is a plate on the panel, not text on a photo:
+                      an image can be any two colors it likes, so the label
+                      brings its own surface and keeps its contrast in both
+                      themes. Bottom in both states so the position springs
+                      instead of jumping when the panel opens. */}
                   <span
-                    className={`absolute text-white font-semibold whitespace-nowrap transition-all duration-300 ease-in-out ${
+                    className={cn(
+                      "absolute left-1/2 whitespace-nowrap rounded-[var(--radius-sm)]",
+                      "border border-[var(--border-subtle)] bg-[var(--surface-raised)]",
+                      "px-[var(--space-3)] py-[var(--space-1)] font-semibold text-[var(--text-primary)]",
+                      "text-[length:var(--text-sm)] sm:text-[length:var(--text-base)]",
+                      "transition-[bottom,transform,box-shadow] duration-[var(--duration-slow)] ease-[var(--ease-spring)]",
+                      "motion-reduce:transition-none",
                       isActive
-                        ? "bottom-6 left-1/2 -translate-x-1/2 text-base sm:text-lg"
-                        : "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90 text-[0.95rem] sm:text-[1.02rem]"
-                    }`}
+                        // Upright, so it can carry the material: the sheen and
+                        // the raised edge both assume light from above.
+                        ? "bottom-[var(--space-5)] -translate-x-1/2 bg-[image:var(--material-sheen)] shadow-[var(--raised)]"
+                        // Turned on its side. A rotated element rotates its
+                        // highlight and its cast shadow with it, which would
+                        // light this one plate from the left while everything
+                        // else on the page is lit from above -- so the
+                        // collapsed label keeps only its surface and its edge.
+                        : "bottom-1/2 -translate-x-1/2 translate-y-1/2 rotate-90",
+                    )}
                   >
                     {item.title}
                   </span>

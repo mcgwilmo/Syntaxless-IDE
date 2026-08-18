@@ -42,6 +42,12 @@ export function joinClasses(...classes: Array<string | false | null | undefined>
   return classes.filter(Boolean).join(" ");
 }
 
+/*
+ * Windows High Contrast and forced-colours modes override our palette wholesale.
+ * That is the right default -- a user who has asked for forced colours means it --
+ * but inside the editor chrome it repaints text we have already guaranteed to be
+ * legible, so these two opt the dark theme back out for those specific surfaces.
+ */
 export function getProtectedDarkTextStyle(theme: Theme, color: string): CSSProperties | undefined {
   if (theme === "light") return undefined;
 
@@ -63,40 +69,90 @@ export function getProtectedDarkSurfaceStyle(theme: Theme): CSSProperties | unde
   };
 }
 
-export function getModeAccentRgb(mode: IdeMode) {
-  switch (mode) {
-    case "strict":
-      return "244,63,94";
-    case "standard":
-      return "56,189,248";
-    case "abstraction":
-      return "168,85,247";
-    case "problem_solving":
-      return "245,158,11";
-    case "vibe":
-      return "16,185,129";
-  }
-}
+/*
+ * Each mode's tint, drawn from the state tokens rather than from free-standing
+ * hues, so the five modes read as one ladder instead of five unrelated colours.
+ *
+ * Ordered by how much the mode lets through: strict blocks the most, so it wears
+ * the blocked tone; vibe checks the least, so it wears success. Problem-solving
+ * takes warning, which is the hue its panel already wears.
+ */
+const MODE_TINT: Record<IdeMode, string> = {
+  strict: "var(--state-blocked)",
+  standard: "var(--accent-solid)",
+  abstraction: "color-mix(in srgb, var(--accent-solid), var(--state-success))",
+  problem_solving: "var(--state-warning)",
+  vibe: "var(--state-success)",
+};
 
+/**
+ * The mode's signature on a surface: a tinted edge, and a wash of the same tint
+ * under the ordinary material sheen.
+ *
+ * This was a radial glow -- coloured light spilling out of the bar's left edge.
+ * Under one light source, above and forward, a surface can only reflect; a
+ * surface that emits reads as a second lamp and drags the rest of the material
+ * out of the illusion with it. The tint stays because it carries meaning (which
+ * mode is running). The light does not.
+ *
+ * The edge now does most of that work. A border can hold real chroma without
+ * looking lit, whereas a wash sits behind text and so has to stay faint enough
+ * to keep it legible -- it can only ever whisper.
+ *
+ * Returned as a style rather than classes because the tint is mixed per mode,
+ * and Tailwind can only emit classes it can find written out in the source.
+ * `theme` is unused: tokens and mixes both follow the theme on their own. It
+ * stays in the signature because every call site passes it positionally.
+ */
 export function getModeBarGlowStyle(
-  theme: Theme,
+  _theme: Theme,
   mode: IdeMode,
   strength: "soft" | "medium" = "soft",
 ): CSSProperties {
-  const rgb = getModeAccentRgb(mode);
-  const isLight = theme === "light";
-  const alpha = strength === "medium" ? (isLight ? 0.13 : 0.16) : isLight ? 0.09 : 0.12;
-  const depth = strength === "medium" ? 42 : 36;
+  const tint = MODE_TINT[mode];
+  // "medium" is for the panels, which have the area to say it a little louder.
+  // "soft" is for bars, where the wash sits directly behind small text.
+  const wash = strength === "medium" ? "9%" : "6%";
+  const edge = strength === "medium" ? "42%" : "30%";
 
   return {
-    backgroundImage: isLight
-      ? `radial-gradient(circle at 12% 50%, rgba(${rgb}, ${alpha}), transparent ${depth}%), linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92))`
-      : `radial-gradient(circle at 12% 50%, rgba(${rgb}, ${alpha}), transparent ${depth}%),
-         linear-gradient(180deg, rgba(11,11,11,0.96), rgba(7,7,7,0.94))`,
-    backgroundRepeat: "no-repeat",
+    backgroundColor: `color-mix(in srgb, ${tint} ${wash}, var(--surface-raised))`,
+    // Restated here because an inline background-image would otherwise drop the
+    // sheen that the call site's bg-[image:var(--material-sheen)] puts down.
+    backgroundImage: "var(--material-sheen)",
+    borderColor: `color-mix(in srgb, ${tint} ${edge}, var(--border-subtle))`,
   };
 }
 
+/*
+ * The material of a pressable IDE control: raised at rest, rising toward the
+ * light on hover, then travelling down and inverting its shading when held.
+ *
+ * The travel is stated here as well as at the call site in app/ide/page.tsx.
+ * Duplicating one class is cheaper than a control whose press is only
+ * acknowledged on some of the screens it appears on.
+ */
+const MODE_BUTTON_PRESSABLE_CLASS = joinClasses(
+  "shadow-[var(--raised)]",
+  "hover:-translate-y-[var(--lift-travel)] hover:shadow-[var(--lifted)]",
+  "active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)]",
+  // Depth still reads with motion off; only the travel is dropped, so a press
+  // is never communicated by movement alone.
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none"
+);
+
+/**
+ * The shared IDE control: mode switches, toolbar buttons, dialog actions.
+ *
+ * Only the mode's own accent classes come in from `modeMeta` -- everything else
+ * is a token, which is why there is no light/dark branch left. `theme` is
+ * ignored for the same reason, and stays only because the call sites pass it.
+ *
+ * The blur that used to sit behind these is gone: every surface they sit on is
+ * an opaque token fill now, so it cost a compositing pass per frame to blur
+ * nothing.
+ */
 export function getModeButtonClass(
   modeMeta: {
     accentBorder: string;
@@ -112,63 +168,103 @@ export function getModeButtonClass(
     pill?: boolean;
     danger?: boolean;
   },
-  theme: Theme = "dark"
+  _theme: Theme = "dark"
 ) {
   const { active, disabled, compact, pill, danger } = options ?? {};
-  const radiusClass = pill ? "rounded-full" : compact ? "rounded-[1rem]" : "rounded-[1.05rem]";
-  const spacingClass = compact ? "px-3 py-1.5 text-[11px]" : "px-3.5 py-2.5 text-[13px]";
-  const isLight = theme === "light";
+  const radiusClass = pill ? "rounded-[var(--radius-full)]" : "rounded-[var(--radius-lg)]";
+  const spacingClass = compact
+    ? "px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-xs)]"
+    : "px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-sm)]";
+  const baseClass = joinClasses(
+    radiusClass,
+    spacingClass,
+    "border font-medium tracking-[0.01em]",
+    "transition-[background-color,border-color,box-shadow,transform]",
+    "duration-[var(--duration-press)] ease-[var(--ease-spring)]"
+  );
 
   if (disabled) {
+    // Not a thing you can press, so the depth goes rather than just the colour.
     return joinClasses(
-      radiusClass,
-      spacingClass,
-      "border font-medium tracking-[0.01em] backdrop-blur-md transition-all duration-200",
-      isLight
-        ? "cursor-not-allowed border-slate-200 bg-white/65 text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]"
-        : "cursor-not-allowed border-white/[0.06] bg-white/[0.03] text-neutral-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+      baseClass,
+      "cursor-not-allowed border-[var(--border-subtle)] bg-[var(--surface-sunken)]",
+      "text-[var(--text-soft)] opacity-60 shadow-none"
     );
   }
 
   if (danger) {
+    // Resting, this is an ordinary control -- the blocked tone only appears once
+    // the pointer is on it, so a destructive action is not shouting from across
+    // the toolbar before anyone reaches for it.
     return joinClasses(
-      radiusClass,
-      spacingClass,
-      "border font-medium tracking-[0.01em] backdrop-blur-md transition-all duration-200 hover:-translate-y-[1px]",
-      isLight
-        ? "border-slate-200 bg-white/90 text-slate-600 shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 hover:shadow-[0_18px_34px_rgba(244,63,94,0.08)]"
-        : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_28px_rgba(0,0,0,0.22)] hover:border-rose-400/35 hover:bg-rose-500/[0.1] hover:text-rose-100"
+      baseClass,
+      MODE_BUTTON_PRESSABLE_CLASS,
+      "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+      "text-[var(--text-muted)]",
+      "hover:border-[color-mix(in_srgb,var(--state-blocked)_45%,transparent)]",
+      "hover:bg-[var(--state-blocked-subtle)] hover:text-[var(--state-blocked)]"
+    );
+  }
+
+  if (active) {
+    // The selected mode is already in, so it wears the pressed shading and does
+    // not rise on hover -- there is nowhere for it to go, and lifting the one
+    // control that is switched on would say the opposite of what it means. A
+    // click still travels, because a press that acknowledges nothing reads as a
+    // control that has stopped working.
+    return joinClasses(
+      baseClass,
+      modeMeta.accentBorder,
+      modeMeta.accentBg,
+      "text-[var(--text-primary)] shadow-[var(--pressed)]",
+      "active:translate-y-[var(--press-travel)]",
+      "motion-reduce:transform-none motion-reduce:active:transform-none"
     );
   }
 
   return joinClasses(
-    radiusClass,
-    spacingClass,
-    "border font-medium tracking-[0.01em] backdrop-blur-md transition-all duration-200 hover:-translate-y-[1px]",
-    active
-      ? isLight
-        ? `${modeMeta.accentBorder} ${modeMeta.accentBg} text-slate-900 shadow-[0_16px_36px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.75)]`
-        : `${modeMeta.accentBorder} ${modeMeta.accentBg} text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_14px_32px_rgba(0,0,0,0.24)]`
-      : isLight
-      ? `border-slate-200/90 bg-white/88 text-slate-600 shadow-[0_12px_28px_rgba(15,23,42,0.05)] hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)] ${modeMeta.accentHoverBorder} ${modeMeta.accentHoverBg} ${modeMeta.accentHoverText}`
-      : `border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.016))] text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_28px_rgba(0,0,0,0.22)] hover:border-white/[0.14] hover:text-white ${modeMeta.accentHoverBorder} ${modeMeta.accentHoverBg} ${modeMeta.accentHoverText}`
+    baseClass,
+    MODE_BUTTON_PRESSABLE_CLASS,
+    "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+    "text-[var(--text-muted)]",
+    // The hover colours are the mode's, not the system's: reaching for a mode
+    // button is when it is most useful to be told which mode you are in. They
+    // are also the only hover colours on this branch -- a token hover border
+    // here would be a second border-colour utility fighting this one, and which
+    // won would come down to stylesheet order.
+    modeMeta.accentHoverBorder,
+    modeMeta.accentHoverBg,
+    modeMeta.accentHoverText
   );
 }
 
+/*
+ * Monaco builds its own stylesheet from these objects and never sees the page's
+ * custom properties, so literal colours are the only option here -- these are
+ * the last hardcoded colours in the file, and each one mirrors a token in
+ * design/tokens.css value for value. Change one there, change it here.
+ *
+ * The editor is the deepest well in the app, so it takes --surface-sunken and
+ * the current line takes the page colour above it: the same "you type into
+ * this" relationship the material gives every other input. Selection uses the
+ * accent at --accent-border strength and drops to --accent-subtle when the
+ * editor loses focus, so an inactive selection reads as remembered rather than
+ * live.
+ */
 export function ensureMonacoThemes(monaco: Monaco) {
   monaco.editor.defineTheme("ide-dark", {
     base: "vs-dark",
     inherit: true,
     rules: [],
     colors: {
-      "editor.background": "#060606",
-      "editor.foreground": "#f8fafc",
-      "editorLineNumber.foreground": "#6b7280",
-      "editorLineNumber.activeForeground": "#f8fafc",
-      "editorCursor.foreground": "#7dd3fc",
-      "editor.lineHighlightBackground": "#111111",
-      "editor.selectionBackground": "#1f2937",
-      "editor.inactiveSelectionBackground": "#161b22",
+      "editor.background": "#100f0e", // --surface-sunken
+      "editor.foreground": "#f5f3f0", // --text-primary
+      "editorLineNumber.foreground": "#9c9691", // --text-soft
+      "editorLineNumber.activeForeground": "#f5f3f0", // --text-primary
+      "editorCursor.foreground": "#5eead4", // --accent-text
+      "editor.lineHighlightBackground": "#171614", // --surface-page
+      "editor.selectionBackground": "#2dd4bf4d", // --accent-border
+      "editor.inactiveSelectionBackground": "#2dd4bf1f", // --accent-subtle
     },
   });
 
@@ -177,14 +273,14 @@ export function ensureMonacoThemes(monaco: Monaco) {
     inherit: true,
     rules: [],
     colors: {
-      "editor.background": "#fbfcfe",
-      "editor.foreground": "#0f172a",
-      "editorLineNumber.foreground": "#94a3b8",
-      "editorLineNumber.activeForeground": "#0f172a",
-      "editorCursor.foreground": "#2563eb",
-      "editor.lineHighlightBackground": "#f1f5f9",
-      "editor.selectionBackground": "#dbeafe",
-      "editor.inactiveSelectionBackground": "#e2e8f0",
+      "editor.background": "#f2f0ed", // --surface-sunken
+      "editor.foreground": "#1c1a17", // --text-primary
+      "editorLineNumber.foreground": "#78716c", // --text-soft
+      "editorLineNumber.activeForeground": "#1c1a17", // --text-primary
+      "editorCursor.foreground": "#0f766e", // --accent-solid
+      "editor.lineHighlightBackground": "#faf9f7", // --surface-page
+      "editor.selectionBackground": "#0f766e47", // --accent-border
+      "editor.inactiveSelectionBackground": "#0f766e14", // --accent-subtle
     },
   });
 }
@@ -312,53 +408,53 @@ export function terminalStreamLabel(stream: TerminalEntry["stream"]) {
   return "System";
 }
 
-export function getDevStepStatusClass(status: string, theme: Theme = "dark") {
-  const isLight = theme === "light";
-  if (status === "completed" || status === "success") {
-    return isLight
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
-  }
-  if (status === "running") {
-    return isLight
-      ? "border-sky-200 bg-sky-50 text-sky-700"
-      : "border-sky-500/30 bg-sky-500/10 text-sky-200";
-  }
+/*
+ * The tones a small status surface can take, as border/fill/text triples.
+ *
+ * Written out in full rather than composed from the tone name, because Tailwind
+ * only emits the classes it can find spelled out in the source -- a class built
+ * by interpolation at runtime produces no CSS at all and the chip renders bare.
+ *
+ * Callers supply the `border` width and shadow-[var(--inlaid)] themselves:
+ * these are labels set into a surface, not things you press.
+ */
+const TONE_CLASS = {
+  success:
+    "border-[color-mix(in_srgb,var(--state-success)_30%,transparent)] bg-[var(--state-success-subtle)] text-[var(--state-success)]",
+  warning:
+    "border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)] bg-[var(--state-warning-subtle)] text-[var(--state-warning)]",
+  blocked:
+    "border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)] bg-[var(--state-blocked-subtle)] text-[var(--state-blocked)]",
+  // In progress: not succeeded and not failed, so it takes the accent, which is
+  // what the app uses everywhere else for "this is the live one".
+  accent: "border-[var(--accent-border)] bg-[var(--accent-subtle)] text-[var(--accent-text)]",
+  neutral: "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]",
+  // Same surface, quieter label: for statuses that are an absence of news.
+  quiet: "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-soft)]",
+} as const;
+
+/*
+ * `theme` is unused in the three helpers below. Every class they return is a
+ * token that swaps with the theme by itself, so there is nothing left to
+ * branch on; the parameter stays because the call sites pass it positionally.
+ */
+
+export function getDevStepStatusClass(status: string, _theme: Theme = "dark") {
+  if (status === "completed" || status === "success") return TONE_CLASS.success;
+  if (status === "running") return TONE_CLASS.accent;
   if (status === "blocked" || status === "error" || status === "timeout" || status === "stopped") {
-    return isLight
-      ? "border-rose-200 bg-rose-50 text-rose-700"
-      : "border-rose-500/30 bg-rose-500/10 text-rose-200";
+    return TONE_CLASS.blocked;
   }
-  if (status === "skipped") {
-    return isLight
-      ? "border-slate-200 bg-slate-50 text-slate-600"
-      : "border-neutral-700 bg-white/[0.03] text-neutral-400";
-  }
-  return isLight
-    ? "border-amber-200 bg-amber-50 text-amber-700"
-    : "border-amber-500/30 bg-amber-500/10 text-amber-200";
+  // A skipped step is not a warning about anything -- it just did not happen.
+  if (status === "skipped") return TONE_CLASS.quiet;
+  return TONE_CLASS.warning;
 }
 
-export function getCompatibilityClass(status: string | null | undefined, theme: Theme = "dark") {
-  const isLight = theme === "light";
-  if (status === "valid" || status === "compatible") {
-    return isLight
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
-  }
-  if (status === "warning") {
-    return isLight
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : "border-amber-500/30 bg-amber-500/10 text-amber-200";
-  }
-  if (status === "blocked" || status === "incompatible") {
-    return isLight
-      ? "border-rose-200 bg-rose-50 text-rose-700"
-      : "border-rose-500/30 bg-rose-500/10 text-rose-200";
-  }
-  return isLight
-    ? "border-slate-200 bg-slate-50 text-slate-600"
-    : "border-neutral-700 bg-white/[0.03] text-neutral-400";
+export function getCompatibilityClass(status: string | null | undefined, _theme: Theme = "dark") {
+  if (status === "valid" || status === "compatible") return TONE_CLASS.success;
+  if (status === "warning") return TONE_CLASS.warning;
+  if (status === "blocked" || status === "incompatible") return TONE_CLASS.blocked;
+  return TONE_CLASS.quiet;
 }
 
 export function getSeverity(line: InterpretationLine): "ok" | "warning" | "blocked" {
@@ -474,43 +570,20 @@ export function getProblemStatusLabel(status: ProblemAlignmentStatus | "awaiting
 
 export function getProblemStatusClass(
   status: ProblemAlignmentStatus | "awaiting_check",
-  theme: Theme = "dark"
+  _theme: Theme = "dark"
 ) {
-  const isLight = theme === "light";
-
-  if (status === "on_track") {
-    return isLight
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : "border-amber-400/30 bg-amber-500/10 text-amber-200";
-  }
-  if (status === "logic_mismatch") {
-    return isLight
-      ? "border-rose-200 bg-rose-50 text-rose-700"
-      : "border-rose-500/30 bg-rose-500/10 text-rose-200";
-  }
-  if (status === "missing_constraint") {
-    return isLight
-      ? "border-orange-200 bg-orange-50 text-orange-700"
-      : "border-orange-500/30 bg-orange-500/10 text-orange-200";
-  }
-  if (status === "output_issue") {
-    return isLight
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : "border-amber-500/30 bg-amber-500/10 text-amber-200";
-  }
-  if (status === "edge_case_risk") {
-    return isLight
-      ? "border-yellow-200 bg-yellow-50 text-yellow-700"
-      : "border-yellow-500/30 bg-yellow-500/10 text-yellow-200";
-  }
-  if (status === "partial") {
-    return isLight
-      ? "border-slate-200 bg-white text-slate-700"
-      : "border-neutral-700 bg-white/[0.03] text-neutral-200";
-  }
-  return isLight
-    ? "border-slate-200 bg-white text-slate-500"
-    : "border-neutral-800 bg-white/[0.03] text-neutral-400";
+  // On Track keeps the warning tone it has always had rather than moving to
+  // success: alignment with the prompt is a running judgement the next line can
+  // undo, and green in this system is reserved for "it ran".
+  if (status === "on_track") return TONE_CLASS.warning;
+  // A mismatch or a dropped constraint means the solution cannot be right as
+  // written; an output or edge-case note means look at it. The four warm hues
+  // these used to have were never separable at chip size anyway -- the label
+  // inside the chip is what tells them apart, and it always renders.
+  if (status === "logic_mismatch" || status === "missing_constraint") return TONE_CLASS.blocked;
+  if (status === "output_issue" || status === "edge_case_risk") return TONE_CLASS.warning;
+  if (status === "partial") return TONE_CLASS.neutral;
+  return TONE_CLASS.quiet;
 }
 
 export function getProblemNoticeSeverity(
@@ -567,57 +640,83 @@ export function getSyntaxStructureDetail(line: ResolvedInterpretationLine) {
   return `${scoreLabel}: ${structureReason}`;
 }
 
-export function getDiagnosticToneClasses(severity: ActionableDiagnostic["severity"], isLight: boolean) {
+/*
+ * The button inside a diagnostic bubble. Shared across the three tones because
+ * the only thing that changes with severity is the colour, and the material --
+ * raised, lifting on hover, pressed when held -- is the same object either way.
+ */
+const DIAGNOSTIC_ACTION_CLASS = joinClasses(
+  "transition-[background-color,box-shadow,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+  "shadow-[var(--raised)] hover:shadow-[var(--lifted)]",
+  "hover:-translate-y-[var(--lift-travel)]",
+  "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none"
+);
+
+/**
+ * The diagnostic bubble and the pieces inside it, by severity.
+ *
+ * The bubble used to be lit from within -- a 60px coloured shadow plus a 4px
+ * tinted ring, which is a diagnostic glowing in the dark rather than a card
+ * lying over the editor. It is a popover, so it now sits on the floating rung
+ * and states its severity the way everything else does: a tinted border (the
+ * call site draws it at border-2), a tinted title, and tinted fills on the rows
+ * inside. Same message, no second light source.
+ *
+ * The bubble's own text is --text-primary rather than a deep tint of the
+ * severity colour. Tinted body text was carrying no meaning the border and
+ * title did not already carry, and it was the one thing here whose contrast
+ * changed with severity.
+ *
+ * No theme argument: every class below is a token that swaps on its own.
+ */
+export function getDiagnosticToneClasses(severity: ActionableDiagnostic["severity"]) {
   if (severity === "blocked") {
     return {
-      bubble: isLight
-        ? "border-rose-400 bg-white/96 text-rose-950 shadow-[0_20px_55px_rgba(225,29,72,0.18)] ring-4 ring-rose-500/10"
-        : "border-rose-400/70 bg-[#0d0708]/96 text-rose-50 shadow-[0_22px_60px_rgba(244,63,94,0.2)] ring-4 ring-rose-500/15",
-      accent: isLight ? "text-rose-700" : "text-rose-200",
-      chip: isLight
-        ? "border-rose-200 bg-rose-50 text-rose-700"
-        : "border-rose-400/30 bg-rose-500/[0.1] text-rose-200",
-      row: isLight
-        ? "border-rose-200 bg-rose-50/65 text-rose-950"
-        : "border-rose-400/20 bg-rose-500/[0.07] text-rose-50",
-      primary: isLight
-        ? "border-rose-300 bg-rose-100 text-rose-900 hover:bg-rose-200"
-        : "border-rose-400/30 bg-rose-500/[0.15] text-rose-100 hover:bg-rose-500/[0.22]",
+      bubble:
+        "border-[color-mix(in_srgb,var(--state-blocked)_55%,transparent)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-[var(--text-primary)] shadow-[var(--floating)]",
+      accent: "text-[var(--state-blocked)]",
+      chip: TONE_CLASS.blocked,
+      row: "border-[color-mix(in_srgb,var(--state-blocked)_22%,transparent)] bg-[var(--state-blocked-subtle)] text-[var(--text-primary)]",
+      primary: joinClasses(
+        DIAGNOSTIC_ACTION_CLASS,
+        "border-[color-mix(in_srgb,var(--state-blocked)_35%,transparent)]",
+        "bg-[var(--state-blocked-subtle)] text-[var(--state-blocked)]",
+        "hover:bg-[color-mix(in_srgb,var(--state-blocked)_16%,transparent)]"
+      ),
     };
   }
 
   if (severity === "warning") {
     return {
-      bubble: isLight
-        ? "border-amber-400 bg-white/96 text-amber-950 shadow-[0_20px_55px_rgba(217,119,6,0.16)] ring-4 ring-amber-500/10"
-        : "border-amber-400/70 bg-[#0f0b04]/96 text-amber-50 shadow-[0_22px_60px_rgba(245,158,11,0.18)] ring-4 ring-amber-500/15",
-      accent: isLight ? "text-amber-700" : "text-amber-200",
-      chip: isLight
-        ? "border-amber-200 bg-amber-50 text-amber-700"
-        : "border-amber-400/30 bg-amber-500/[0.1] text-amber-200",
-      row: isLight
-        ? "border-amber-200 bg-amber-50/65 text-amber-950"
-        : "border-amber-400/20 bg-amber-500/[0.07] text-amber-50",
-      primary: isLight
-        ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
-        : "border-amber-400/30 bg-amber-500/[0.15] text-amber-100 hover:bg-amber-500/[0.22]",
+      bubble:
+        "border-[color-mix(in_srgb,var(--state-warning)_55%,transparent)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-[var(--text-primary)] shadow-[var(--floating)]",
+      accent: "text-[var(--state-warning)]",
+      chip: TONE_CLASS.warning,
+      row: "border-[color-mix(in_srgb,var(--state-warning)_22%,transparent)] bg-[var(--state-warning-subtle)] text-[var(--text-primary)]",
+      primary: joinClasses(
+        DIAGNOSTIC_ACTION_CLASS,
+        "border-[color-mix(in_srgb,var(--state-warning)_35%,transparent)]",
+        "bg-[var(--state-warning-subtle)] text-[var(--state-warning)]",
+        "hover:bg-[color-mix(in_srgb,var(--state-warning)_16%,transparent)]"
+      ),
     };
   }
 
   return {
-    bubble: isLight
-      ? "border-emerald-300 bg-white/96 text-emerald-950 shadow-[0_20px_55px_rgba(5,150,105,0.14)] ring-4 ring-emerald-500/10"
-      : "border-emerald-400/60 bg-[#05100b]/96 text-emerald-50 shadow-[0_22px_60px_rgba(16,185,129,0.16)] ring-4 ring-emerald-500/15",
-    accent: isLight ? "text-emerald-700" : "text-emerald-200",
-    chip: isLight
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : "border-emerald-400/30 bg-emerald-500/[0.1] text-emerald-200",
-    row: isLight
-      ? "border-emerald-200 bg-emerald-50/65 text-emerald-950"
-      : "border-emerald-400/20 bg-emerald-500/[0.07] text-emerald-50",
-    primary: isLight
-      ? "border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-      : "border-emerald-400/30 bg-emerald-500/[0.15] text-emerald-100 hover:bg-emerald-500/[0.22]",
+    bubble:
+      "border-[color-mix(in_srgb,var(--state-success)_55%,transparent)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-[var(--text-primary)] shadow-[var(--floating)]",
+    accent: "text-[var(--state-success)]",
+    chip: TONE_CLASS.success,
+    row: "border-[color-mix(in_srgb,var(--state-success)_22%,transparent)] bg-[var(--state-success-subtle)] text-[var(--text-primary)]",
+    primary: joinClasses(
+      DIAGNOSTIC_ACTION_CLASS,
+      "border-[color-mix(in_srgb,var(--state-success)_35%,transparent)]",
+      "bg-[var(--state-success-subtle)] text-[var(--state-success)]",
+      "hover:bg-[color-mix(in_srgb,var(--state-success)_16%,transparent)]"
+    ),
   };
 }
 

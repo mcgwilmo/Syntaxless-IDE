@@ -143,6 +143,29 @@ function MoonIcon() {
   );
 }
 
+/*
+ * The toggle always sits on a bar next to other controls, so it is made of the
+ * same material they are: proud at rest, rising toward the light on hover, then
+ * pushed in and inverted when held. Motion-reduce keeps the depth and drops
+ * only the travel, so the press is never signalled by movement alone.
+ *
+ * Nothing here branches on the theme. The button used to pick its own greys for
+ * each theme, which is why it was the one control that had to be re-tuned every
+ * time the palette moved; the tokens swap underneath it now.
+ */
+const TOGGLE_MATERIAL = cn(
+  "border border-[var(--border-strong)]",
+  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+  "text-[var(--text-muted)] shadow-[var(--raised)]",
+  "transition-[background-color,border-color,box-shadow,color,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+  "hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]",
+  "hover:shadow-[var(--lifted)] hover:-translate-y-[var(--lift-travel)]",
+  "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none"
+);
+
 export function ThemeToggleButton({
   className,
   variant = "default",
@@ -151,6 +174,8 @@ export function ThemeToggleButton({
   variant?: "default" | "ide";
 }) {
   const { theme, toggleTheme } = useTheme();
+  // Still needed: which icon to show and what the label promises are behaviour,
+  // not colour, so they stay on the theme rather than on a token.
   const isLight = theme === "light";
   const nextThemeLabel = isLight ? "dark" : "light";
 
@@ -161,20 +186,13 @@ export function ThemeToggleButton({
       aria-label={`Switch to ${nextThemeLabel} mode`}
       title={`Switch to ${nextThemeLabel} mode`}
       className={cn(
-        "flex items-center justify-center transition-all duration-300",
+        "flex items-center justify-center",
+        TOGGLE_MATERIAL,
+        // Only the footprint differs between variants: the IDE bar packs its
+        // controls tighter, the site header runs round ones.
         variant === "ide"
-          ? cn(
-              "h-10 w-10 rounded-[0.95rem] border",
-              isLight
-                ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                : "border-neutral-900 bg-[#0b0b0b] text-neutral-300 hover:border-neutral-700 hover:bg-[#111111] hover:text-white"
-            )
-          : cn(
-              "h-12 w-12 rounded-full border",
-              isLight
-                ? "border-slate-200 bg-white text-slate-600 shadow-[0_10px_26px_rgba(15,23,42,0.06)] hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                : "border-white/10 bg-white/[0.03] text-neutral-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-            ),
+          ? "h-10 w-10 rounded-[var(--radius-lg)]"
+          : "h-12 w-12 rounded-[var(--radius-full)]",
         className
       )}
     >

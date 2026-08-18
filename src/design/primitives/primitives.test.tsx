@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { Badge, Button, Card, Field, Panel } from "./index";
+import { Badge, Button, Card, Field, Modal, Panel } from "./index";
 
 /*
  * Smoke tests, deliberately.
@@ -188,5 +188,43 @@ describe("surfaces", () => {
     expect(success.firstElementChild?.className).not.toBe(
       blocked.firstElementChild?.className
     );
+  });
+});
+
+/*
+ * Modal's dialog semantics.
+ *
+ * These are the part of a modal that shadow cannot express. Depth says "in
+ * front" to someone looking at the screen and nothing at all to someone who is
+ * not, so the role and the name are what actually make it a dialog -- and they
+ * are exactly the kind of attribute a restyle drops without any visible trace.
+ */
+describe("Modal", () => {
+  it("exposes itself as a modal dialog", () => {
+    render(<Modal label="New Project">body</Modal>);
+    const dialog = screen.getByRole("dialog");
+
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("takes its accessible name from label", () => {
+    render(<Modal label="New Project">body</Modal>);
+
+    expect(screen.getByRole("dialog", { name: "New Project" })).toBeDefined();
+  });
+
+  it("prefers labelledBy over label so the visible title cannot drift", () => {
+    render(
+      <>
+        <h2 id="title-id">Project limit reached</h2>
+        <Modal labelledBy="title-id" label="ignored">
+          body
+        </Modal>
+      </>
+    );
+    const dialog = screen.getByRole("dialog", { name: "Project limit reached" });
+
+    // Both would otherwise apply, and aria-label would win over the heading.
+    expect(dialog.getAttribute("aria-label")).toBeNull();
   });
 });

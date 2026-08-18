@@ -6,9 +6,9 @@ import {
   AppPageBackground,
   PageFrame,
   SiteHeader,
+  SurfaceCard,
   TypingHeading,
 } from "@/components/site-shell";
-import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/cn";
 
 const IMPACT_POINTS = [
@@ -28,6 +28,51 @@ const IMPACT_POINTS = [
       "Contribute to Caribbean human capital by building useful AI tools and exportable intellectual property rooted in education, software, training, and support.",
   },
 ] as const;
+
+/*
+ * The small label above each heading. Muted rather than soft: two of the three
+ * sit on a raised card, and --text-soft only clears AA against the page.
+ */
+const EYEBROW = cn(
+  "text-[length:var(--text-xs)] uppercase",
+  "tracking-[var(--tracking-label)] text-[var(--text-muted)]"
+);
+
+/*
+ * The founder links are anchors -- they leave the site and carry target/rel --
+ * so they cannot be the Button primitive. They mirror its material instead:
+ * raised at rest, rising toward the light on hover, pushed in and shaded from
+ * the top when held. They are only not Buttons because a 48px pill does not fit
+ * the primitive's padding scale.
+ */
+const LINK_BUTTON = cn(
+  "border border-[var(--border-strong)]",
+  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+  "text-[var(--text-primary)] shadow-[var(--raised)]",
+  "transition-[background-color,border-color,box-shadow,color,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+  "hover:bg-[var(--surface-sunken)] hover:shadow-[var(--lifted)]",
+  "hover:-translate-y-[var(--lift-travel)]",
+  "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none",
+  "motion-reduce:active:transform-none"
+);
+
+/*
+ * The arrow's nudge on hover.
+ *
+ * The travel comes from --lift-travel, which goes to 0px under
+ * prefers-reduced-motion. That token is what actually stops the movement: a
+ * motion-reduce:transform-none class does NOT, because Tailwind v4 compiles
+ * translate-* to the `translate` property and `transform: none` does not touch
+ * it. Same reasoning as the disclosure chevron in docs/page.tsx.
+ */
+const LINK_ARROW = cn(
+  "h-4 w-4 transition-transform",
+  "duration-[var(--duration-base)] ease-[var(--ease-spring)]",
+  "group-hover:translate-x-[var(--lift-travel)]",
+  "group-hover:-translate-y-[var(--lift-travel)]"
+);
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -87,56 +132,34 @@ function ArrowIcon({ className }: { className?: string }) {
 }
 
 export default function AboutPage() {
-  const { isLight } = useTheme();
-
-  const pageClass = isLight
-    ? "bg-[#eef3f9] text-slate-900"
-    : "bg-[#050608] text-white";
-  const eyebrowClass = isLight ? "text-slate-500" : "text-neutral-500";
-  const headingClass = isLight ? "text-slate-950" : "text-white";
-  const bodyClass = isLight ? "text-slate-600" : "text-neutral-400";
-  const surfaceClass = isLight
-    ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] shadow-[0_22px_54px_rgba(15,23,42,0.08)]"
-    : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.032),rgba(255,255,255,0.012))] shadow-[0_0_0_1px_rgba(255,255,255,0.01)]";
-  const insetClass = isLight
-    ? "border-sky-100 bg-[linear-gradient(180deg,rgba(240,249,255,0.9),rgba(255,255,255,0.92))]"
-    : "border-white/[0.06] bg-[linear-gradient(180deg,rgba(6,182,212,0.04),rgba(255,255,255,0.014))]";
-  const buttonClass = isLight
-    ? "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-slate-950 hover:shadow-[0_16px_32px_rgba(59,130,246,0.12)]"
-    : "border-blue-400/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.014))] text-neutral-300 hover:border-blue-300/28 hover:text-white hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_22px_rgba(66,146,255,0.07)]";
-
   return (
-    <main className={cn("relative min-h-screen overflow-hidden", pageClass)}>
+    <main className="relative min-h-screen overflow-hidden bg-[var(--surface-page)] text-[var(--text-primary)]">
       <AppPageBackground />
 
       <SiteHeader
         authHref="/login"
         authLabel="Login"
         learningCenterHref="/resources"
-        className="page-enter-soft"
-        surfaceClassName={isLight ? "border-slate-200 bg-white/80" : "border-white/[0.08] bg-black/55"}
       />
 
-      <PageFrame className="space-y-8 md:space-y-10">
-        <section className="page-enter">
+      <PageFrame className="space-y-[var(--space-8)] md:space-y-[var(--space-10)]">
+        <section>
           <div className="mx-auto max-w-4xl text-center">
-            <div className={cn("mb-4 text-[11px] uppercase", eyebrowClass)}>
+            <div className={cn("mb-[var(--space-4)]", EYEBROW)}>
               Mission Statement
             </div>
 
             <TypingHeading
               text="Learn by thinking, build by reasoning"
               as="h1"
-              className={cn(
-                "mx-auto max-w-4xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95]",
-                headingClass
-              )}
+              className="mx-auto max-w-4xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] text-[var(--text-primary)]"
             />
 
             <p
               className={cn(
-                "mx-auto mt-5 max-w-3xl text-center text-base leading-8 md:text-lg md:leading-9",
-                bodyClass
+                "mx-auto mt-[var(--space-5)] max-w-3xl text-center",
+                "text-[length:var(--text-base)] leading-[var(--leading-relaxed)]",
+                "text-[var(--text-muted)] md:text-[length:var(--text-lg)]"
               )}
             >
               T.R.A.C.E. helps people use computer science concepts without
@@ -147,20 +170,26 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="page-enter-soft">
+        <section>
           <div className="mx-auto max-w-4xl text-center">
-            <div className={cn("mb-3 text-[11px] uppercase", eyebrowClass)}>
+            <div className={cn("mb-[var(--space-3)]", EYEBROW)}>
               Our Goal And Mission
             </div>
             <h2
               className={cn(
-                "text-3xl font-bold leading-tight md:text-4xl",
-                headingClass
+                "text-[length:var(--text-2xl)] font-bold leading-[var(--leading-tight)]",
+                "text-[var(--text-primary)] md:text-[length:var(--text-3xl)]"
               )}
             >
               Make programming more understandable without removing rigor.
             </h2>
-            <p className={cn("mx-auto mt-5 max-w-3xl text-sm leading-8 md:text-base", bodyClass)}>
+            <p
+              className={cn(
+                "mx-auto mt-[var(--space-5)] max-w-3xl",
+                "text-[length:var(--text-sm)] leading-[var(--leading-relaxed)]",
+                "text-[var(--text-muted)] md:text-[length:var(--text-base)]"
+              )}
+            >
               T.R.A.C.E. is designed to combine the accessibility of natural
               language with the discipline of structured programming. Users can
               specify behavior in English, run it in a browser-based IDE, and
@@ -169,84 +198,109 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section
-          className={cn(
-            "page-enter-soft overflow-hidden rounded-[2rem] border p-6 md:p-9",
-            surfaceClass
-          )}
-        >
+        <SurfaceCard className="overflow-hidden p-[var(--space-6)] md:p-[var(--space-8)]">
           <div className="mx-auto max-w-5xl">
-            <div className={cn("mb-3 text-[11px] uppercase", eyebrowClass)}>
+            <div className={cn("mb-[var(--space-3)]", EYEBROW)}>
               Long-Term Impact
             </div>
             <h2
               className={cn(
-                "max-w-3xl text-3xl font-bold leading-tight md:text-4xl",
-                headingClass
+                "max-w-3xl text-[length:var(--text-2xl)] font-bold",
+                "leading-[var(--leading-tight)] text-[var(--text-primary)]",
+                "md:text-[length:var(--text-3xl)]"
               )}
             >
               Build practical AI capacity through tools people can actually use.
             </h2>
-            <p className={cn("mt-5 max-w-3xl text-sm leading-8 md:text-base", bodyClass)}>
+            <p
+              className={cn(
+                "mt-[var(--space-5)] max-w-3xl",
+                "text-[length:var(--text-sm)] leading-[var(--leading-relaxed)]",
+                "text-[var(--text-muted)] md:text-[length:var(--text-base)]"
+              )}
+            >
               The Caribbean opportunity is not just access to AI tools. It is
               the development of students, teachers, institutions, and workers
               who can apply AI with clarity and confidence. T.R.A.C.E. is built
               around that application-first strategy.
             </p>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="mt-[var(--space-8)] grid gap-[var(--space-4)] md:grid-cols-3">
               {IMPACT_POINTS.map((point) => (
+                /*
+                 * Inlaid, not raised: these sit inside a card that is already
+                 * lifted off the page, and they are read rather than pressed.
+                 * Stacking a second raised rung on the first would make the
+                 * section read as a pile of stickers instead of one object with
+                 * three panels set into it.
+                 */
                 <div
                   key={point.label}
                   className={cn(
-                    "flex min-h-[13rem] flex-col rounded-[1.4rem] border p-5",
-                    insetClass
+                    "flex min-h-[13rem] flex-col rounded-[var(--radius-lg)] border",
+                    "border-[var(--border-subtle)] bg-[var(--surface-sunken)]",
+                    "p-[var(--space-5)] shadow-[var(--inlaid)]"
                   )}
                 >
+                  {/*
+                   * Set at --text-xl/bold, not --text-sm/semibold. --accent-text
+                   * on --accent-subtle measures 4.9:1 over a raised card, which
+                   * is where the rest of the app uses this pair, but only 4.33:1
+                   * over --surface-sunken -- under the 4.5:1 AA floor for body
+                   * sizes. 20px bold clears the large-text floor of 3:1 instead,
+                   * so the pairing stays identical to Badge and every other
+                   * accent chip in the app rather than this one page inventing
+                   * its own colour.
+                   *
+                   * The letter repeats the heading directly beneath it, so it is
+                   * hidden from assistive tech rather than read out twice.
+                   */}
                   <div
+                    aria-hidden="true"
                     className={cn(
-                      "mb-4 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold",
-                      isLight
-                        ? "border-cyan-200 bg-cyan-50 text-cyan-700"
-                        : "border-cyan-300/20 bg-cyan-400/10 text-cyan-200"
+                      "mb-[var(--space-4)] flex h-10 w-10 items-center justify-center",
+                      "rounded-[var(--radius-full)] border border-[var(--accent-border)]",
+                      "bg-[var(--accent-subtle)] shadow-[var(--inlaid)]",
+                      "text-[length:var(--text-xl)] font-bold text-[var(--accent-text)]"
                     )}
                   >
                     {point.label.slice(0, 1)}
                   </div>
-                  <h3
-                    className={cn(
-                      "text-base font-semibold",
-                      isLight ? "text-slate-900" : "text-white"
-                    )}
-                  >
+                  <h3 className="text-[length:var(--text-base)] font-semibold text-[var(--text-primary)]">
                     {point.label}
                   </h3>
-                  <p className={cn("mt-3 text-sm leading-7", bodyClass)}>
+                  <p
+                    className={cn(
+                      "mt-[var(--space-3)] text-[length:var(--text-sm)]",
+                      "leading-[var(--leading-relaxed)] text-[var(--text-muted)]"
+                    )}
+                  >
                     {point.text}
                   </p>
                 </div>
               ))}
             </div>
           </div>
-        </section>
+        </SurfaceCard>
 
-        <section
-          className={cn(
-            "page-enter-soft overflow-hidden rounded-[2rem] border p-6 md:p-9",
-            surfaceClass
-          )}
-        >
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <SurfaceCard className="overflow-hidden p-[var(--space-6)] md:p-[var(--space-8)]">
+          <div className="grid gap-[var(--space-8)] lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div className="flex justify-center lg:justify-center">
+              {/*
+               * The portrait frame rests on the section it sits in -- the base
+               * rung -- rather than lifting off it. It is a physical object
+               * among the text, but nothing happens when you click it, so it
+               * never travels.
+               */}
               <div
                 className={cn(
-                  "relative h-56 w-56 overflow-hidden rounded-full border p-2 md:h-72 md:w-72",
-                  isLight
-                    ? "border-slate-200 bg-white shadow-[0_22px_48px_rgba(15,23,42,0.1)]"
-                    : "border-white/[0.1] bg-white/[0.035] shadow-[0_24px_70px_rgba(0,0,0,0.32)]"
+                  "relative h-56 w-56 overflow-hidden rounded-[var(--radius-full)]",
+                  "border border-[var(--border-subtle)] bg-[var(--surface-raised)]",
+                  "bg-[image:var(--material-sheen)] p-2 shadow-[var(--raised)]",
+                  "md:h-72 md:w-72"
                 )}
               >
-                <div className="relative h-full w-full overflow-hidden rounded-full">
+                <div className="relative h-full w-full overflow-hidden rounded-[var(--radius-full)]">
                   <Image
                     src="/brand/profile-photo.png"
                     alt="Matthew Wilmot"
@@ -260,18 +314,25 @@ export default function AboutPage() {
             </div>
 
             <div>
-              <div className={cn("mb-3 text-[11px] uppercase", eyebrowClass)}>
+              <div className={cn("mb-[var(--space-3)]", EYEBROW)}>
                 About The Founder
               </div>
               <h2
                 className={cn(
-                  "text-3xl font-bold leading-tight md:text-4xl",
-                  headingClass
+                  "text-[length:var(--text-2xl)] font-bold",
+                  "leading-[var(--leading-tight)] text-[var(--text-primary)]",
+                  "md:text-[length:var(--text-3xl)]"
                 )}
               >
                 Matthew Wilmot
               </h2>
-              <p className={cn("mt-5 text-sm leading-8 md:text-base", bodyClass)}>
+              <p
+                className={cn(
+                  "mt-[var(--space-5)] text-[length:var(--text-sm)]",
+                  "leading-[var(--leading-relaxed)] text-[var(--text-muted)]",
+                  "md:text-[length:var(--text-base)]"
+                )}
+              >
                 Matthew Wilmot is an undergraduate student at MIT pursuing a
                 B.S. in Artificial Intelligence and Decision-Making, with
                 interests spanning machine learning, computer vision, data
@@ -282,7 +343,13 @@ export default function AboutPage() {
                 support real-time deforestation mapping through the DEFORA
                 project.
               </p>
-              <p className={cn("mt-4 text-sm leading-8 md:text-base", bodyClass)}>
+              <p
+                className={cn(
+                  "mt-[var(--space-4)] text-[length:var(--text-sm)]",
+                  "leading-[var(--leading-relaxed)] text-[var(--text-muted)]",
+                  "md:text-[length:var(--text-base)]"
+                )}
+              >
                 He has also contributed to MIT&apos;s Research Lab of Electronics,
                 processing over 1,000 speech files and improving NLP
                 preprocessing workflows. Beyond MIT, Matthew consults on
@@ -293,37 +360,41 @@ export default function AboutPage() {
                 innovation.
               </p>
 
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-[var(--space-8)] flex flex-col gap-[var(--space-3)] sm:flex-row">
                 <a
                   href="https://github.com/mcgwilmo"
                   target="_blank"
                   rel="noreferrer"
                   className={cn(
-                    "group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full border px-5 text-sm uppercase transition-all duration-300",
-                    buttonClass
+                    "group relative inline-flex h-12 items-center justify-center",
+                    "gap-[var(--space-2)] overflow-hidden rounded-[var(--radius-full)]",
+                    "px-[var(--space-5)] text-[length:var(--text-sm)] uppercase",
+                    LINK_BUTTON
                   )}
                 >
                   <GitHubIcon className="h-5 w-5" />
                   GitHub
-                  <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  <ArrowIcon className={LINK_ARROW} />
                 </a>
                 <a
                   href="https://www.linkedin.com/in/matthew-wilmot-6938a9292"
                   target="_blank"
                   rel="noreferrer"
                   className={cn(
-                    "group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full border px-5 text-sm uppercase transition-all duration-300",
-                    buttonClass
+                    "group relative inline-flex h-12 items-center justify-center",
+                    "gap-[var(--space-2)] overflow-hidden rounded-[var(--radius-full)]",
+                    "px-[var(--space-5)] text-[length:var(--text-sm)] uppercase",
+                    LINK_BUTTON
                   )}
                 >
                   <LinkedInIcon className="h-5 w-5" />
                   LinkedIn
-                  <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  <ArrowIcon className={LINK_ARROW} />
                 </a>
               </div>
             </div>
           </div>
-        </section>
+        </SurfaceCard>
       </PageFrame>
 
       <SiteFooter />

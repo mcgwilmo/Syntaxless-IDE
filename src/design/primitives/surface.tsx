@@ -67,7 +67,7 @@ export function Badge({
         "inline-flex items-center rounded-[var(--radius-sm)]",
         // Inlaid rather than raised: a badge is a label set into the surface,
         // not something you can press.
-        "shadow-[inset_0_1px_1px_rgba(28,26,23,0.07),0_1px_0_var(--material-highlight)]",
+        "shadow-[var(--inlaid)]",
         "px-[var(--space-2)] py-[var(--space-1)]",
         "text-[length:var(--text-xs)] font-medium",
         BADGE_TONES[tone],
@@ -76,5 +76,92 @@ export function Badge({
     >
       {children}
     </span>
+  );
+}
+
+/*
+ * Floating -- detached from the page: menus, popovers, dropdowns, toasts.
+ *
+ * No contact shadow, because nothing is touching. That absence is what
+ * separates a menu hovering over the page from a card lying on it, and it is
+ * doing more work than the larger blur is.
+ */
+export function Floating({ children, className }: SurfaceProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-[var(--radius-lg)] border border-[var(--border-subtle)]",
+        "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+        "p-[var(--space-2)] shadow-[var(--floating)]",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/*
+ * Modal -- the top of the stack, over a scrim.
+ *
+ * Pair it with Scrim. The long shadow falloff only reads as distance when
+ * there is something dimmed behind it to be distant from.
+ *
+ * The dialog semantics are not optional decoration. Depth is the only thing
+ * that said "this is in front and the page behind it is inert", and depth is
+ * exactly what a screen reader cannot see: without role="dialog" this was an
+ * anonymous <div> that happened to appear in the middle of the document, and
+ * nothing told a non-visual user that a modal had opened, what it was called,
+ * or that the content behind it no longer applied.
+ *
+ * `label` names the dialog. Pass it whenever the visible title is rendered by
+ * something whose text is not a stable, plain string -- TypingHeading types its
+ * heading in a character at a time, so pointing aria-labelledby at it is not
+ * safe. When the title IS a plain element, pass labelledBy instead and skip the
+ * duplicate string.
+ */
+export function Modal({
+  children,
+  className,
+  label,
+  labelledBy,
+}: SurfaceProps & { label?: string; labelledBy?: string }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={labelledBy ? undefined : label}
+      aria-labelledby={labelledBy}
+      className={cn(
+        "rounded-[var(--radius-xl)] border border-[var(--border-subtle)]",
+        "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+        "p-[var(--space-8)] shadow-[var(--modal)]",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/*
+ * Scrim -- the dimmed page behind a modal.
+ *
+ * Dim rather than blur. A blur costs a full-viewport compositing pass on every
+ * frame it animates, and on a classroom laptop that is the difference between
+ * a modal that opens and one that stutters. The material system does not need
+ * it: the modal's shadow already says "in front".
+ */
+export function Scrim({ children, className }: SurfaceProps) {
+  return (
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center p-[var(--space-4)]",
+        "bg-[var(--surface-overlay)]",
+        className
+      )}
+    >
+      {children}
+    </div>
   );
 }

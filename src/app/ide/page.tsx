@@ -20,6 +20,7 @@ import type {
   ExplorerNode,
   IdeMode,
   LayoutMode,
+  TerminalEntry,
   VisualArtifact,
 } from "@/features/ide/types";
 import {
@@ -51,6 +52,206 @@ import {
   tierAllowsMode,
 } from "@/lib/subscriptions";
 
+/*
+ * Shared surfaces for the sidebar chrome.
+ *
+ * The IDE's own toolbar surfaces live in use-ide-state; these are the few the
+ * explorer needs on top of those, kept here so the two small icon buttons and
+ * the two small menus cannot drift apart from each other.
+ */
+const SIDEBAR_ICON_BUTTON_CLASS = joinClasses(
+  // Size is left to the call site so the two 7x7 explorer controls and the
+  // 6x6 report control can share one set of material rules.
+  "flex items-center justify-center rounded-[var(--radius-sm)] border",
+  "transition-[background-color,border-color,box-shadow,transform]",
+  "duration-[var(--duration-press)] ease-[var(--ease-spring)]",
+  "active:shadow-[var(--pressed)] active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:active:transform-none"
+);
+
+const SIDEBAR_ICON_BUTTON_RESTING_CLASS = joinClasses(
+  "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+  "text-[var(--text-muted)] shadow-[var(--raised)]",
+  "hover:-translate-y-[var(--lift-travel)] hover:text-[var(--text-primary)] hover:shadow-[var(--lifted)]",
+  "motion-reduce:hover:transform-none"
+);
+
+/*
+ * Menus hang off the page rather than resting on it, so they lose the contact
+ * shadow entirely -- that absence is what separates the dropdown from the
+ * toolbar it dropped out of, and it does more work than the bigger blur does.
+ */
+const MENU_PANEL_CLASS = joinClasses(
+  // --border-strong, not --border-subtle: a menu is raised surface sitting on
+  // raised surface, so the shadow alone does not draw its edge. This matches
+  // menuPanelClass in use-ide-state.ts, which describes the same object.
+  "rounded-[var(--radius-lg)] border border-[var(--border-strong)]",
+  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-2)]",
+  "text-[var(--text-primary)] shadow-[var(--floating)]"
+);
+
+const MENU_SURFACE_CLASS = joinClasses("absolute right-0 top-9 z-30", MENU_PANEL_CLASS);
+
+const MENU_ROW_CLASS = joinClasses(
+  "w-full rounded-[var(--radius-sm)] px-[var(--space-3)] py-1.5 text-left",
+  "text-[length:var(--text-sm)] text-[var(--text-muted)]",
+  "transition-colors duration-[var(--duration-fast)]",
+  "hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]",
+  "active:bg-[var(--accent-subtle)] active:text-[var(--accent-text)]"
+);
+
+/*
+ * Modal sheets. The top of the stack, always paired with SCRIM_CLASS -- the
+ * long shadow falloff only reads as distance when there is something dimmed
+ * behind it to be distant from.
+ */
+const MODAL_SURFACE_CLASS = joinClasses(
+  "rounded-[var(--radius-xl)] border border-[var(--border-subtle)]",
+  "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--modal)]"
+);
+
+const SCRIM_CLASS = "absolute inset-0 bg-[var(--surface-overlay)]";
+
+/*
+ * The press, for controls whose surface is owned by getModeButtonClass.
+ *
+ * Only the travel, deliberately: that helper already sets a shadow on every
+ * branch, and a second shadow utility on the same element resolves by
+ * stylesheet order rather than by intent. Travel is additive, so this is the
+ * part that can be layered on safely -- and it is the part that was missing,
+ * since the shared helper lifts on hover but never acknowledges the click.
+ */
+const PRESS_TRAVEL_CLASS = joinClasses(
+  "active:translate-y-[var(--press-travel)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none"
+);
+
+/*
+ * The mode and layout cards in the two full-screen pickers.
+ *
+ * These are the largest pressable objects in the app, so they get the full
+ * travel: raised at rest, rising on hover, pushed in and inverted when held.
+ * The selected card carries the mode tint as its only fill -- stacking the tint
+ * over a neutral fill is how the two backgrounds end up fighting for the same
+ * element and one of them wins at random.
+ */
+const OVERLAY_CARD_CLASS = joinClasses(
+  "group relative overflow-hidden rounded-[var(--radius-xl)] border p-5 text-left",
+  "transition-[background-color,border-color,box-shadow,transform]",
+  "duration-[var(--duration-base)] ease-[var(--ease-spring)]"
+);
+
+const OVERLAY_CARD_PRESSABLE_CLASS = joinClasses(
+  "shadow-[var(--raised)]",
+  "hover:-translate-y-[var(--lift-travel)] hover:shadow-[var(--lifted)]",
+  "active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)]",
+  "motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none"
+);
+
+const OVERLAY_CARD_RESTING_CLASS = joinClasses(
+  "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+  "hover:border-[var(--border-strong)]"
+);
+
+// A locked card is not an object you can press, so the depth goes away with it.
+const OVERLAY_CARD_LOCKED_CLASS = joinClasses(
+  "cursor-not-allowed border-[var(--border-subtle)] bg-[var(--surface-sunken)]",
+  "opacity-60 grayscale shadow-none"
+);
+
+const OVERLAY_LOCK_OVERLAY_CLASS =
+  "absolute inset-0 z-20 flex flex-col items-center justify-center bg-[var(--surface-overlay)] px-6 text-center";
+
+const OVERLAY_LOCK_NOTE_CLASS =
+  "rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3 text-xs leading-5 text-[var(--text-muted)] shadow-[var(--inlaid)]";
+
+const OVERLAY_CARD_DETAIL_CLASS =
+  "mt-auto rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-4 text-xs leading-6 text-[var(--text-muted)] shadow-[var(--inlaid)]";
+
+/*
+ * A label set flush into whatever it sits on. Never pressable, so --inlaid.
+ *
+ * Surface and text are separate because the mode/layout cards pair this chip
+ * with MODE_META.badge, which is itself a text colour. Joining the two whole
+ * strings put two text-* utilities on one element, and joinClasses is a plain
+ * join -- the winner would be decided by stylesheet order, not by intent. Call
+ * sites that bring their own text colour take CHIP_SURFACE_CLASS instead.
+ */
+const CHIP_SURFACE_CLASS =
+  "border-[var(--border-subtle)] bg-[var(--surface-sunken)] shadow-[var(--inlaid)]";
+
+const CHIP_CLASS = joinClasses(CHIP_SURFACE_CLASS, "text-[var(--text-muted)]");
+
+/*
+ * The side panels (Problem, Dev Vision) are read, not operated: their blocks
+ * are inlaid into the panel rather than raised off it, so nothing in there
+ * looks pressable when only one thing -- the textarea -- actually takes input.
+ */
+const PANEL_CARD_CLASS =
+  "rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-[var(--space-3)] shadow-[var(--inlaid)]";
+
+const PANEL_LABEL_CLASS =
+  "mb-1.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]";
+
+// A tile set into a PANEL_CARD tray: lighter fill, same "read me" shading.
+const PANEL_ROW_CLASS =
+  "rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-[var(--text-muted)] shadow-[var(--inlaid)]";
+
+const PANEL_SUBROW_CLASS =
+  "rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-2.5 py-2 text-[var(--text-muted)] shadow-[var(--inlaid)]";
+
+/*
+ * Terminal stream tones.
+ *
+ * Tone carries meaning here and nothing else: rose = it stopped, amber = read
+ * this, accent = the program's own output, neutral = the IDE talking. The
+ * label above each block says the same thing in words, because the colour
+ * alone is not readable by everyone.
+ *
+ * "default" is here because these entries arrive from the sandbox rather than
+ * from our own code, so the stream union is a claim rather than a guarantee.
+ *
+ * Each tint is composited over --surface-raised rather than left to fall on
+ * whatever is behind it. The blocks sit inside the terminal well, which is
+ * --surface-sunken, and a 9%-alpha tint dropped straight onto that darker
+ * ground pulled the light-theme label text down to 3.93:1 -- below AA. Painting
+ * the same tint over a raised base restores it and is also the truer reading:
+ * an output block is an object set into the well, not a stain on it.
+ */
+const TERMINAL_STREAM_TONES: Record<
+  TerminalEntry["stream"] | "default",
+  { box: string; text: string }
+> = {
+  stderr: {
+    box: "border-[color-mix(in_srgb,var(--state-blocked)_30%,transparent)] bg-[var(--surface-raised)] bg-[image:linear-gradient(0deg,var(--state-blocked-subtle),var(--state-blocked-subtle))]",
+    text: "text-[var(--state-blocked)]",
+  },
+  explanation: {
+    box: "border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)] bg-[var(--surface-raised)] bg-[image:linear-gradient(0deg,var(--state-warning-subtle),var(--state-warning-subtle))]",
+    text: "text-[var(--state-warning)]",
+  },
+  stdout: {
+    box: "border-[var(--accent-border)] bg-[var(--surface-raised)] bg-[image:linear-gradient(0deg,var(--accent-subtle),var(--accent-subtle))]",
+    text: "text-[var(--accent-text)]",
+  },
+  runtime: {
+    box: "border-[color-mix(in_srgb,var(--state-success)_30%,transparent)] bg-[var(--surface-raised)] bg-[image:linear-gradient(0deg,var(--state-success-subtle),var(--state-success-subtle))]",
+    text: "text-[var(--state-success)]",
+  },
+  input: {
+    box: "border-[var(--border-subtle)] bg-[var(--surface-raised)]",
+    text: "text-[var(--text-muted)]",
+  },
+  system: {
+    box: "border-[var(--border-subtle)] bg-[var(--surface-raised)]",
+    text: "text-[var(--text-muted)]",
+  },
+  default: {
+    box: "border-[var(--border-subtle)] bg-[var(--surface-raised)]",
+    text: "text-[var(--text-muted)]",
+  },
+};
+
 function InfoTooltip({
   label,
   description,
@@ -58,7 +259,6 @@ function InfoTooltip({
   label: string;
   description: string;
 }) {
-  const { isLight } = useTheme();
   const triggerRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -85,13 +285,9 @@ function InfoTooltip({
         }}
         onMouseLeave={() => setOpen(false)}
       >
-        <div
-          className={`flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-medium transition-colors duration-200 ${
-            isLight
-              ? "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900"
-              : "border-neutral-700 bg-[#101010] text-neutral-400 hover:border-neutral-500 hover:text-white"
-          }`}
-        >
+        {/* Inlaid, not raised: the "i" is a marker you read and hover, and
+            giving it a pressable edge promises a click that never happens. */}
+        <div className="flex h-5 w-5 items-center justify-center rounded-[var(--radius-full)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[length:var(--text-xs)] font-medium text-[var(--text-muted)] shadow-[var(--inlaid)] transition-colors duration-[var(--duration-base)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]">
           i
         </div>
       </div>
@@ -100,18 +296,10 @@ function InfoTooltip({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className={`pointer-events-none fixed z-[300] w-72 rounded-2xl border px-3 py-2 text-xs leading-5 shadow-[0_12px_50px_rgba(0,0,0,0.18)] backdrop-blur-md ${
-              isLight
-                ? "border-slate-200 bg-white/95 text-slate-600"
-                : "border-neutral-800 bg-[#0a0a0a]/95 text-neutral-300 shadow-[0_12px_50px_rgba(0,0,0,0.45)]"
-            }`}
+            className="pointer-events-none fixed z-[300] w-72 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-xs)] leading-[var(--leading-normal)] text-[var(--text-muted)] shadow-[var(--floating)]"
             style={{ top: pos.top, left: pos.left }}
           >
-            <div
-              className={`mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
-                isLight ? "text-slate-400" : "text-neutral-500"
-              }`}
-            >
+            <div className="mb-[var(--space-1)] text-[length:var(--text-xs)] font-semibold uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
               {label}
             </div>
             <div>{description}</div>
@@ -135,16 +323,16 @@ function ExplorerTree({
   activeFileId: string | null;
   onSelectFile: (fileId: string) => void;
   onToggleFolder: (folderId: string) => void;
+  // HTMLElement, not HTMLDivElement: both rows are <button> now, and the
+  // handler only ever reads preventDefault/clientX/clientY off the event.
   onContextMenu: (
-    e: React.MouseEvent<HTMLDivElement>,
+    e: React.MouseEvent<HTMLElement>,
     nodeId: string,
     nodeType: "file" | "folder"
   ) => void;
   depth?: number;
   modeAccentClass: string;
 }) {
-  const { isLight } = useTheme();
-
   return (
     <div className="space-y-0.5">
       {nodes.map((node) => {
@@ -153,23 +341,38 @@ function ExplorerTree({
         if (node.type === "folder") {
           return (
             <div key={node.id}>
-              <div
+              {/* Rows live inside a recessed well, so they do not travel on
+                  press -- they darken into it instead.
+
+                  A real <button>, not a clickable <div>. The explorer is how
+                  you choose what to edit and what to run, and as divs none of
+                  it could be reached from the keyboard at all: no tab stop, no
+                  Enter/Space, and no focus ring for the global :focus-visible
+                  rule to attach to. The chevron already showed open/closed, but
+                  only visually, so aria-expanded states it too. */}
+              <button
+                type="button"
+                aria-expanded={node.isOpen}
                 onClick={() => onToggleFolder(node.id)}
                 onContextMenu={(e) => onContextMenu(e, node.id, "folder")}
-                className={`group flex cursor-pointer items-center rounded-[0.55rem] px-2 py-1.5 text-[12px] transition-colors duration-150 ${
-                  isLight
-                    ? "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                    : "text-neutral-300 hover:bg-white/[0.045] hover:text-white"
-                }`}
+                className="group flex w-full cursor-pointer items-center rounded-[var(--radius-sm)] px-[var(--space-2)] py-1.5 text-left text-[length:var(--text-xs)] text-[var(--text-muted)] transition-[background-color,box-shadow,color] duration-[var(--duration-fast)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] active:shadow-[var(--pressed)]"
                 style={{ paddingLeft }}
               >
-                <span className="mr-2 text-xs text-neutral-500">{node.isOpen ? "▾" : "▸"}</span>
-                <span className="mr-2 text-neutral-500">⊟</span>
+                <span aria-hidden="true" className="mr-[var(--space-2)] text-[length:var(--text-xs)] text-[var(--text-muted)]">
+                  {node.isOpen ? "▾" : "▸"}
+                </span>
+                <span aria-hidden="true" className="mr-[var(--space-2)] text-[var(--text-muted)]">⊟</span>
                 <span className="truncate">{node.name}</span>
-              </div>
+              </button>
 
+              {/* inert while collapsed. The rows inside are <button>s now, and
+                  a closed folder is only closed visually -- the grid collapses
+                  to 0fr and clips, but every child stays in the DOM. Without
+                  this, tabbing through the explorer walks into files that are
+                  not on screen, and a click lands on a zero-height target. */}
               <div
-                className={`grid overflow-hidden transition-all duration-300 ${
+                inert={!node.isOpen}
+                className={`grid overflow-hidden transition-all duration-[var(--duration-slow)] ${
                   node.isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-60"
                 }`}
               >
@@ -192,29 +395,62 @@ function ExplorerTree({
         const isActive = activeFileId === node.id;
 
         return (
-          <div
+          <button
             key={node.id}
+            type="button"
+            /*
+             * Which file is selected decides what Run runs, and it was said
+             * three ways that a screen reader sees none of: an inlaid recess, a
+             * mode tint, and an accent-coloured bullet. aria-current is the
+             * fourth, and the only one that is not depth or colour.
+             */
+            aria-current={isActive ? "true" : undefined}
             onClick={() => onSelectFile(node.id)}
             onContextMenu={(e) => onContextMenu(e, node.id, "file")}
-            className={`group flex cursor-pointer items-center border-l px-2 py-1.5 text-[12px] transition-colors duration-150 ${
+            className={joinClasses(
+              "group flex w-full cursor-pointer items-center border-l px-[var(--space-2)] py-1.5 text-left text-[length:var(--text-xs)]",
+              "transition-[background-color,border-color,box-shadow,color] duration-[var(--duration-fast)]",
               isActive
-                ? isLight
-                  ? "border-slate-500 bg-slate-100 text-slate-950"
-                  : `border-white/[0.22] bg-white/[0.045] text-white ${modeAccentClass}`
-                : isLight
-                ? "border-slate-200/70 text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950"
-                : "border-white/[0.06] text-neutral-300 hover:border-white/[0.14] hover:bg-white/[0.035] hover:text-white"
-            }`}
+                ? // The selected file is set into the well rather than sitting
+                  // on it; the mode tint is what says which file will run.
+                  `border-[var(--accent-border)] text-[var(--text-primary)] shadow-[var(--inlaid)] ${modeAccentClass}`
+                : "border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] active:shadow-[var(--pressed)]"
+            )}
             style={{ paddingLeft }}
           >
-            <span className={`mr-2 ${isActive ? "text-white/80" : "text-neutral-500"}`}>•</span>
+            <span
+              aria-hidden="true"
+              className={`mr-[var(--space-2)] ${isActive ? "text-[var(--accent-text)]" : "text-[var(--text-muted)]"}`}
+            >
+              •
+            </span>
             <span className="truncate">{node.name}</span>
-          </div>
+          </button>
         );
       })}
     </div>
   );
 }
+
+/*
+ * The bug-report form fields.
+ *
+ * Every one of these is a well you type into, so they take --recessed and the
+ * sunken fill -- the exact inverse of the buttons underneath them. Pulled out
+ * as constants because six identical fields repeating the same twelve classes
+ * is how one of them quietly drifts.
+ */
+const BUG_FIELD_CLASS = joinClasses(
+  "w-full rounded-[var(--radius-md)] border border-[var(--border-strong)]",
+  "bg-[var(--surface-sunken)] px-[var(--space-4)] py-[var(--space-3)]",
+  "text-[length:var(--text-sm)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+  "shadow-[var(--recessed)] outline-none",
+  "transition-[border-color,box-shadow] duration-[var(--duration-fast)]",
+  "focus:border-[var(--accent-solid)] focus:ring-1"
+);
+
+const BUG_FIELD_LABEL_CLASS =
+  "mb-[var(--space-2)] block text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]";
 
 function BugReportModal({
   open,
@@ -239,7 +475,7 @@ function BugReportModal({
   };
   modeMeta: (typeof MODE_META)[IdeMode];
 }) {
-  const { isLight, theme } = useTheme();
+  const { theme } = useTheme();
 
   const defaultCategory: BugReportCategory =
     targetKind === "run" ? "runtime_execution_failure" : "ide_ui_issue";
@@ -294,47 +530,53 @@ function BugReportModal({
 
   return (
     <div className="fixed inset-0 z-[180] overflow-y-auto">
+      {/* Click-outside is a pointer-only convenience and the dialog has its own
+          Cancel, so the scrim is hidden from assistive tech rather than
+          presented as a nameless clickable region. */}
       <div
-        className={`absolute inset-0 backdrop-blur-sm ${isLight ? "bg-slate-200/70" : "bg-black/75"}`}
+        aria-hidden="true"
+        className="absolute inset-0 bg-[var(--surface-overlay)]"
         onClick={onClose}
       />
-      <div className="relative z-10 flex min-h-full items-start justify-center px-6 py-6 md:py-8">
+      <div className="relative z-10 flex min-h-full items-start justify-center px-[var(--space-6)] py-[var(--space-6)] md:py-[var(--space-8)]">
         <div
-          className={`w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-y-auto rounded-[2rem] border p-6 ${
-            isLight
-              ? "border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)]"
-              : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] shadow-[0_20px_80px_rgba(0,0,0,0.45)]"
-          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ide-bug-report-title"
+          className={joinClasses(
+            "w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-y-auto",
+            "rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-[var(--space-6)]",
+            // Top of the stack, over the scrim above -- the long falloff is
+            // what reads as distance from the IDE behind it.
+            "bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--modal)]"
+          )}
         >
-        <div className={`mb-2 text-[11px] uppercase tracking-[0.26em] ${"text-[var(--text-soft)]"}`}>
+        <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
           Report Bug
         </div>
 
         <h2
-          className={`${PAGE_HEADING_CLASS} ${"text-3xl text-[var(--text-primary)]"}`}
+          id="ide-bug-report-title"
+          className={`${PAGE_HEADING_CLASS} text-[length:var(--text-3xl)] text-[var(--text-primary)]`}
         >
           {targetKind === "run" ? "Report this run" : "Report IDE issue"}
         </h2>
 
-        <p className={`mt-3 text-sm leading-7 ${"text-[var(--text-muted)]"}`}>
+        <p className="mt-[var(--space-3)] text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
           {targetKind === "run"
             ? "This report will include the selected run diagnostics automatically."
             : "This report will include the current IDE state automatically."}
         </p>
 
-        <div className="mt-6 grid gap-4">
+        <div className="mt-[var(--space-6)] grid gap-[var(--space-4)]">
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
+            <label className={BUG_FIELD_LABEL_CLASS}>
               Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as BugReportCategory)}
-              className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all focus:ring-1 ${modeMeta.accentRing} ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-900 focus:border-blue-400/60"
-                  : "border-neutral-800 bg-[#080808] text-white focus:border-white/10"
-              }`}
+              className={`${BUG_FIELD_CLASS} ${modeMeta.accentRing}`}
             >
               {categoryOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -345,23 +587,19 @@ function BugReportModal({
           </div>
 
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
+            <label className={BUG_FIELD_LABEL_CLASS}>
               Title
             </label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Short summary of the issue"
-              className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all placeholder:text-neutral-600 focus:ring-1 ${modeMeta.accentRing} ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400/60"
-                  : "border-neutral-800 bg-[#080808] text-white focus:border-white/10"
-              }`}
+              className={`${BUG_FIELD_CLASS} ${modeMeta.accentRing}`}
             />
           </div>
 
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
+            <label className={BUG_FIELD_LABEL_CLASS}>
               What went wrong
             </label>
             <textarea
@@ -369,16 +607,12 @@ function BugReportModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
               placeholder="Describe what happened."
-              className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all placeholder:text-neutral-600 focus:ring-1 ${modeMeta.accentRing} ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400/60"
-                  : "border-neutral-800 bg-[#080808] text-white focus:border-white/10"
-              }`}
+              className={`${BUG_FIELD_CLASS} ${modeMeta.accentRing}`}
             />
           </div>
 
           <div>
-            <label className={`mb-2 block text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
+            <label className={BUG_FIELD_LABEL_CLASS}>
               Expected behavior
             </label>
             <textarea
@@ -386,29 +620,27 @@ function BugReportModal({
               onChange={(e) => setExpectedBehavior(e.target.value)}
               rows={3}
               placeholder="What should have happened instead?"
-              className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all placeholder:text-neutral-600 focus:ring-1 ${modeMeta.accentRing} ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400/60"
-                  : "border-neutral-800 bg-[#080808] text-white focus:border-white/10"
-              }`}
+              className={`${BUG_FIELD_CLASS} ${modeMeta.accentRing}`}
             />
           </div>
 
-          <label className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${isLight ? "border-slate-200 bg-slate-50 text-slate-700" : "border-neutral-900 bg-[#0b0b0b] text-neutral-300"}`}>
+          <label className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-sm)] text-[var(--text-muted)] shadow-[var(--inlaid)]">
             <input
               type="checkbox"
               checked={reproducible}
               onChange={(e) => setReproducible(e.target.checked)}
-              className="h-4 w-4"
+              className="h-4 w-4 accent-[var(--accent-solid)]"
             />
             I can reproduce this issue consistently
           </label>
 
-          <div className={`rounded-2xl border p-4 ${isLight ? "border-slate-200 bg-slate-50" : "border-neutral-900 bg-[#0b0b0b]"}`}>
-            <div className={`mb-2 text-[11px] uppercase tracking-[0.22em] ${"text-[var(--text-soft)]"}`}>
+          {/* Read-only summary of what gets attached, so it is inlaid rather
+              than recessed -- nothing is typed into it. */}
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-[var(--space-4)] shadow-[var(--inlaid)]">
+            <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
               Attached context
             </div>
-            <div className={`space-y-1 text-sm ${isLight ? "text-slate-700" : "text-neutral-300"}`}>
+            <div className="space-y-[var(--space-1)] text-[length:var(--text-sm)] text-[var(--text-muted)]">
               <div>Project: {context.projectName || "Untitled Project"}</div>
               <div>Project ID: {context.projectId}</div>
               <div>File: {context.currentFilePath}</div>
@@ -418,11 +650,20 @@ function BugReportModal({
           </div>
         </div>
 
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-[var(--space-6)] flex justify-end gap-[var(--space-2)]">
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className={`${getModeButtonClass(modeMeta, undefined, theme)} rounded-2xl px-4 py-2 disabled:opacity-50`}
+              /*
+               * The disabled flag has to reach getModeButtonClass, not just the
+               * element. Passing undefined here meant Cancel kept the full
+               * pressable material while submitting -- raised, and still rising
+               * toward the light on hover -- with a 50% opacity wash as the only
+               * hint it was inert. The Submit button beside it already does this
+               * correctly; this one silently did not, so the pair disagreed
+               * about what "disabled" looks like.
+               */
+              className={`${getModeButtonClass(modeMeta, { disabled: isSubmitting }, theme)} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
             >
               Cancel
             </button>
@@ -431,7 +672,7 @@ function BugReportModal({
               disabled={isSubmitting || !title.trim() || !description.trim()}
               className={`${getModeButtonClass(modeMeta, {
                 disabled: isSubmitting || !title.trim() || !description.trim(),
-              }, theme)} rounded-2xl px-4 py-2 disabled:opacity-50`}
+              }, theme)} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
             >
               {isSubmitting ? "Submitting..." : "Submit Report"}
             </button>
@@ -449,14 +690,12 @@ function ArtifactPreview({
   artifact: VisualArtifact;
   onError: (name: string) => void;
 }) {
-  const { isLight } = useTheme();
-
   if (artifact.artifact_type === "image") {
     return (
       <img
         src={artifact.url}
         alt={artifact.label}
-        className={`max-h-[340px] w-full object-contain ${isLight ? "bg-slate-50" : "bg-[#080808]"}`}
+        className="max-h-[340px] w-full bg-[var(--surface-sunken)] object-contain"
         onError={() => onError(artifact.name)}
       />
     );
@@ -468,16 +707,22 @@ function ArtifactPreview({
     artifact.artifact_type === "json"
   ) {
     return (
+      // The embedded document paints its own ground; this fill is only what
+      // shows through before it loads, so it matches the card around it.
       <iframe
         src={artifact.url}
         title={artifact.label}
-        className="h-[340px] w-full bg-white"
+        className="h-[340px] w-full bg-[var(--surface-raised)]"
         onError={() => onError(artifact.name)}
       />
     );
   }
 
-  return <div className={`p-4 text-sm ${"text-[var(--text-muted)]"}`}>Artifact available.</div>;
+  return (
+    <div className="p-[var(--space-4)] text-[length:var(--text-sm)] text-[var(--text-muted)]">
+      Artifact available.
+    </div>
+  );
 }
 
 function IdePageContent() {
@@ -546,7 +791,6 @@ function IdePageContent() {
     loadRunDetails,
     menuButtonClass,
     menuItemClass,
-    menuPanelClass,
     menuSymbolClass,
     minimalist,
     mode,
@@ -564,8 +808,6 @@ function IdePageContent() {
     outputSummaryLabel,
     panelBgClass,
     panelBorderClass,
-    pricingCardClass,
-    pricingCardHoverClass,
     problemAlignment,
     problemGoalSummary,
     problemIssues,
@@ -585,7 +827,6 @@ function IdePageContent() {
     resultsButtonLabel,
     runButtonLabel,
     runs,
-    sectionLabelClass,
     sectionMetaClass,
     sectionTitleClass,
     selectedDiagnostic,
@@ -630,7 +871,6 @@ function IdePageContent() {
     sidebarDividerClass,
     sidebarOpen,
     sidebarSurfaceClass,
-    softTextClass,
     strongTextAltClass,
     strongTextClass,
     studentModeLocked,
@@ -650,34 +890,38 @@ function IdePageContent() {
     workspaceBgClass,
   } = ide;
 
+  /*
+   * Every toolbar control acknowledges being pressed.
+   *
+   * ideButtonClass lifts on hover but has no held state at all, so a student
+   * clicking Run on the slow path gets nothing back until output arrives. The
+   * press is added here, once, instead of at each of the twenty-odd call
+   * sites -- and as travel only, for the reason PRESS_TRAVEL_CLASS explains.
+   */
+  const ideButton = (options?: Parameters<typeof ideButtonClass>[0]) =>
+    joinClasses(ideButtonClass(options), PRESS_TRAVEL_CLASS);
+
+  // Run is armed when a file is open and nothing is in flight; the mode tint
+  // is what marks it out from the rest of the toolbar.
+  const armedControlClass = joinClasses(
+    currentModeMeta.accentBorder,
+    currentModeMeta.accentBg,
+    "text-[var(--text-primary)]",
+    PRESS_TRAVEL_CLASS
+  );
+
   return (
     <IdeProvider value={ide}>
-    <main
-      className={`relative h-screen w-screen overflow-hidden ${
-        isLight ? "bg-[#eef3f9] text-slate-900" : "bg-[#020202] text-white"
-      }`}
-    >
-      <div className="pointer-events-none absolute inset-0 opacity-90">
-        <div
-          className={`absolute inset-0 ${
-            isLight
-              ? "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.72),transparent_36%)]"
-              : "bg-[linear-gradient(180deg,rgba(10,10,10,0.98),rgba(2,2,2,1))]"
-          }`}
-        />
-        <div
-          className={`absolute left-[20%] top-[10%] h-52 w-52 rounded-full blur-3xl ${
-            isLight
-              ? "bg-[radial-gradient(circle,rgba(255,255,255,0.55),transparent_72%)]"
-              : "bg-[radial-gradient(circle,rgba(255,255,255,0.06),transparent_72%)]"
-          }`}
-        />
-      </div>
-
+    {/* The sheen rides on the page's own background rather than on an overlay
+        div, the way every other surface in the system carries it. The two
+        decorative white blooms that used to sit on top of the shell are gone:
+        with one light source the page falls off once, from the top, and a
+        second glow placed at 20%/10% was light arriving from nowhere. */}
+    <main className="relative h-screen w-screen overflow-hidden bg-[var(--surface-page)] bg-[image:var(--material-sheen)] text-[var(--text-primary)]">
       <div className="flex h-full w-full p-2.5">
-        <div className={`flex h-full w-full overflow-hidden rounded-[1.65rem] border ${shellSurfaceClass}`}>
+        <div className={`flex h-full w-full overflow-hidden rounded-[var(--radius-xl)] border ${shellSurfaceClass}`}>
           <aside
-            className={`relative overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${sidebarSurfaceClass} ${sidebarContainerClass}`}
+            className={`relative overflow-hidden transition-all duration-500 ease-[var(--ease-out)] ${sidebarSurfaceClass} ${sidebarContainerClass}`}
           >
             <div
               className={`flex h-full min-h-0 w-[17rem] flex-col p-3.5 transition-all duration-500 ${
@@ -689,7 +933,7 @@ function IdePageContent() {
                   <div className={`mb-3 border-b pb-3 ${sidebarDividerClass}`}>
                     <div className="mb-2 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${sectionLabelClass}`}>
+                        <div className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${sectionMetaClass}`}>
                           Explorer
                         </div>
                         <InfoTooltip
@@ -714,14 +958,11 @@ function IdePageContent() {
                               setShowAddMenu((prev) => !prev);
                             }}
                             className={joinClasses(
-                              "flex h-7 w-7 items-center justify-center rounded-[0.55rem] border text-[14px] font-semibold transition-colors",
+                              "h-7 w-7 text-[length:var(--text-sm)] font-semibold",
+                              SIDEBAR_ICON_BUTTON_CLASS,
                               showAddMenu
-                                ? isLight
-                                  ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-slate-950`
-                                  : `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-white`
-                                : isLight
-                                ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950"
-                                : "border-white/[0.08] bg-white/[0.035] text-neutral-300 hover:border-white/[0.14] hover:text-white"
+                                ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-[var(--text-primary)] shadow-[var(--pressed)]`
+                                : SIDEBAR_ICON_BUTTON_RESTING_CLASS
                             )}
                             aria-label="Add file or folder"
                             title="Add file or folder"
@@ -730,13 +971,13 @@ function IdePageContent() {
                           </button>
 
                           {showAddMenu && (
-                            <div className={`absolute right-0 top-9 z-30 w-40 rounded-[1rem] border p-1.5 backdrop-blur-md ${"border-[var(--border-strong)] bg-[var(--surface-raised)] shadow-[var(--raised-lg)]"}`}>
+                            <div className={MENU_SURFACE_CLASS + " w-40"}>
                               <button
                                 onClick={() => {
                                   createFile();
                                   setShowAddMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
+                                className={MENU_ROW_CLASS}
                               >
                                 New file
                               </button>
@@ -745,7 +986,7 @@ function IdePageContent() {
                                   createFolder();
                                   setShowAddMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
+                                className={MENU_ROW_CLASS}
                               >
                                 New folder
                               </button>
@@ -761,14 +1002,11 @@ function IdePageContent() {
                               setShowTreeMenu((prev) => !prev);
                             }}
                             className={joinClasses(
-                              "flex h-7 w-7 items-center justify-center rounded-[0.55rem] border transition-colors",
+                              "h-7 w-7",
+                              SIDEBAR_ICON_BUTTON_CLASS,
                               showTreeMenu
-                                ? isLight
-                                  ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-slate-950`
-                                  : `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-white`
-                                : isLight
-                                ? "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950"
-                                : "border-white/[0.08] bg-white/[0.035] text-neutral-300 hover:border-white/[0.14] hover:text-white"
+                                ? `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} text-[var(--text-primary)] shadow-[var(--pressed)]`
+                                : SIDEBAR_ICON_BUTTON_RESTING_CLASS
                             )}
                             aria-label="Tree actions"
                             title="Tree actions"
@@ -777,13 +1015,13 @@ function IdePageContent() {
                           </button>
 
                           {showTreeMenu && (
-                            <div className={`absolute right-0 top-9 z-30 w-44 rounded-[1rem] border p-1.5 backdrop-blur-md ${"border-[var(--border-strong)] bg-[var(--surface-raised)] shadow-[var(--raised-lg)]"}`}>
+                            <div className={MENU_SURFACE_CLASS + " w-44"}>
                               <button
                                 onClick={() => {
                                   setExplorerTree((prev) => setAllFoldersOpen(prev, true));
                                   setShowTreeMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
+                                className={MENU_ROW_CLASS}
                               >
                                 Expand all folders
                               </button>
@@ -792,7 +1030,7 @@ function IdePageContent() {
                                   setExplorerTree((prev) => setAllFoldersOpen(prev, false));
                                   setShowTreeMenu(false);
                                 }}
-                                className={`w-full rounded-[0.85rem] px-3 py-1.5 text-left text-sm transition-colors ${"text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"}`}
+                                className={MENU_ROW_CLASS}
                               >
                                 Collapse all folders
                               </button>
@@ -807,7 +1045,9 @@ function IdePageContent() {
                       <span className={sectionTitleClass}>{currentSynthFileCount} / {getSynthFileLimitLabel(activeTier)}</span>
                     </div>
 
-                    <div className={`rounded-[0.85rem] border p-1.5 ${isLight ? "border-slate-200/90 bg-white/60" : "border-white/[0.06] bg-black/20"}`}>
+                    {/* The tree scrolls, so the container is a well cut into
+                        the sidebar rather than a card sitting on it. */}
+                    <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-1.5 shadow-[var(--recessed)]">
                       <ExplorerTree
                         nodes={explorerTree}
                         activeFileId={activeFileId}
@@ -830,10 +1070,10 @@ function IdePageContent() {
                   <div className="flex min-h-0 flex-1 flex-col pt-1">
                     <button
                       onClick={() => setShowRunsSection((prev) => !prev)}
-                      className="mb-2 flex w-full items-center justify-between text-left"
+                      className="mb-2 flex w-full items-center justify-between text-left text-[var(--text-muted)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--text-primary)]"
                     >
                       <span className="flex items-center gap-2">
-                        <span className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${sectionLabelClass}`}>Run History</span>
+                        <span className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${sectionMetaClass}`}>Run History</span>
                         <InfoTooltip
                           label="Run History"
                           description="Restore previous output, diagnostics, artifacts, and generated Python."
@@ -843,21 +1083,32 @@ function IdePageContent() {
                     </button>
 
                     <div
-                      className={`grid min-h-0 flex-1 overflow-hidden transition-all duration-300 ${
+                      className={`grid min-h-0 flex-1 overflow-hidden transition-all duration-[var(--duration-slow)] ${
                         showRunsSection ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-70"
                       }`}
                     >
                       <div className="min-h-0 overflow-hidden">
                         <div className="h-full space-y-1 overflow-auto pr-1">
                           {runs.length === 0 ? (
-                            <div className={`rounded-[0.8rem] border px-3 py-2 text-[12px] ${isLight ? "border-slate-200 bg-white/60" : "border-white/[0.06] bg-white/[0.025]"} ${sectionMetaClass}`}>
+                            <div className={`rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-2 text-[12px] shadow-[var(--inlaid)] ${sectionMetaClass}`}>
                               No runs yet
                             </div>
                           ) : (
                             runs.map((run) => (
+                              // Each run is a card resting on the sidebar and
+                              // rises when pointed at, because clicking it
+                              // restores that run's whole output.
+                              //
+                              // And it goes back down when clicked. It used to
+                              // lift on hover and then do nothing at all under
+                              // the press -- a card that offers itself and then
+                              // ignores being taken, which is the one thing
+                              // every other pressable card here (the dashboard
+                              // grid, the learning-center cards, the mode and
+                              // layout pickers) completes.
                               <div
                                 key={run.id}
-                                className={`rounded-[0.8rem] border px-2.5 py-2 transition-colors ${isLight ? "border-slate-200/80 bg-white/55 hover:bg-white" : "border-white/[0.06] bg-white/[0.025] hover:bg-white/[0.045]"}`}
+                                className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-2.5 py-2 shadow-[var(--raised)] transition-[box-shadow,transform] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] hover:shadow-[var(--lifted)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none"
                               >
                                 <div className="flex items-start gap-2">
                                   <button
@@ -870,7 +1121,7 @@ function IdePageContent() {
                                       </div>
                                       {run.mode && (
                                         <div
-                                          className={`shrink-0 text-[9px] font-semibold uppercase tracking-[0.14em] ${MODE_META[run.mode].badge}`}
+                                          className={`shrink-0 text-[9px] font-semibold uppercase tracking-[var(--tracking-label)] ${MODE_META[run.mode].badge}`}
                                         >
                                           {MODE_META[run.mode].label}
                                         </div>
@@ -888,7 +1139,11 @@ function IdePageContent() {
 
                                   <button
                                     onClick={() => void openRunBugReport(run.id)}
-                                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[0.55rem] border text-[11px] transition-colors ${isLight ? "border-slate-200 bg-white/80 text-slate-500 hover:border-slate-300 hover:text-slate-900" : "border-white/[0.08] bg-white/[0.035] text-neutral-500 hover:border-white/[0.14] hover:text-white"}`}
+                                    className={joinClasses(
+                                      "mt-0.5 h-6 w-6 shrink-0 text-[length:var(--text-xs)]",
+                                      SIDEBAR_ICON_BUTTON_CLASS,
+                                      SIDEBAR_ICON_BUTTON_RESTING_CLASS
+                                    )}
                                     aria-label={`Report run ${run.id.slice(0, 8)}`}
                                     title="Report run"
                                   >
@@ -908,44 +1163,56 @@ function IdePageContent() {
           </aside>
 
           <section className={`flex min-w-0 flex-1 flex-col ${workspaceBgClass}`}>
+            {/* No backdrop blur: modeBarGlowStyle mixes the mode tint into
+                --surface-raised, an opaque fill, so there is never anything
+                behind this header to blur -- it only cost a compositing pass
+                per frame. */}
             <header
-              className={`relative z-[120] overflow-visible px-4 py-3 backdrop-blur-md ${headerSurfaceClass}`}
+              className={`relative z-[120] overflow-visible px-4 py-3 ${headerSurfaceClass}`}
               style={modeBarGlowStyle}
             >
               <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <button
                     onClick={() => setSidebarOpen((prev) => !prev)}
+                    aria-expanded={sidebarOpen}
                     aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
                     className={joinClasses(
-                      "group flex h-10 w-10 items-center justify-center rounded-[0.95rem] border transition-all duration-300",
-                      isLight ? "border-slate-200 bg-white" : "border-neutral-900 bg-[#0b0b0b]",
+                      "group h-10 w-10 rounded-[var(--radius-md)]",
+                      SIDEBAR_ICON_BUTTON_CLASS,
+                      SIDEBAR_ICON_BUTTON_RESTING_CLASS,
                       currentModeMeta.accentHoverBorder,
                       currentModeMeta.accentHoverBg
                     )}
                   >
                     <div className="relative h-4 w-5">
-                      <span className="absolute left-0 top-0 h-[2px] w-5 rounded-full bg-neutral-400 transition-all duration-300 group-hover:bg-white" />
-                      <span className="absolute left-0 top-1/2 h-[2px] w-5 -translate-y-1/2 rounded-full bg-neutral-400 transition-all duration-300 group-hover:bg-white" />
-                      <span className="absolute bottom-0 left-0 h-[2px] w-5 rounded-full bg-neutral-400 transition-all duration-300 group-hover:bg-white" />
+                      {/* The bars inherit the button's text colour, so the
+                          hover state is stated once rather than three times. */}
+                      <span className="absolute left-0 top-0 h-[2px] w-5 rounded-[var(--radius-full)] bg-current" />
+                      <span className="absolute left-0 top-1/2 h-[2px] w-5 -translate-y-1/2 rounded-[var(--radius-full)] bg-current" />
+                      <span className="absolute bottom-0 left-0 h-[2px] w-5 rounded-[var(--radius-full)] bg-current" />
                     </div>
                   </button>
 
                   <Link
                     href="/dashboard"
-                    className={`group flex h-10 w-10 items-center justify-center rounded-[1rem] border transition-all duration-200 ${
-                      isLight
-                        ? "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                        : "border-neutral-900 bg-[#0a0a0a] hover:border-neutral-700 hover:bg-[#111111]"
-                    }`}
+                    // The mark's alt text named the product, not the
+                    // destination, so this link announced as "T.R.A.C.E., link"
+                    // -- which says what it is a picture of, not where it goes.
+                    aria-label="Go to dashboard"
+                    className={joinClasses(
+                      "group h-10 w-10 rounded-[var(--radius-md)]",
+                      SIDEBAR_ICON_BUTTON_CLASS,
+                      SIDEBAR_ICON_BUTTON_RESTING_CLASS
+                    )}
                   >
                     <div className="relative h-5 w-5">
                       <Image
                         src="/brand/logo-mark.png"
-                        alt="T.R.A.C.E."
+                        alt=""
                         fill
                         sizes="20px"
-                        className="object-contain opacity-90 transition-opacity duration-200 group-hover:opacity-100"
+                        className="object-contain opacity-90 transition-opacity duration-[var(--duration-base)] group-hover:opacity-100"
                         priority
                       />
                     </div>
@@ -953,7 +1220,7 @@ function IdePageContent() {
 
                   <div className="hidden min-w-0 items-center gap-3 lg:flex">
                     <div className="min-w-0">
-                      <div className={`truncate text-[10px] font-semibold uppercase tracking-[0.22em] ${sectionLabelClass}`}>
+                      <div className={`truncate text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${sectionMetaClass}`}>
                         Workspace
                       </div>
                       <div
@@ -980,15 +1247,17 @@ function IdePageContent() {
                     aria-label={iconControls ? runButtonLabel : undefined}
                     title={iconControls ? runButtonLabel : undefined}
                     className={joinClasses(
-                      ideButtonClass({
+                      ideButton({
                         disabled: isRunning || !activeFile,
                       }),
                       iconControls
-                        ? "inline-flex min-w-11 items-center justify-center px-0 font-medium duration-300"
-                        : "px-4 font-medium duration-300",
-                      !isRunning &&
-                        activeFile &&
-                        `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} ${"text-[var(--text-primary)]"} shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] hover:-translate-y-[1px]`
+                        ? "inline-flex min-w-11 items-center justify-center px-0 font-medium duration-[var(--duration-slow)]"
+                        : "px-4 font-medium duration-[var(--duration-slow)]",
+                      // Run is the one control on the bar that is armed, so it
+                      // is the one that carries the mode tint. The rest of its
+                      // material comes from ideButton -- adding a shadow here
+                      // would race the one that already sets.
+                      !isRunning && activeFile && armedControlClass
                     )}
                   >
                     {iconControls ? (
@@ -1006,17 +1275,17 @@ function IdePageContent() {
                     aria-label={iconControls ? checkButtonLabel : undefined}
                     title={iconControls ? checkButtonLabel : undefined}
                     className={joinClasses(
-                      ideButtonClass({
+                      ideButton({
                         disabled: isChecking || !activeFile,
                       }),
                       iconControls
                         ? "inline-flex min-w-11 items-center justify-center px-0 font-medium"
                         : "px-4 font-medium",
+                      // Check sits beside Run without competing with it: it
+                      // presses the same way but takes no mode tint.
                       !isChecking &&
                         activeFile &&
-                        isLight
-                          ? "border-slate-200 bg-slate-50 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                          : "border-white/10 bg-white/[0.045] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                        `border-[var(--border-strong)] text-[var(--text-primary)] ${PRESS_TRAVEL_CLASS}`
                     )}
                   >
                     {iconControls ? (
@@ -1033,7 +1302,7 @@ function IdePageContent() {
                       onClick={handleStopRun}
                       aria-label={iconControls ? "Stop" : undefined}
                       title={iconControls ? "Stop" : undefined}
-                      className={`${ideButtonClass({
+                      className={`${ideButton({
                         danger: true,
                       })} ${iconControls ? "inline-flex min-w-11 items-center justify-center px-0" : "px-4"}`}
                     >
@@ -1059,7 +1328,7 @@ function IdePageContent() {
                           ? "Mode"
                           : undefined
                       }
-                      className={`${ideButtonClass({ compact: true })} ${
+                      className={`${ideButton({ compact: true })} ${
                         iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : ""
                       } ${studentModeLocked ? "cursor-not-allowed opacity-60" : ""}`}
                     >
@@ -1073,7 +1342,7 @@ function IdePageContent() {
                     <button
                       onClick={() => setShowLayoutOverlay(true)}
                       aria-label={iconControls ? "Layout" : undefined}
-                      className={`${ideButtonClass({ compact: true })} ${
+                      className={`${ideButton({ compact: true })} ${
                         iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : ""
                       }`}
                       title={iconControls ? "Layout" : currentLayoutMeta.short}
@@ -1089,7 +1358,7 @@ function IdePageContent() {
                       onClick={openTutorialPlaceholder}
                       aria-label={iconControls ? "Tutorials" : undefined}
                       title={iconControls ? "Tutorials" : undefined}
-                      className={`${ideButtonClass({ compact: true })} ${
+                      className={`${ideButton({ compact: true })} ${
                         iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : ""
                       }`}
                     >
@@ -1104,7 +1373,7 @@ function IdePageContent() {
                       onClick={handleTogglePython}
                       aria-label={iconControls ? pythonButtonLabel : undefined}
                       title={iconControls ? pythonButtonLabel : undefined}
-                      className={ideButtonClass({
+                      className={ideButton({
                         compact: true,
                         disabled: !generatedPythonAllowed,
                         active: generatedPythonAllowed && showPython,
@@ -1125,7 +1394,7 @@ function IdePageContent() {
                       onClick={() => setShowBottomPanel((prev) => !prev)}
                       aria-label={iconControls ? resultsButtonLabel : undefined}
                       title={iconControls ? resultsButtonLabel : undefined}
-                      className={ideButtonClass({
+                      className={ideButton({
                         compact: true,
                         active: showBottomPanel,
                       }) + (iconControls ? " inline-flex min-w-9 items-center justify-center px-2" : "")}
@@ -1145,7 +1414,7 @@ function IdePageContent() {
                     onClick={devVisionEnabled ? exitDevVision : openDevVisionPrompt}
                     aria-label={iconControls ? devVisionButtonLabel : undefined}
                     title={iconControls ? devVisionButtonLabel : undefined}
-                    className={`${ideButtonClass({
+                    className={`${ideButton({
                       compact: true,
                       active: devVisionEnabled,
                     })} ${iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : ""}`}
@@ -1163,7 +1432,7 @@ function IdePageContent() {
                     onClick={openUiBugReport}
                     aria-label={iconControls ? "Report Bug" : undefined}
                     title={iconControls ? "Report Bug" : undefined}
-                    className={`${ideButtonClass({ compact: true })} ${
+                    className={`${ideButton({ compact: true })} ${
                       iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : ""
                     }`}
                   >
@@ -1178,7 +1447,7 @@ function IdePageContent() {
                     href="/subscriptions"
                     aria-label={iconControls ? "Subscriptions" : undefined}
                     title={iconControls ? "Subscriptions" : undefined}
-                    className={`${ideButtonClass({ compact: true })} ${
+                    className={`${ideButton({ compact: true })} ${
                       iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : ""
                     }`}
                   >
@@ -1193,7 +1462,7 @@ function IdePageContent() {
                     onClick={handleSignOut}
                     aria-label={iconControls ? "Sign Out" : undefined}
                     title={iconControls ? "Sign Out" : undefined}
-                    className={`${ideButtonClass({ compact: true })} ${
+                    className={`${ideButton({ compact: true })} ${
                       iconControls ? "inline-flex min-w-9 items-center justify-center px-2" : ""
                     }`}
                   >
@@ -1211,13 +1480,11 @@ function IdePageContent() {
                         onClick={handleRun}
                         disabled={isRunning || !activeFile}
                         className={joinClasses(
-                          ideButtonClass({
+                          ideButton({
                             disabled: isRunning || !activeFile,
                           }),
                           "inline-flex items-center gap-2 px-3.5 py-2 text-[12px] font-semibold",
-                          !isRunning &&
-                            activeFile &&
-                            `${currentModeMeta.accentBorder} ${currentModeMeta.accentBg} ${"text-[var(--text-primary)]"}`
+                          !isRunning && activeFile && armedControlClass
                         )}
                       >
                         <MinimalControlIcon name="run" className="h-4 w-4" />
@@ -1228,7 +1495,7 @@ function IdePageContent() {
                         onClick={handleCheck}
                         disabled={isChecking || !activeFile}
                         className={joinClasses(
-                          ideButtonClass({
+                          ideButton({
                             disabled: isChecking || !activeFile,
                           }),
                           "inline-flex items-center gap-2 px-3.5 py-2 text-[12px] font-semibold"
@@ -1241,7 +1508,7 @@ function IdePageContent() {
                       {isRunning && (
                         <button
                           onClick={handleStopRun}
-                          className={`${ideButtonClass({
+                          className={`${ideButton({
                             danger: true,
                           })} inline-flex items-center gap-2 px-3.5 py-2 text-[12px] font-semibold`}
                         >
@@ -1265,16 +1532,20 @@ function IdePageContent() {
                             >
                               <span className={menuSymbolClass()}>{group.symbol}</span>
                               <span>{group.label}</span>
-                              <span className={`text-[10px] transition-transform ${active ? "rotate-180" : ""}`}>
+                              {/* The flip is the open/closed indicator, so the
+                                  rotation itself has to survive reduced motion
+                                  -- only the animation between the two states
+                                  is dropped. */}
+                              <span className={`text-[10px] transition-transform motion-reduce:transition-none ${active ? "rotate-180" : ""}`}>
                                 v
                               </span>
                             </button>
 
                             {active && (
                               <div
-                                className={`absolute right-0 top-11 z-[140] w-64 rounded-[1.1rem] border p-1.5 backdrop-blur-xl ${menuPanelClass}`}
+                                className={`absolute right-0 top-11 z-[140] w-64 ${MENU_PANEL_CLASS}`}
                               >
-                                <div className={`px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${sectionMetaClass}`}>
+                                <div className={`px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${sectionMetaClass}`}>
                                   {group.symbol} {group.label}
                                 </div>
                                 <div className="space-y-0.5">
@@ -1343,55 +1614,65 @@ function IdePageContent() {
 
             <div className="flex min-h-0 flex-1">
               <div className="flex min-w-0 flex-1 flex-col">
+                {/* The editor is the deepest well on the page: everything the
+                    student writes goes into it, so it takes the recess rather
+                    than any part of the raised chrome around it. */}
                 <div
                   ref={editorShellRef}
-                  className={`relative z-0 min-h-0 flex-1 overflow-hidden ${workspaceBgClass}`}
+                  className={`relative z-0 min-h-0 flex-1 overflow-hidden shadow-[var(--recessed)] ${workspaceBgClass}`}
                 >
                   {showEditorInspector && (
                     <div className="absolute right-3 top-3 z-20 hidden xl:block">
                       <button
                         onClick={() => setAnalysisOpen((prev) => !prev)}
-                        className={`${ideButtonClass({
+                        className={`${ideButton({
                           compact: true,
                           pill: true,
                           active: analysisOpen,
-                        })} mb-1.5 ml-auto flex items-center gap-1.5 ${isLight ? "bg-white/90" : "bg-[#0b0b0b]/80"} text-[10px]`}
+                        })} mb-1.5 ml-auto flex items-center gap-1.5 text-[10px]`}
                       >
                         <span>{analysisOpen ? "Hide analysis" : "Show analysis"}</span>
                         <span
-                          className={`transition-transform duration-300 ${analysisOpen ? "rotate-180" : "rotate-0"}`}
+                          className={`transition-transform duration-[var(--duration-slow)] motion-reduce:transition-none ${analysisOpen ? "rotate-180" : "rotate-0"}`}
                         >
                           ▾
                         </span>
                       </button>
 
+                      {/* A popover over the editor well, not part of it, so it
+                          floats clear of the surface it is annotating. */}
                       <div
-                        className={`origin-top-right overflow-hidden rounded-[1rem] border backdrop-blur-md transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                          isLight ? "border-slate-200 bg-white/92" : "border-white/[0.05] bg-[#090909]/72"
-                        } ${
+                        className={joinClasses(
+                          "origin-top-right overflow-hidden rounded-[var(--radius-lg)]",
+                          "border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)]",
+                          "shadow-[var(--floating)]",
+                          "transition-all duration-[var(--duration-slow)] ease-[var(--ease-spring)]",
+                          // The height and fade still carry the open/close;
+                          // only the zoom is dropped when motion is reduced.
+                          "motion-reduce:transform-none",
                           analysisOpen
                             ? "max-h-72 w-52 scale-100 opacity-100"
                             : "max-h-0 w-52 scale-95 opacity-0"
-                        }`}
+                        )}
                       >
                         <div className="p-2.5">
-                          <div className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
+                          <div className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                             Analysis summary
                           </div>
                           <div className="space-y-1.5">
                             <div className="flex items-center justify-between text-[11px]">
-                              <span className={softTextClass}>Executable lines</span>
+                              <span className={mutedTextClass}>Executable lines</span>
                               <span className={strongTextAltClass}>{editableLineCount}</span>
                             </div>
                             <div className="flex items-center justify-between text-[11px]">
-                              <span className={softTextClass}>Warnings</span>
-                              <span className="text-yellow-300">{diagnosticsSummary.warnings}</span>
+                              <span className={mutedTextClass}>Warnings</span>
+                              <span className="text-[var(--state-warning)]">{diagnosticsSummary.warnings}</span>
                             </div>
                             <div className="flex items-center justify-between text-[11px]">
-                              <span className={softTextClass}>Blocked</span>
-                              <span className="text-rose-300">{diagnosticsSummary.blocked}</span>
+                              <span className={mutedTextClass}>Blocked</span>
+                              <span className="text-[var(--state-blocked)]">{diagnosticsSummary.blocked}</span>
                             </div>
-                            <div className={`mt-1 rounded-[0.85rem] border px-2.5 py-2 text-[10px] leading-4.5 ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-white/[0.05] bg-black/25 text-neutral-400"}`}>
+                            <div className="mt-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-2.5 py-2 text-[10px] leading-4.5 text-[var(--text-muted)] shadow-[var(--inlaid)]">
                               {interpretationLines.length > 0
                                 ? "Semantic cues are folded into the editor header and diagnostics panel."
                                 : "Run Check to populate editor semantics and execution diagnostics."}
@@ -1437,19 +1718,22 @@ function IdePageContent() {
                       }}
                     />
                   ) : (
-                    <div className={`flex h-full items-center justify-center ${softTextClass}`}>
+                    <div className={`flex h-full items-center justify-center ${mutedTextClass}`}>
                       No file selected.
                     </div>
                   )}
 
+                  {/* Tone (and its shadow) comes from getDiagnosticToneClasses,
+                      so the popup below only sets its geometry -- a second
+                      shadow class would race the one the tone supplies. */}
                   {diagnosticPopup && selectedDiagnostic && (
                     <div
-                      className={`absolute z-30 w-[min(25rem,calc(100%-2rem))] rounded-[1.4rem] border-2 px-3.5 py-3 text-sm backdrop-blur-xl ${selectedDiagnosticTone.bubble}`}
+                      className={`absolute z-30 w-[min(25rem,calc(100%-2rem))] rounded-[var(--radius-xl)] border-2 px-3.5 py-3 text-[length:var(--text-sm)] ${selectedDiagnosticTone.bubble}`}
                       style={{ top: diagnosticPopup.top, left: diagnosticPopup.left }}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${selectedDiagnosticTone.accent}`}>
+                          <div className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${selectedDiagnosticTone.accent}`}>
                             {selectedDiagnostic.severity === "blocked" ? "Error" : "Warning"} on line{" "}
                             {diagnosticPopup.lineNumber}
                           </div>
@@ -1458,7 +1742,7 @@ function IdePageContent() {
                           </div>
                         </div>
                         <span
-                          className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${selectedDiagnosticTone.chip}`}
+                          className={`inline-flex shrink-0 items-center rounded-[var(--radius-full)] border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] shadow-[var(--inlaid)] ${selectedDiagnosticTone.chip}`}
                         >
                           {selectedDiagnostic.source === "problem" ? "Problem" : selectedDiagnostic.severity}
                         </span>
@@ -1469,7 +1753,7 @@ function IdePageContent() {
                       </div>
 
                       <div className="mt-3 space-y-1.5">
-                        <div className={`flex min-w-0 items-center rounded-[1rem] border px-3 py-2 text-[12px] leading-5 ${selectedDiagnosticTone.row}`}>
+                        <div className={`flex min-w-0 items-center rounded-[var(--radius-lg)] border px-3 py-2 text-[12px] leading-5 shadow-[var(--inlaid)] ${selectedDiagnosticTone.row}`}>
                           <span className="shrink-0 font-semibold">Specificity / Mode</span>
                           <span className="mx-1.5 shrink-0 opacity-50">|</span>
                           <span
@@ -1479,7 +1763,7 @@ function IdePageContent() {
                             {selectedDiagnostic.modeDetail || "Specificity n/a / Mode n/a"}
                           </span>
                         </div>
-                        <div className={`flex min-w-0 items-center rounded-[1rem] border px-3 py-2 text-[12px] leading-5 ${selectedDiagnosticTone.row}`}>
+                        <div className={`flex min-w-0 items-center rounded-[var(--radius-lg)] border px-3 py-2 text-[12px] leading-5 shadow-[var(--inlaid)] ${selectedDiagnosticTone.row}`}>
                           <span className="shrink-0 font-semibold">Structure</span>
                           <span className="mx-1.5 shrink-0 opacity-50">|</span>
                           <span
@@ -1492,8 +1776,8 @@ function IdePageContent() {
                       </div>
 
                       {selectedDiagnostic.suggestedFix ? (
-                        <div className={`mt-2 rounded-[1rem] border px-3 py-2 text-[12px] leading-5 ${selectedDiagnosticTone.row}`}>
-                          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]">
+                        <div className={`mt-2 rounded-[var(--radius-lg)] border px-3 py-2 text-[12px] leading-5 shadow-[var(--inlaid)] ${selectedDiagnosticTone.row}`}>
+                          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)]">
                             Suggested Fix
                           </div>
                           <div>{selectedDiagnostic.suggestedFix}</div>
@@ -1514,9 +1798,11 @@ function IdePageContent() {
                     ...protectedDarkSurfaceStyle,
                   }}
                 >
+                  {/* The drag handle is a track you grab, not a button: it
+                      stays flush and only changes value on hover. */}
                   <div
                     onMouseDown={() => setIsResizingTerminal(true)}
-                    className={`h-1.5 cursor-row-resize transition-colors duration-200 ${isLight ? "bg-slate-100 hover:bg-slate-200" : "bg-[#0a0a0a] hover:bg-neutral-800"}`}
+                    className="h-1.5 cursor-row-resize bg-[var(--surface-sunken)] transition-colors duration-[var(--duration-base)] hover:bg-[var(--accent-subtle)] active:bg-[var(--accent-border)]"
                   />
 
                   <div className="relative z-10 flex h-full flex-col px-4 py-3" style={protectedDarkSurfaceStyle}>
@@ -1555,12 +1841,12 @@ function IdePageContent() {
                                   ? `${tab === "visual" ? "Visual" : "Terminal"}${count > 0 ? ` (${count})` : ""}`
                                   : undefined
                               }
-                              className={`${ideButtonClass({
+                              className={`${ideButton({
                                 active,
                                 compact: true,
                                 pill: true,
                               })} ${
-                                iconControls ? "inline-flex min-w-10 items-center justify-center px-2" : "uppercase tracking-[0.18em]"
+                                iconControls ? "inline-flex min-w-10 items-center justify-center px-2" : "uppercase tracking-[var(--tracking-label)]"
                               }`}
                             >
                               {iconControls ? (
@@ -1590,7 +1876,7 @@ function IdePageContent() {
                         {isRunning && (
                           <div className={`ml-2 flex items-center gap-2 text-xs ${sectionMetaClass}`}>
                             <div
-                              className={`h-3 w-3 animate-spin rounded-full border border-neutral-700 ${currentModeMeta.terminalBorder}`}
+                              className={`h-3 w-3 animate-spin rounded-[var(--radius-full)] border border-[var(--border-strong)] ${currentModeMeta.terminalBorder}`}
                             />
                             <span>Streaming</span>
                           </div>
@@ -1598,7 +1884,9 @@ function IdePageContent() {
                       </div>
                     </div>
 
-                    <div className={`min-h-0 flex-1 overflow-hidden rounded-[1.1rem] border ${panelBorderClass} ${isLight ? "bg-slate-50" : "bg-[#050505]"}`}>
+                    {/* Output scrolls into this, so it is a well like the
+                        editor above it rather than a card on the panel. */}
+                    <div className={`min-h-0 flex-1 overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--surface-sunken)] shadow-[var(--recessed)] ${panelBorderClass}`}>
                       {activeBottomTab === "terminal" && (
                         <div className="flex h-full flex-col">
                           <div
@@ -1608,32 +1896,23 @@ function IdePageContent() {
                           >
                             <div className="min-w-0 space-y-2">
                               {terminalEntries.length === 0 ? (
-                                <div
-                                  className={`rounded-[0.95rem] border px-3 py-2.5 text-[13px] ${
-                                    isLight
-                                      ? "border-slate-200 bg-white text-slate-500"
-                                      : "border-neutral-900 bg-[#0d0d0d] text-neutral-500"
-                                  }`}
-                                >
+                                <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2.5 text-[13px] text-[var(--text-muted)] shadow-[var(--inlaid)]">
                                   Terminal output will appear here.
                                 </div>
                               ) : (
-                                terminalEntries.map((entry) =>
-                                  entry.stream === "runtime" ? (
+                                terminalEntries.map((entry) => {
+                                  const tone = TERMINAL_STREAM_TONES[entry.stream] ?? TERMINAL_STREAM_TONES.default;
+
+                                  return entry.stream === "runtime" ? (
+                                    // A marker rather than a message: it says a
+                                    // subprocess took over, and carries no text
+                                    // of its own, so it reads as a chip.
                                     <div
                                       key={entry.id}
-                                      className={`inline-flex w-fit items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                                        isLight
-                                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                          : "border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-200"
-                                      }`}
+                                      className={`inline-flex w-fit items-center gap-2 rounded-[var(--radius-full)] border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] shadow-[var(--inlaid)] ${tone.box} ${tone.text}`}
                                     >
                                       <span
-                                        className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] ${
-                                          isLight
-                                            ? "border-emerald-200 bg-white"
-                                            : "border-emerald-400/25 bg-emerald-400/[0.08]"
-                                        }`}
+                                        className={`flex h-5 w-5 items-center justify-center rounded-[var(--radius-full)] border text-[9px] ${tone.box}`}
                                         aria-label="Subprocess runtime"
                                       >
                                         {entry.symbol || "SP"}
@@ -1641,44 +1920,15 @@ function IdePageContent() {
                                       <span>{terminalStreamLabel(entry.stream)}</span>
                                     </div>
                                   ) : (
+                                    // Output blocks are set into the terminal
+                                    // well, so they are inlaid, never raised --
+                                    // nothing here is clickable.
                                     <div
                                       key={entry.id}
-                                      className={`rounded-[0.95rem] border ${
-                                        entry.stream === "stderr"
-                                          ? isLight
-                                            ? "border-rose-200 bg-rose-50"
-                                            : "border-rose-500/20 bg-rose-500/[0.06]"
-                                          : entry.stream === "explanation"
-                                          ? isLight
-                                            ? "border-amber-200 bg-amber-50"
-                                            : "border-amber-500/20 bg-amber-500/[0.06]"
-                                          : entry.stream === "stdout"
-                                          ? isLight
-                                            ? "border-sky-200 bg-white"
-                                            : "border-sky-500/15 bg-sky-500/[0.04]"
-                                          : isLight
-                                          ? "border-slate-200 bg-white"
-                                          : "border-neutral-900 bg-[#0d0d0d]"
-                                      }`}
+                                      className={`rounded-[var(--radius-md)] border shadow-[var(--inlaid)] ${tone.box}`}
                                     >
                                       <div
-                                        className={`flex items-center justify-between border-b px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                                          entry.stream === "stderr"
-                                            ? isLight
-                                              ? "border-rose-200 text-rose-700"
-                                              : "border-rose-500/15 text-rose-200"
-                                            : entry.stream === "explanation"
-                                            ? isLight
-                                              ? "border-amber-200 text-amber-700"
-                                              : "border-amber-500/15 text-amber-200"
-                                            : entry.stream === "stdout"
-                                            ? isLight
-                                              ? "border-sky-100 text-sky-700"
-                                              : "border-sky-500/10 text-sky-200"
-                                            : isLight
-                                            ? "border-slate-200 text-slate-500"
-                                            : "border-neutral-900 text-neutral-500"
-                                        }`}
+                                        className={`flex items-center justify-between border-b px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${tone.box} ${tone.text}`}
                                       >
                                         <span>{terminalStreamLabel(entry.stream)}</span>
                                         <span>{entry.text.split(/\r?\n/).filter(Boolean).length || 1} line</span>
@@ -1690,14 +1940,14 @@ function IdePageContent() {
                                         {entry.text}
                                       </pre>
                                     </div>
-                                  )
-                                )
+                                  );
+                                })
                               )}
                             </div>
                           </div>
 
                           {inputPrompt && (
-                            <div className={`border-t p-2.5 ${panelBorderClass} ${isLight ? "bg-white" : "bg-[#090909]"}`}>
+                            <div className={`border-t bg-[var(--surface-raised)] p-2.5 ${panelBorderClass}`}>
                               <div className={`mb-1.5 text-[11px] ${sectionMetaClass}`}>
                                 Awaiting input{inputPrompt ? `: ${inputPrompt}` : "."}
                               </div>
@@ -1708,14 +1958,14 @@ function IdePageContent() {
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter") handleSendTerminalInput();
                                   }}
-                                  className={`flex-1 rounded-[0.95rem] px-3 py-2 text-[13px] outline-none transition-colors ${inputSurfaceClass} ${"focus:border-[var(--accent-solid)]"}`}
+                                  className={`flex-1 rounded-[var(--radius-md)] px-3 py-2 text-[13px] outline-none transition-[border-color,box-shadow] duration-[var(--duration-fast)] focus:border-[var(--accent-solid)] ${inputSurfaceClass}`}
                                   placeholder="Type input for the running program..."
                                 />
                                 <button
                                   onClick={handleSendTerminalInput}
                                   aria-label={iconControls ? "Send input" : undefined}
                                   title={iconControls ? "Send input" : undefined}
-                                  className={`${ideButtonClass()} rounded-[0.95rem] px-3 py-2 ${
+                                  className={`${ideButton()} rounded-[var(--radius-md)] px-3 py-2 ${
                                     iconControls ? "inline-flex min-w-10 items-center justify-center" : ""
                                   }`}
                                 >
@@ -1734,20 +1984,23 @@ function IdePageContent() {
                       {activeBottomTab === "visual" && (
                         <div className="h-full overflow-auto p-3">
                           {visualArtifacts.length === 0 ? (
-                            <div className={`rounded-[1rem] border px-3 py-2.5 text-sm ${isLight ? "border-slate-200 bg-white text-slate-500" : "border-neutral-900 bg-[#0d0d0d] text-neutral-600"}`}>
+                            <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2.5 text-[length:var(--text-sm)] text-[var(--text-muted)] shadow-[var(--inlaid)]">
                               No visual output yet. Plots, images, tables, and HTML will appear here.
                             </div>
                           ) : (
                             <div className="grid gap-3 md:grid-cols-2">
+                              {/* Each artifact is a card lying in the results
+                                  well -- something produced, not something to
+                                  press, so it rests without a hover lift. */}
                               {visualArtifacts.map((artifact) => (
                                 <div
                                   key={`${artifact.source}-${artifact.name}`}
-                                  className={`overflow-hidden rounded-[1rem] border ${isLight ? "border-slate-200 bg-white" : "border-neutral-900 bg-[#0d0d0d]"}`}
+                                  className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised)]"
                                 >
-                                  <div className={`flex items-center justify-between border-b px-3 py-2 text-[11px] ${panelBorderClass} ${softTextClass}`}>
+                                  <div className={`flex items-center justify-between border-b px-3 py-2 text-[11px] ${panelBorderClass} ${mutedTextClass}`}>
                                     <div className="flex min-w-0 items-center gap-2">
                                       <span className="truncate">{artifact.label}</span>
-                                      <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${isLight ? "border-slate-200 bg-slate-50 text-slate-500" : "border-neutral-800 bg-[#090909] text-neutral-500"}`}>
+                                      <span className={`rounded-[var(--radius-full)] border px-2 py-0.5 text-[10px] uppercase tracking-[var(--tracking-label)] ${CHIP_CLASS}`}>
                                         {artifact.source}
                                       </span>
                                     </div>
@@ -1755,14 +2008,14 @@ function IdePageContent() {
                                       href={artifact.url}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className={currentModeMeta.accentText}
+                                      className={`transition-colors duration-[var(--duration-fast)] hover:text-[var(--text-primary)] ${currentModeMeta.accentText}`}
                                     >
                                       Open
                                     </a>
                                   </div>
 
                                   {artifactErrors[artifact.name] ? (
-                                    <div className="p-4 text-sm text-rose-300">
+                                    <div className="p-[var(--space-4)] text-[length:var(--text-sm)] text-[var(--state-blocked)]">
                                       Could not load this artifact in-window.
                                     </div>
                                   ) : (
@@ -1786,61 +2039,70 @@ function IdePageContent() {
 
               {showProblemPanel && (
                 <div
-                  className={`relative isolate overflow-hidden border-l transition-all duration-500 ease-in-out ${
-                    isLight
-                      ? "border-slate-200 bg-white"
-                      : "border-neutral-900 bg-[#070707]"
-                  } ${problemPanelOpen ? "w-[19.5rem] opacity-100" : "w-[3.25rem] opacity-100"}`}
+                  className={`relative isolate overflow-hidden border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] transition-all duration-500 ease-in-out ${
+                    problemPanelOpen ? "w-[19.5rem] opacity-100" : "w-[3.25rem] opacity-100"
+                  }`}
                   style={{ ...modePanelGlowStyle, ...protectedDarkSurfaceStyle }}
                 >
                   <div className="relative z-10 flex h-full min-w-[3.25rem]">
+                    {/* The spine is the panel's own handle: a full-height
+                        control, so it presses in rather than travelling -- a
+                        1px drop on something this tall reads as a glitch. */}
                     <button
                       onClick={() => setProblemPanelOpen((prev) => !prev)}
-                      className={`group relative flex w-[3.25rem] shrink-0 items-center justify-center border-r text-[10px] font-semibold uppercase tracking-[0.24em] transition-colors duration-300 ${
-                        isLight
-                          ? "border-amber-200 bg-[linear-gradient(180deg,rgba(251,191,36,0.14),rgba(255,255,255,0.96)_30%,rgba(248,250,252,0.98))] text-amber-700 hover:bg-[linear-gradient(180deg,rgba(245,158,11,0.18),rgba(255,255,255,1)_30%,rgba(241,245,249,1))]"
-                          : "border-amber-400/15 bg-[linear-gradient(180deg,rgba(245,158,11,0.1),rgba(8,8,8,0.03)_28%,rgba(8,8,8,0.92))] text-amber-200 hover:bg-[linear-gradient(180deg,rgba(245,158,11,0.15),rgba(8,8,8,0.06)_28%,rgba(8,8,8,0.96))]"
-                      }`}
+                      className={joinClasses(
+                        "group relative flex w-[3.25rem] shrink-0 items-center justify-center border-r",
+                        "border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)]",
+                        "bg-[var(--state-warning-subtle)] bg-[image:var(--material-sheen)]",
+                        "text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] text-[var(--state-warning)]",
+                        "shadow-[var(--raised)] transition-[background-color,box-shadow] duration-[var(--duration-base)]",
+                        // Hover answers in colour, not in depth. --lifted is
+                        // the shading of an object that has actually moved, and
+                        // this one deliberately does not move (see above), so
+                        // pairing them gave the spine a bigger shadow while it
+                        // stood still -- which is exactly what reads as a glow
+                        // rather than a lift. pricingCardHoverClass in
+                        // use-ide-state names the same trap from the other
+                        // side. Deepening the warning wash is how the other
+                        // non-travelling controls in this app answer the
+                        // cursor.
+                        "hover:bg-[color-mix(in_srgb,var(--state-warning)_16%,transparent)]",
+                        "active:shadow-[var(--pressed)]"
+                      )}
+                      aria-expanded={problemPanelOpen}
                       aria-label={problemPanelOpen ? "Collapse problem panel" : "Expand problem panel"}
                     >
-                      <div className="pointer-events-none absolute inset-y-0 left-0 w-px bg-amber-300/40" />
                       <span className="-rotate-90 whitespace-nowrap">Problem</span>
                     </button>
 
                       <div
-                        className={`min-w-0 flex-1 overflow-hidden transition-all duration-300 ${
+                        className={`min-w-0 flex-1 overflow-hidden transition-all duration-[var(--duration-slow)] ${
                           problemPanelOpen ? "opacity-100" : "opacity-0"
                         }`}
                         style={protectedDarkSurfaceStyle}
                       >
                         <div className="flex h-full flex-col">
                           <div
-                            className={`border-b px-3.5 py-2.5 ${
-                              isLight
-                                ? "border-slate-200 bg-slate-50"
-                                : "border-neutral-900 bg-[#090909]"
-                            }`}
+                            className="border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-3.5 py-2.5"
                             style={{ ...modeBarGlowStyle, ...protectedDarkSurfaceStyle }}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <div
-                                  className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                    "text-[var(--text-soft)]"
-                                  }`}
+                                  className="text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]"
                                   style={protectedDarkLabelStyle}
                                 >
                                   Problem Context
                                 </div>
                                 <div
-                                  className={`mt-0.5 text-[11px] ${"text-[var(--text-soft)]"}`}
+                                  className="mt-0.5 text-[11px] text-[var(--text-muted)]"
                                   style={protectedDarkMetaStyle}
                                 >
                                   Quiet alignment checks for the active solution
                                 </div>
                               </div>
                             <div
-                              className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${getProblemStatusClass(problemPanelStatus, theme)}`}
+                              className={`rounded-[var(--radius-full)] border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] shadow-[var(--inlaid)] ${getProblemStatusClass(problemPanelStatus, theme)}`}
                             >
                               {normalizedProblemStatement
                                 ? getProblemStatusLabel(problemPanelStatus)
@@ -1853,13 +2115,13 @@ function IdePageContent() {
                           <div className="space-y-3">
                             <div>
                               <div
-                                className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                  "text-[var(--text-soft)]"
-                                }`}
+                                className={PANEL_LABEL_CLASS}
                                 style={protectedDarkLabelStyle}
                               >
                                 Problem Input
                               </div>
+                              {/* The one place in this panel that takes typing,
+                                  so the one place that is recessed. */}
                               <textarea
                                 value={problemStatement}
                                 onChange={(e) => {
@@ -1868,66 +2130,46 @@ function IdePageContent() {
                                 }}
                                 placeholder="Paste the coding prompt, algorithm question, or structured task here..."
                                 rows={10}
-                                className={`min-h-[9.5rem] w-full resize-none rounded-[1.05rem] border px-3 py-2.5 text-[13px] leading-6 outline-none transition-all focus:ring-1 focus:ring-amber-400/20 ${
-                                  isLight
-                                    ? "border-slate-200 bg-[#f8fafc] text-slate-900 placeholder:text-slate-400 focus:border-amber-300"
-                                    : "border-neutral-800 bg-[#080808] text-white placeholder:text-neutral-600 focus:border-amber-400/35"
-                                }`}
+                                className={`min-h-[9.5rem] w-full resize-none rounded-[var(--radius-lg)] px-3 py-2.5 text-[13px] leading-6 outline-none transition-[border-color,box-shadow] duration-[var(--duration-fast)] focus:border-[var(--accent-solid)] ${inputSurfaceClass}`}
                               />
                             </div>
 
-                            <div
-                              className={`rounded-[1.05rem] border p-3 ${
-                                isLight
-                                  ? "border-slate-200 bg-[#f8fafc]"
-                                  : "border-white/[0.05] bg-white/[0.015]"
-                              }`}
-                            >
+                            <div className={PANEL_CARD_CLASS}>
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                   <div
-                                    className={`mb-1 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                      "text-[var(--text-soft)]"
-                                    }`}
+                                    className={PANEL_LABEL_CLASS}
                                     style={protectedDarkLabelStyle}
                                   >
                                     Goal Summary
                                   </div>
                                   <div
-                                    className={`text-[13px] leading-5 ${isLight ? "text-slate-700" : "text-neutral-200"}`}
-                                    style={!isLight ? protectedDarkMetaStyle : undefined}
+                                    className="text-[13px] leading-5 text-[var(--text-muted)]"
+                                    style={protectedDarkMetaStyle}
                                   >
                                     {problemGoalSummary}
                                   </div>
                                 </div>
                                 <div
-                                  className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getProblemStatusClass(problemPanelStatus, theme)}`}
+                                  className={`inline-flex items-center gap-2 rounded-[var(--radius-full)] border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] shadow-[var(--inlaid)] ${getProblemStatusClass(problemPanelStatus, theme)}`}
                                 >
-                                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                                  <span className="h-1.5 w-1.5 rounded-[var(--radius-full)] bg-current" />
                                   {normalizedProblemStatement
                                     ? getProblemStatusLabel(problemPanelStatus)
                                     : "Awaiting Problem"}
                                 </div>
                               </div>
                               <div
-                                className={`mt-2 text-[11px] ${"text-[var(--text-soft)]"}`}
+                                className="mt-2 text-[11px] text-[var(--text-muted)]"
                                 style={protectedDarkMetaStyle}
                               >
                                 Updates on Check or Run
                               </div>
                             </div>
 
-                            <div
-                              className={`rounded-[1.05rem] border p-3 ${
-                                isLight
-                                  ? "border-slate-200 bg-[#f8fafc]"
-                                  : "border-white/[0.05] bg-white/[0.015]"
-                              }`}
-                            >
+                            <div className={PANEL_CARD_CLASS}>
                               <div
-                                className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                  "text-[var(--text-soft)]"
-                                }`}
+                                className={PANEL_LABEL_CLASS}
                                 style={protectedDarkLabelStyle}
                               >
                                 Issues / Hints
@@ -1937,16 +2179,12 @@ function IdePageContent() {
                                   {problemIssues.map((issue, index) => (
                                     <div
                                       key={`${issue.kind}-${index}-${issue.message}`}
-                                      className={`rounded-[0.9rem] border px-3 py-2 text-[13px] leading-5 ${
-                                        isLight
-                                          ? "border-slate-200 bg-white text-slate-700"
-                                          : "border-neutral-900 bg-black/20 text-neutral-300"
-                                      }`}
+                                      className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-[13px] leading-5 text-[var(--text-muted)] shadow-[var(--inlaid)]"
                                     >
                                       {issue.line_number ? `Line ${issue.line_number}: ` : ""}
                                       {issue.message}
                                       {issue.suggested_fix ? (
-                                        <div className={`mt-1 text-[12px] ${isLight ? "text-slate-500" : "text-neutral-400"}`}>
+                                        <div className="mt-1 text-[12px] text-[var(--text-muted)]">
                                           Fix: {issue.suggested_fix}
                                         </div>
                                       ) : null}
@@ -1955,7 +2193,7 @@ function IdePageContent() {
                                 </div>
                               ) : (
                                 <div
-                                  className={`text-[13px] leading-5 ${"text-[var(--text-soft)]"}`}
+                                  className="text-[13px] leading-5 text-[var(--text-muted)]"
                                   style={protectedDarkMetaStyle}
                                 >
                                   {normalizedProblemStatement
@@ -1968,9 +2206,7 @@ function IdePageContent() {
                             {problemAlignment?.problem_model?.explicit_constraints?.length ? (
                               <div>
                               <div
-                                className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${
-                                  "text-[var(--text-soft)]"
-                                }`}
+                                className={PANEL_LABEL_CLASS}
                                 style={protectedDarkLabelStyle}
                               >
                                 Constraints
@@ -1979,13 +2215,11 @@ function IdePageContent() {
                                   {problemAlignment.problem_model.explicit_constraints
                                     .slice(0, 3)
                                     .map((constraint, index) => (
+                                      // Warning tone: a constraint is something
+                                      // to keep an eye on, not something wrong.
                                       <div
                                         key={`${constraint}-${index}`}
-                                        className={`rounded-full border px-2.5 py-0.5 text-[10px] ${
-                                          isLight
-                                            ? "border-amber-200 bg-amber-50 text-amber-700"
-                                            : "border-amber-400/15 bg-amber-500/[0.06] text-amber-100/90"
-                                        }`}
+                                        className="rounded-[var(--radius-full)] border border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)] bg-[var(--state-warning-subtle)] px-2.5 py-0.5 text-[10px] text-[var(--state-warning)] shadow-[var(--inlaid)]"
                                       >
                                         {constraint}
                                       </div>
@@ -2002,7 +2236,7 @@ function IdePageContent() {
               )}
 
               <div
-                className={`overflow-hidden border-l transition-all duration-500 ease-in-out ${panelBorderClass} ${isLight ? "bg-white" : "bg-[#070707]"} ${
+                className={`overflow-hidden border-l bg-[var(--surface-raised)] transition-all duration-500 ease-in-out ${panelBorderClass} ${
                   showPython
                     ? developerExpanded
                       ? "w-[35%] opacity-100"
@@ -2015,12 +2249,12 @@ function IdePageContent() {
                   style={{ ...modeBarGlowStyle, ...protectedDarkSurfaceStyle }}
                 >
                   <div
-                    className={`relative z-10 flex items-center justify-between border-b px-4 py-2.5 text-[11px] ${panelBorderClass} ${isLight ? "bg-slate-50 text-slate-500" : "bg-[#101010] text-neutral-200"}`}
+                    className={`relative z-10 flex items-center justify-between border-b bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-4 py-2.5 text-[11px] text-[var(--text-muted)] ${panelBorderClass}`}
                     style={{ ...modeBarGlowStyle, ...protectedDarkSurfaceStyle }}
                   >
                     <div>
                       <div
-                        className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${sectionLabelClass}`}
+                        className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${sectionMetaClass}`}
                         style={protectedDarkLabelStyle}
                       >
                         Generated Python
@@ -2057,31 +2291,27 @@ function IdePageContent() {
               </div>
 
               <div
-                className={`overflow-hidden border-l transition-all duration-500 ease-in-out ${panelBorderClass} ${
-                  isLight ? "bg-white" : "bg-[#060606]"
-                } ${devVisionEnabled ? (developerExpanded ? "w-[26rem] opacity-100" : "w-[24rem] opacity-100") : "w-0 opacity-0"}`}
+                className={`overflow-hidden border-l bg-[var(--surface-raised)] transition-all duration-500 ease-in-out ${panelBorderClass} ${
+                  devVisionEnabled ? (developerExpanded ? "w-[26rem] opacity-100" : "w-[24rem] opacity-100") : "w-0 opacity-0"
+                }`}
               >
                 <div className="flex h-full min-w-[360px] flex-col">
-                  <div
-                    className={`border-b px-4 py-3 ${
-                      isLight ? "border-slate-200 bg-slate-50" : "border-neutral-900 bg-[#090909]"
-                    }`}
-                  >
+                  <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
+                        <div className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                           Dev Vision
                         </div>
                         <div className={`mt-1 text-[13px] ${strongTextAltClass}`}>
                           Locked debugging telemetry
                         </div>
-                        <div className={`mt-0.5 text-[11px] ${softTextClass}`}>
+                        <div className={`mt-0.5 text-[11px] ${mutedTextClass}`}>
                           This panel stays open until Dev Vision is exited.
                         </div>
                       </div>
                       <button
                         onClick={exitDevVision}
-                        className={`${ideButtonClass({ compact: true, pill: true })} shrink-0`}
+                        className={`${ideButton({ compact: true, pill: true })} shrink-0`}
                       >
                         Exit
                       </button>
@@ -2091,22 +2321,18 @@ function IdePageContent() {
                   <div className="flex-1 overflow-y-auto px-3 py-3">
                     <div className="space-y-3">
                       <div
-                        className={`rounded-[1.05rem] border p-3 ${
-                          "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
-                        }`}
+                        className={PANEL_CARD_CLASS}
                       >
-                        <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
+                        <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                           Run Metrics
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           {checkMetrics.map((metric) => (
                             <div
                               key={metric.label}
-                              className={`rounded-[0.95rem] border px-3 py-2 ${
-                                "border-[var(--border-subtle)] bg-[var(--surface-raised)]"
-                              }`}
+                              className={PANEL_ROW_CLASS}
                             >
-                              <div className={`text-[10px] uppercase tracking-[0.18em] ${softTextClass}`}>
+                              <div className={`text-[10px] uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                                 {metric.label}
                               </div>
                               <div className={`mt-1 text-[13px] font-medium ${strongTextAltClass}`}>
@@ -2118,35 +2344,31 @@ function IdePageContent() {
                       </div>
 
                       <div
-                        className={`rounded-[1.05rem] border p-3 ${
-                          "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
-                        }`}
+                        className={PANEL_CARD_CLASS}
                       >
-                        <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
+                        <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                           Pipeline Timing
                         </div>
                         <div className="space-y-2">
                           {(devMetrics?.steps || []).length === 0 ? (
-                            <div className={`rounded-[0.95rem] border px-3 py-2 text-[12px] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
+                            <div className={`${PANEL_ROW_CLASS} text-[12px]`}>
                               Run the file to populate step timings.
                             </div>
                           ) : (
                             (devMetrics?.steps || []).map((step) => (
                               <div
                                 key={step.key}
-                                className={`rounded-[0.95rem] border px-3 py-2 ${
-                                  "border-[var(--border-subtle)] bg-[var(--surface-raised)]"
-                                }`}
+                                className={PANEL_ROW_CLASS}
                               >
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
                                     <div className={`text-[13px] ${strongTextAltClass}`}>{step.label}</div>
-                                    <div className={`mt-0.5 text-[11px] ${softTextClass}`}>
+                                    <div className={`mt-0.5 text-[11px] ${mutedTextClass}`}>
                                       {formatDurationMs(step.duration_ms)}
                                     </div>
                                   </div>
                                   <div
-                                    className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${getDevStepStatusClass(step.status, theme)}`}
+                                    className={`rounded-[var(--radius-full)] border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] shadow-[var(--inlaid)] ${getDevStepStatusClass(step.status, theme)}`}
                                   >
                                     {step.status}
                                   </div>
@@ -2158,16 +2380,14 @@ function IdePageContent() {
                       </div>
 
                       <div
-                        className={`rounded-[1.05rem] border p-3 ${
-                          "border-[var(--border-subtle)] bg-[var(--surface-sunken)]"
-                        }`}
+                        className={PANEL_CARD_CLASS}
                       >
-                        <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] ${softTextClass}`}>
+                        <div className={`mb-2 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                           Line-by-Line Intent
                         </div>
                         <div className="space-y-2">
                           {resolvedInterpretationLines.length === 0 ? (
-                            <div className={`rounded-[0.95rem] border px-3 py-2 text-[12px] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
+                            <div className={`${PANEL_ROW_CLASS} text-[12px]`}>
                               No interpretation data yet.
                             </div>
                           ) : (
@@ -2180,21 +2400,19 @@ function IdePageContent() {
                               return (
                                 <div
                                   key={`${line.resolvedLineNumber || index}-${line.raw}`}
-                                  className={`rounded-[0.95rem] border px-3 py-2 ${
-                                    "border-[var(--border-subtle)] bg-[var(--surface-raised)]"
-                                  }`}
+                                  className={PANEL_ROW_CLASS}
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                       <div className={`text-[13px] ${strongTextAltClass}`}>
                                         Line {line.resolvedLineNumber || index + 1}
                                       </div>
-                                      <div className={`mt-0.5 text-[11px] ${softTextClass}`}>
+                                      <div className={`mt-0.5 text-[11px] ${mutedTextClass}`}>
                                         {line.raw}
                                       </div>
                                     </div>
                                     <div
-                                      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${validationSeverityClass(
+                                      className={`rounded-[var(--radius-full)] border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] shadow-[var(--inlaid)] ${validationSeverityClass(
                                         severity,
                                       )}`}
                                     >
@@ -2207,38 +2425,38 @@ function IdePageContent() {
                                   </div>
 
                                   <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
-                                      <div className="uppercase tracking-[0.16em]">Mode Specificity</div>
+                                    <div className={PANEL_SUBROW_CLASS}>
+                                      <div className="uppercase tracking-[var(--tracking-label)]">Mode Specificity</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
-                                      <div className="uppercase tracking-[0.16em]">Raw Specificity</div>
+                                    <div className={PANEL_SUBROW_CLASS}>
+                                      <div className="uppercase tracking-[var(--tracking-label)]">Raw Specificity</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.raw_specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
-                                      <div className="uppercase tracking-[0.16em]">Strict Score</div>
+                                    <div className={PANEL_SUBROW_CLASS}>
+                                      <div className="uppercase tracking-[var(--tracking-label)]">Strict Score</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.strict_specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
-                                      <div className="uppercase tracking-[0.16em]">Structure Score</div>
+                                    <div className={PANEL_SUBROW_CLASS}>
+                                      <div className="uppercase tracking-[var(--tracking-label)]">Structure Score</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.structure_specificity_score)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
-                                      <div className="uppercase tracking-[0.16em]">Mode Struct Penalty</div>
+                                    <div className={PANEL_SUBROW_CLASS}>
+                                      <div className="uppercase tracking-[var(--tracking-label)]">Mode Struct Penalty</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(line.structure_penalty)}
                                       </div>
                                     </div>
-                                    <div className={`rounded-[0.8rem] border px-2.5 py-2 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
-                                      <div className="uppercase tracking-[0.16em]">Intent Confidence</div>
+                                    <div className={PANEL_SUBROW_CLASS}>
+                                      <div className="uppercase tracking-[var(--tracking-label)]">Intent Confidence</div>
                                       <div className={`mt-1 text-[12px] ${strongTextAltClass}`}>
                                         {formatScore(confidence)}
                                       </div>
@@ -2247,21 +2465,19 @@ function IdePageContent() {
 
                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                     <div
-                                      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${getCompatibilityClass(strictStatus, theme)}`}
+                                      className={`rounded-[var(--radius-full)] border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] shadow-[var(--inlaid)] ${getCompatibilityClass(strictStatus, theme)}`}
                                     >
                                       Strict Compatibility {strictStatus || "n/a"}
                                     </div>
                                     <div
-                                      className={`rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] ${
-                                        isLight ? "border-slate-200 bg-white text-slate-600" : "border-neutral-800 bg-[#090909] text-neutral-400"
-                                      }`}
+                                      className={`rounded-[var(--radius-full)] border px-2.5 py-0.5 text-[10px] uppercase tracking-[var(--tracking-label)] ${CHIP_CLASS}`}
                                     >
                                       Strict Struct Penalty {formatScore(line.strict_structure_penalty)}
                                     </div>
                                   </div>
 
                                   {(line.intent?.target || line.intent?.value_or_source || line.intent?.context) && (
-                                    <div className={`mt-2 rounded-[0.8rem] border px-2.5 py-2 text-[11px] leading-5 ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"}`}>
+                                    <div className={`mt-2 text-[11px] leading-5 ${PANEL_SUBROW_CLASS}`}>
                                       <div>Target: {line.intent?.target || "n/a"}</div>
                                       <div>Source: {line.intent?.value_or_source || "n/a"}</div>
                                       <div>Context: {line.intent?.context || "n/a"}</div>
@@ -2269,31 +2485,31 @@ function IdePageContent() {
                                   )}
 
                                   {line.specificity_reasoning && (
-                                    <div className={`mt-2 text-[11px] leading-5 ${softTextClass}`}>
+                                    <div className={`mt-2 text-[11px] leading-5 ${mutedTextClass}`}>
                                       Mode note: {line.specificity_reasoning}
                                     </div>
                                   )}
 
+                                  {/* Warning tone only when the model actually
+                                      flagged a logic risk; plain feedback stays
+                                      neutral so the amber keeps its meaning. */}
                                   {(line.ai_message || line.logic_risk || line.suggested_fix || line.generated_code_excerpt) && (
                                     <div
-                                      className={`mt-2 rounded-[0.8rem] border px-2.5 py-2 text-[11px] leading-5 ${
+                                      className={joinClasses(
+                                        "mt-2 rounded-[var(--radius-sm)] border px-2.5 py-2 text-[11px] leading-5 shadow-[var(--inlaid)]",
                                         line.logic_risk
-                                          ? isLight
-                                            ? "border-amber-200 bg-amber-50 text-amber-800"
-                                            : "border-amber-500/20 bg-amber-500/[0.06] text-amber-100"
-                                          : isLight
-                                          ? "border-slate-200 bg-slate-50 text-slate-600"
-                                          : "border-neutral-800 bg-[#0a0a0a] text-neutral-300"
-                                      }`}
+                                          ? "border-[color-mix(in_srgb,var(--state-warning)_30%,transparent)] bg-[var(--state-warning-subtle)] text-[var(--state-warning)]"
+                                          : "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"
+                                      )}
                                     >
-                                      <div className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${softTextClass}`}>
+                                      <div className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                                         AI Line Feedback
                                       </div>
                                       {line.ai_message && <div className="mt-1">{line.ai_message}</div>}
                                       {line.logic_risk && <div className="mt-1">Logic risk: {line.logic_risk}</div>}
                                       {line.suggested_fix && <div className="mt-1">Fix: {line.suggested_fix}</div>}
                                       {line.generated_code_excerpt && (
-                                        <code className="mt-2 block whitespace-pre-wrap rounded-[0.65rem] bg-black/10 px-2 py-1 font-mono text-[10px]">
+                                        <code className="mt-2 block whitespace-pre-wrap rounded-[var(--radius-sm)] bg-[var(--surface-page)] px-2 py-1 font-mono text-[10px] text-[var(--text-primary)] shadow-[var(--recessed)]">
                                           {line.generated_code_excerpt}
                                         </code>
                                       )}
@@ -2302,25 +2518,25 @@ function IdePageContent() {
 
                                   {line.raw_specificity_reasoning &&
                                   line.raw_specificity_reasoning !== line.specificity_reasoning ? (
-                                    <div className={`mt-2 text-[11px] leading-5 ${softTextClass}`}>
+                                    <div className={`mt-2 text-[11px] leading-5 ${mutedTextClass}`}>
                                       Raw note: {line.raw_specificity_reasoning}
                                     </div>
                                   ) : null}
 
                                   {line.structure_reasoning ? (
-                                    <div className={`mt-2 text-[11px] leading-5 ${softTextClass}`}>
+                                    <div className={`mt-2 text-[11px] leading-5 ${mutedTextClass}`}>
                                       Structure note: {line.structure_reasoning}
                                     </div>
                                   ) : null}
 
                                   {line.strict_specificity_reasoning &&
                                   line.strict_specificity_reasoning !== line.specificity_reasoning ? (
-                                    <div className={`mt-2 text-[11px] leading-5 ${softTextClass}`}>
+                                    <div className={`mt-2 text-[11px] leading-5 ${mutedTextClass}`}>
                                       Strict note: {line.strict_specificity_reasoning}
                                     </div>
                                   ) : null}
 
-                                  <div className={`mt-2 text-[11px] leading-5 ${softTextClass}`}>
+                                  <div className={`mt-2 text-[11px] leading-5 ${mutedTextClass}`}>
                                     Diagnostic: {line.message}
                                   </div>
                                 </div>
@@ -2338,8 +2554,23 @@ function IdePageContent() {
         </div>
       </div>
 
+      {/*
+       * inert while closed.
+       *
+       * This overlay is never unmounted -- it is faded out and set to
+       * pointer-events-none instead, so the open/close can transition. But
+       * pointer-events and opacity are both purely visual: every control inside
+       * stayed in the tab order and in the accessibility tree while invisible,
+       * so tabbing through the IDE dropped focus into a dialog nobody could see
+       * -- including, here, an autoFocus password input.
+       *
+       * inert is the one attribute that removes a subtree from focus AND from
+       * assistive tech, which is exactly the state "closed but still mounted"
+       * is meant to be.
+       */}
       <div
-        className={`absolute inset-0 z-[130] transition-all duration-300 ${
+        inert={!showDevVisionPrompt}
+        className={`absolute inset-0 z-[130] transition-all duration-[var(--duration-slow)] ${
           showDevVisionPrompt ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
@@ -2351,28 +2582,25 @@ function IdePageContent() {
             setDevVisionPassword("");
             setDevVisionError("");
           }}
-          className={`absolute inset-0 ${
-            isLight ? "bg-white/65 backdrop-blur-sm" : "bg-black/70 backdrop-blur-sm"
-          }`}
+          className="absolute inset-0 bg-[var(--surface-overlay)]"
         />
 
         <div
-          className={`absolute inset-0 flex items-center justify-center px-6 transition-all duration-300 ${
+          className={`absolute inset-0 flex items-center justify-center px-6 transition-all duration-[var(--duration-slow)] motion-reduce:transform-none ${
             showDevVisionPrompt ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"
           }`}
         >
           <div
-            className={`relative w-full max-w-md rounded-[1.75rem] border p-5 ${
-              isLight
-                ? "border-slate-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.14)]"
-                : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] shadow-[0_30px_90px_rgba(0,0,0,0.55)]"
-            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Developer access required"
+            className={`relative w-full max-w-md p-5 ${MODAL_SURFACE_CLASS}`}
           >
-            <div className={`text-[10px] font-semibold uppercase tracking-[0.24em] ${softTextClass}`}>
+            <div className={`text-[10px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
               Dev Vision
             </div>
             <div className={`mt-2 text-[20px] ${PAGE_HEADING_CLASS} ${strongTextClass}`}>Developer access required</div>
-            <div className={`mt-1 text-[13px] leading-6 ${softTextClass}`}>
+            <div className={`mt-1 text-[13px] leading-6 ${mutedTextClass}`}>
               Enter the password to unlock the locked telemetry panel.
             </div>
 
@@ -2388,15 +2616,13 @@ function IdePageContent() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleDevVisionUnlock();
                 }}
-                className={`w-full rounded-[1rem] px-3 py-3 text-[14px] outline-none transition-colors ${inputSurfaceClass} ${
-                  "focus:border-[var(--accent-solid)]"
-                }`}
+                className={`w-full rounded-[var(--radius-md)] px-3 py-3 text-[14px] outline-none transition-[border-color,box-shadow] duration-[var(--duration-fast)] focus:border-[var(--accent-solid)] ${inputSurfaceClass}`}
                 placeholder="Enter password"
               />
               {devVisionError ? (
-                <div className="mt-2 text-[12px] text-rose-300">{devVisionError}</div>
+                <div className="mt-2 text-[12px] text-[var(--state-blocked)]">{devVisionError}</div>
               ) : (
-                <div className={`mt-2 text-[11px] ${softTextClass}`}>
+                <div className={`mt-2 text-[11px] ${mutedTextClass}`}>
                   Access reveals intent traces, specificity scores, and run timings.
                 </div>
               )}
@@ -2409,13 +2635,13 @@ function IdePageContent() {
                   setDevVisionPassword("");
                   setDevVisionError("");
                 }}
-                className={`${ideButtonClass()} rounded-[0.95rem] px-4 py-2`}
+                className={`${ideButton()} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleDevVisionUnlock}
-                className={`${ideButtonClass({ active: true })} rounded-[0.95rem] px-4 py-2`}
+                className={`${ideButton({ active: true })} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
               >
                 Unlock
               </button>
@@ -2427,11 +2653,7 @@ function IdePageContent() {
       {contextMenu && (
         <div
           ref={contextMenuRef}
-          className={`fixed z-[140] w-48 rounded-2xl border p-2 backdrop-blur-md ${
-            isLight
-              ? "border-slate-200 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.12)]"
-              : "border-neutral-800 bg-[#090909]/95 shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
-          }`}
+          className={`fixed z-[140] w-48 ${MENU_PANEL_CLASS}`}
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           <button
@@ -2439,9 +2661,7 @@ function IdePageContent() {
               renameNode(contextMenu.nodeId);
               setContextMenu(null);
             }}
-            className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-              "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
-            }`}
+            className={MENU_ROW_CLASS}
           >
             Rename
           </button>
@@ -2451,9 +2671,7 @@ function IdePageContent() {
               duplicateById(contextMenu.nodeId);
               setContextMenu(null);
             }}
-            className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-              "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
-            }`}
+            className={MENU_ROW_CLASS}
           >
             Duplicate
           </button>
@@ -2465,9 +2683,7 @@ function IdePageContent() {
                   createFile(contextMenu.nodeId);
                   setContextMenu(null);
                 }}
-                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-                  "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
-                }`}
+                className={MENU_ROW_CLASS}
               >
                 New file inside
               </button>
@@ -2476,9 +2692,7 @@ function IdePageContent() {
                   createFolder(contextMenu.nodeId);
                   setContextMenu(null);
                 }}
-                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
-                  "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
-                }`}
+                className={MENU_ROW_CLASS}
               >
                 New folder inside
               </button>
@@ -2490,54 +2704,61 @@ function IdePageContent() {
               deleteById(contextMenu.nodeId);
               setContextMenu(null);
             }}
-            className="w-full rounded-xl px-3 py-2 text-left text-sm text-rose-300 transition-colors duration-200 hover:bg-rose-500/10"
+            className={joinClasses(
+              "w-full rounded-[var(--radius-sm)] px-[var(--space-3)] py-[var(--space-2)] text-left",
+              "text-[length:var(--text-sm)] text-[var(--state-blocked)]",
+              "transition-colors duration-[var(--duration-fast)] hover:bg-[var(--state-blocked-subtle)]"
+            )}
           >
             Delete
           </button>
         </div>
       )}
 
+      {/* inert while closed -- see the Dev Vision prompt above. */}
       <div
-        className={`absolute inset-0 z-[120] transition-all duration-300 ${
+        inert={!showModeOverlay}
+        className={`absolute inset-0 z-[120] transition-all duration-[var(--duration-slow)] ${
           showModeOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
+        {/* Pointer-only convenience; the dialog has its own Close button. */}
         <div
-          className={`absolute inset-0 backdrop-blur-sm ${isLight ? "bg-slate-200/70" : "bg-black/65"}`}
+          aria-hidden="true"
+          className={SCRIM_CLASS}
           onClick={() => setShowModeOverlay(false)}
         />
 
         <div
-          className={`absolute inset-0 flex items-center justify-center px-6 transition-all duration-300 ${
+          className={`absolute inset-0 flex items-center justify-center px-6 transition-all duration-[var(--duration-slow)] motion-reduce:transform-none ${
             showModeOverlay ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"
           }`}
         >
           <div
-            className={`relative w-full max-w-7xl rounded-[2rem] border p-6 ${
-              isLight
-                ? "border-slate-200 bg-white/96 shadow-[0_25px_100px_rgba(15,23,42,0.12)]"
-                : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] shadow-[0_25px_120px_rgba(0,0,0,0.65)]"
-            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Select IDE mode"
+            className={`relative w-full max-w-7xl p-6 ${MODAL_SURFACE_CLASS}`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowModeOverlay(false)}
               aria-label="Close mode selection"
-              className={`absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-2xl border text-lg transition-all duration-200 ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900"
-                  : "border-neutral-800 bg-[#0c0c0c] text-neutral-400 hover:border-neutral-600 hover:text-white"
-              }`}
+              className={joinClasses(
+                "absolute right-5 top-5 h-10 w-10 rounded-[var(--radius-md)] text-lg",
+                SIDEBAR_ICON_BUTTON_CLASS,
+                SIDEBAR_ICON_BUTTON_RESTING_CLASS
+              )}
             >
               ×
             </button>
 
             <div className="mb-8 pr-14">
-              <div className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.28em] ${softTextClass}`}>
+              <div className={`mb-2 text-[11px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                 Select IDE Mode
               </div>
               <h2
-                className={`${PAGE_HEADING_CLASS} ${"mb-3 text-3xl text-[var(--text-primary)] md:text-4xl"}`}
+                className={`${PAGE_HEADING_CLASS} mb-3 text-3xl text-[var(--text-primary)] md:text-4xl`}
               >
                 Choose how you want to code
               </h2>
@@ -2557,34 +2778,36 @@ function IdePageContent() {
                     key={modeKey}
                     onClick={() => handleSelectMode(modeKey)}
                     disabled={!unlocked}
-                    className={`group relative min-h-[20rem] overflow-hidden rounded-[1.75rem] border p-5 text-left transition-all duration-300 ${
+                    className={joinClasses(
+                      "min-h-[20rem]",
+                      OVERLAY_CARD_CLASS,
                       unlocked
-                        ? selected
-                          ? isLight
-                            ? `border-slate-200 bg-white shadow-[0_24px_54px_rgba(15,23,42,0.12)] hover:-translate-y-1 ${item.active}`
-                            : `${pricingCardClass} ${item.active} ${item.glow} hover:-translate-y-1`
-                          : isLight
-                          ? `border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] shadow-[0_18px_42px_rgba(15,23,42,0.08)] hover:-translate-y-1 hover:border-slate-300 ${item.hover}`
-                          : `${pricingCardClass} ${pricingCardHoverClass} hover:-translate-y-1 ${item.hover}`
-                        : isLight
-                        ? "cursor-not-allowed border-slate-200 bg-slate-100/90 opacity-70 grayscale-[0.15]"
-                        : `${pricingCardClass} cursor-not-allowed opacity-60 grayscale`
-                    }`}
+                        ? joinClasses(
+                            OVERLAY_CARD_PRESSABLE_CLASS,
+                            selected
+                              ? `${item.active} text-[var(--text-primary)]`
+                              : `${OVERLAY_CARD_RESTING_CLASS} ${item.hover}`
+                          )
+                        : OVERLAY_CARD_LOCKED_CLASS
+                    )}
                     style={{
                       transitionDelay: showModeOverlay ? `${index * 35}ms` : "0ms",
                     }}
                   >
-                    <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                      <div className={`absolute -right-10 -top-10 h-36 w-36 rounded-full blur-3xl ${isLight ? "bg-sky-200/40" : "bg-white/[0.04]"}`} />
-                      <div className={`absolute inset-x-0 top-0 h-px ${isLight ? "bg-slate-200" : "bg-white/[0.05]"}`} />
-                    </div>
+                    {/* The catch of light along the top edge, brought up on
+                        hover so the card reads as rising toward the source
+                        rather than just moving. */}
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[var(--material-highlight)] opacity-0 transition-opacity duration-[var(--duration-base)] group-hover:opacity-100"
+                    />
 
                     {!unlocked && (
-                      <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center ${isLight ? "bg-white/75" : "bg-black/35"}`}>
-                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-xl ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
+                      <div className={OVERLAY_LOCK_OVERLAY_CLASS}>
+                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-[var(--radius-full)] border text-xl ${CHIP_CLASS}`}>
                           🔒
                         </div>
-                        <div className={`rounded-2xl border px-4 py-3 text-xs leading-5 ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
+                        <div className={OVERLAY_LOCK_NOTE_CLASS}>
                           Upgrade your subscription to access this mode.
                         </div>
                       </div>
@@ -2593,28 +2816,28 @@ function IdePageContent() {
                     <div className="relative z-10 flex h-full flex-col">
                       <div className="mb-6 flex items-start justify-between">
                         <div
-                          className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-2xl ${item.badge} ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)]"}`}
+                          className={`flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] border text-2xl ${CHIP_SURFACE_CLASS} ${item.badge}`}
                         >
                           {item.icon}
                         </div>
 
                         {selected && unlocked ? (
                           <div
-                            className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${item.badge} ${"border-[var(--border-subtle)] bg-[var(--surface-raised)]"}`}
+                            className={`rounded-[var(--radius-full)] border px-3 py-1 text-[11px] uppercase tracking-[var(--tracking-label)] ${CHIP_SURFACE_CLASS} ${item.badge}`}
                           >
                             Selected
                           </div>
                         ) : unlocked ? null : (
-                          <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
+                          <div className={`rounded-[var(--radius-full)] border px-3 py-1 text-[11px] uppercase tracking-[var(--tracking-label)] ${CHIP_CLASS}`}>
                             Locked
                           </div>
                         )}
                       </div>
 
-                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} ${"text-[var(--text-primary)]"}`}>{item.label}</div>
-                      <div className={`mb-5 text-sm leading-6 ${"text-[var(--text-muted)]"}`}>{item.short}</div>
+                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} text-[var(--text-primary)]`}>{item.label}</div>
+                      <div className="mb-5 text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--text-muted)]">{item.short}</div>
 
-                      <div className={`mt-auto rounded-2xl border p-4 text-xs leading-6 ${isLight ? "border-slate-200 bg-[#f8fafc] text-slate-500" : "border-white/5 bg-black/20 text-neutral-500"}`}>
+                      <div className={OVERLAY_CARD_DETAIL_CLASS}>
                         {item.description}
                       </div>
                     </div>
@@ -2626,47 +2849,50 @@ function IdePageContent() {
         </div>
       </div>
 
+      {/* inert while closed -- see the Dev Vision prompt above. */}
       <div
-        className={`absolute inset-0 z-[120] transition-all duration-300 ${
+        inert={!showLayoutOverlay}
+        className={`absolute inset-0 z-[120] transition-all duration-[var(--duration-slow)] ${
           showLayoutOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
+        {/* Pointer-only convenience; the dialog has its own Close button. */}
         <div
-          className={`absolute inset-0 backdrop-blur-sm ${isLight ? "bg-slate-200/70" : "bg-black/65"}`}
+          aria-hidden="true"
+          className={SCRIM_CLASS}
           onClick={() => setShowLayoutOverlay(false)}
         />
 
         <div
-          className={`absolute inset-0 flex items-center justify-center px-6 transition-all duration-300 ${
+          className={`absolute inset-0 flex items-center justify-center px-6 transition-all duration-[var(--duration-slow)] motion-reduce:transform-none ${
             showLayoutOverlay ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"
           }`}
         >
           <div
-            className={`relative w-full max-w-5xl rounded-[2rem] border p-6 ${
-              isLight
-                ? "border-slate-200 bg-white/96 shadow-[0_25px_100px_rgba(15,23,42,0.12)]"
-                : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] shadow-[0_25px_120px_rgba(0,0,0,0.65)]"
-            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Select layout"
+            className={`relative w-full max-w-5xl p-6 ${MODAL_SURFACE_CLASS}`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowLayoutOverlay(false)}
               aria-label="Close layout selection"
-              className={`absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-2xl border text-lg transition-all duration-200 ${
-                isLight
-                  ? "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900"
-                  : "border-neutral-800 bg-[#0c0c0c] text-neutral-400 hover:border-neutral-600 hover:text-white"
-              }`}
+              className={joinClasses(
+                "absolute right-5 top-5 h-10 w-10 rounded-[var(--radius-md)] text-lg",
+                SIDEBAR_ICON_BUTTON_CLASS,
+                SIDEBAR_ICON_BUTTON_RESTING_CLASS
+              )}
             >
               ×
             </button>
 
             <div className="mb-8 pr-14">
-              <div className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.28em] ${softTextClass}`}>
+              <div className={`mb-2 text-[11px] font-semibold uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
                 Select Layout
               </div>
               <h2
-                className={`${PAGE_HEADING_CLASS} ${"mb-3 text-3xl text-[var(--text-primary)] md:text-4xl"}`}
+                className={`${PAGE_HEADING_CLASS} mb-3 text-3xl text-[var(--text-primary)] md:text-4xl`}
               >
                 Choose your workspace
               </h2>
@@ -2686,73 +2912,82 @@ function IdePageContent() {
                     key={layoutKey}
                     onClick={() => handleSelectLayout(layoutKey)}
                     disabled={!unlocked}
-                    className={`group relative min-h-[13.75rem] overflow-hidden rounded-[1.75rem] border p-5 text-left transition-all duration-300 ${
+                    className={joinClasses(
+                      "min-h-[13.75rem]",
+                      OVERLAY_CARD_CLASS,
                       unlocked
-                        ? selected
-                          ? isLight
-                            ? `border-slate-200 bg-white shadow-[0_24px_54px_rgba(15,23,42,0.12)] hover:-translate-y-1 ${item.accentBorder} ${item.accentBg}`
-                            : `${pricingCardClass} ${item.accentBorder} ${item.accentBg} ${item.glow} hover:-translate-y-1`
-                          : isLight
-                          ? `border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] shadow-[0_18px_42px_rgba(15,23,42,0.08)] hover:-translate-y-1 hover:border-slate-300 ${item.hover}`
-                          : `${pricingCardClass} ${pricingCardHoverClass} hover:-translate-y-1 ${item.hover}`
-                        : isLight
-                        ? "cursor-not-allowed border-slate-200 bg-slate-100/90 opacity-70 grayscale-[0.15]"
-                        : `${pricingCardClass} cursor-not-allowed opacity-60 grayscale`
-                    }`}
+                        ? joinClasses(
+                            OVERLAY_CARD_PRESSABLE_CLASS,
+                            selected
+                              ? `${item.accentBorder} ${item.accentBg} text-[var(--text-primary)]`
+                              : `${OVERLAY_CARD_RESTING_CLASS} ${item.hover}`
+                          )
+                        : OVERLAY_CARD_LOCKED_CLASS
+                    )}
                     style={{
                       transitionDelay: showLayoutOverlay ? `${index * 35}ms` : "0ms",
                     }}
                   >
                     {!unlocked && (
-                      <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center ${isLight ? "bg-white/75" : "bg-black/35"}`}>
-                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-xl ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
+                      <div className={OVERLAY_LOCK_OVERLAY_CLASS}>
+                        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-[var(--radius-full)] border text-xl ${CHIP_CLASS}`}>
                           🔒
                         </div>
-                        <div className={`rounded-2xl border px-4 py-3 text-xs leading-5 ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>
+                        <div className={OVERLAY_LOCK_NOTE_CLASS}>
                           Upgrade your subscription to access this layout.
                         </div>
                       </div>
                     )}
 
-                    <div className="absolute inset-0 overflow-hidden rounded-[1.75rem]">
+                    <div className="absolute inset-0 overflow-hidden rounded-[var(--radius-xl)]">
                       <div
-                        className={`absolute left-1/2 top-[46%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl transition-opacity duration-300 ${item.halo} ${
+                        className={`absolute left-1/2 top-[46%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-full)] blur-3xl transition-opacity duration-[var(--duration-base)] ${item.halo} ${
                           selected ? "opacity-70" : "opacity-0 group-hover:opacity-55"
                         }`}
                       />
-                      <div className={`absolute inset-x-0 top-0 h-px ${isLight ? "bg-slate-200" : "bg-white/[0.05]"}`} />
+                      {/* Same catch of light as the mode cards, and brought up
+                          the same way: on hover, so the card reads as rising
+                          toward the source rather than just moving. It was
+                          painted permanently here, which put a second, brighter
+                          top edge on top of the one --raised already draws and
+                          left the two pickers -- the same OVERLAY_CARD object,
+                          two panels apart -- lit differently at rest. */}
+                      <div
+                        aria-hidden="true"
+                        className="absolute inset-x-0 top-0 h-px bg-[var(--material-highlight)] opacity-0 transition-opacity duration-[var(--duration-base)] group-hover:opacity-100"
+                      />
                     </div>
 
                     <div className="relative z-10 flex h-full flex-col">
                       <div className="mb-6 flex items-start justify-between">
                         <div
-                          className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-xs font-semibold uppercase tracking-[0.24em] ${item.accentText} ${"border-[var(--border-subtle)] bg-[var(--surface-sunken)]"}`}
+                          className={`flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] border text-xs font-semibold uppercase tracking-[var(--tracking-label)] ${item.accentText} ${CHIP_CLASS}`}
                         >
                           {layoutKey === "minimalist" ? "○" : layoutKey === "normal" ? "◫" : "▣"}
                         </div>
 
                         {selected && unlocked ? (
                           <div
-                            className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${item.accentText} ${"border-[var(--border-subtle)] bg-[var(--surface-raised)]"}`}
+                            className={`rounded-[var(--radius-full)] border px-3 py-1 text-[11px] uppercase tracking-[var(--tracking-label)] ${item.accentText} ${CHIP_CLASS}`}
                           >
                             Selected
                           </div>
                         ) : unlocked ? null : (
-                          <div className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${"border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-soft)]"}`}>
+                          <div className={`rounded-[var(--radius-full)] border px-3 py-1 text-[11px] uppercase tracking-[var(--tracking-label)] ${CHIP_CLASS}`}>
                             Locked
                           </div>
                         )}
                       </div>
 
-                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} ${"text-[var(--text-primary)]"}`}>
+                      <div className={`mb-2 text-xl ${PAGE_HEADING_CLASS} text-[var(--text-primary)]`}>
                         {item.label}
                       </div>
 
-                      <div className={`mb-5 text-sm leading-6 ${"text-[var(--text-muted)]"}`}>
+                      <div className="mb-5 text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--text-muted)]">
                         {item.short}
                       </div>
 
-                      <div className={`mt-auto rounded-2xl border p-4 text-xs leading-6 ${isLight ? "border-slate-200 bg-[#f8fafc] text-slate-500" : "border-white/5 bg-black/20 text-neutral-500"}`}>
+                      <div className={OVERLAY_CARD_DETAIL_CLASS}>
                         {item.detail}
                       </div>
                     </div>
@@ -2786,39 +3021,46 @@ function IdePageContent() {
 
       {upgradeModal.open && (
         <div className="fixed inset-0 z-[170] flex items-center justify-center px-6">
+          {/* Pointer-only convenience; the dialog has its own Close button. */}
           <div
-            className={`absolute inset-0 backdrop-blur-sm ${isLight ? "bg-slate-200/70" : "bg-black/70"}`}
+            aria-hidden="true"
+            className={SCRIM_CLASS}
             onClick={() => setUpgradeModal((prev) => ({ ...prev, open: false }))}
           />
-          <div className={`relative z-10 w-full max-w-lg rounded-[2rem] border p-6 ${
-            isLight
-              ? "border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)]"
-              : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(8,8,8,0.96))] shadow-[0_20px_80px_rgba(0,0,0,0.45)]"
-          }`}>
-            <div className={`mb-2 text-[11px] uppercase tracking-[0.26em] ${softTextClass}`}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ide-upgrade-modal-title"
+            className={`relative z-10 w-full max-w-lg p-6 ${MODAL_SURFACE_CLASS}`}
+          >
+            <div className={`mb-2 text-[11px] uppercase tracking-[var(--tracking-label)] ${mutedTextClass}`}>
               Subscription Required
             </div>
+            {/* labelledby rather than a duplicated aria-label: this heading is
+                plain text, so the visible title and the announced one cannot
+                drift apart. */}
             <h2
-              className={`${PAGE_HEADING_CLASS} ${"text-3xl text-[var(--text-primary)]"}`}
+              id="ide-upgrade-modal-title"
+              className={`${PAGE_HEADING_CLASS} text-3xl text-[var(--text-primary)]`}
             >
               {upgradeModal.title}
             </h2>
-            <p className={`mt-3 text-sm leading-7 ${mutedTextClass}`}>{upgradeModal.message}</p>
+            <p className={`mt-3 text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] ${mutedTextClass}`}>{upgradeModal.message}</p>
 
-            <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${isLight ? "border-slate-200 bg-slate-50 text-slate-700" : "border-neutral-800 bg-[#0b0b0b] text-neutral-300"}`}>
+            <div className="mt-5 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-4 py-3 text-[length:var(--text-sm)] text-[var(--text-muted)] shadow-[var(--inlaid)]">
               Current plan: {SUBSCRIPTION_META[activeTier].label}
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
               <button
                 onClick={() => setUpgradeModal((prev) => ({ ...prev, open: false }))}
-                className={`${ideButtonClass()} rounded-2xl px-4 py-2`}
+                className={`${ideButton()} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
               >
                 Close
               </button>
               <Link
                 href="/subscriptions"
-                className={`${ideButtonClass()} rounded-2xl px-4 py-2`}
+                className={`${ideButton()} rounded-[var(--radius-md)] px-[var(--space-4)] py-[var(--space-2)]`}
               >
                 View Subscriptions
               </Link>
@@ -2827,50 +3069,43 @@ function IdePageContent() {
         </div>
       )}
 
+      {/*
+       * The toast is the IDE's only transient feedback channel -- it is what
+       * confirms a save, a copy, a deleted file. It announced none of that:
+       * with no live region the text simply appeared and vanished, so the
+       * confirmation existed for sighted users only.
+       *
+       * polite, not assertive: these are acknowledgements, not emergencies, and
+       * assertive would interrupt whatever the reader is in the middle of.
+       * aria-atomic so the message is read as one sentence rather than as a
+       * diff against the previous toast.
+       *
+       * The live region is the always-mounted wrapper, not the message: a
+       * region that mounts at the same moment its content arrives is not
+       * reliably announced, because there was no prior state to compare to.
+       */}
       <div
-        className={`pointer-events-none absolute right-6 top-6 z-[160] transition-all duration-300 ${
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        // motion-reduce:translate-y-0, not transform-none -- Tailwind v4
+        // compiles -translate-y-2 to the `translate` property, which
+        // `transform: none` does not touch. The fade still carries the change.
+        className={`pointer-events-none absolute right-6 top-6 z-[160] transition-all duration-[var(--duration-slow)] motion-reduce:transition-none motion-reduce:translate-y-0 ${
           toast.visible ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
         }`}
       >
-        <div className={`rounded-[1.1rem] border px-4 py-3 text-sm shadow-[0_16px_48px_rgba(0,0,0,0.38)] backdrop-blur-md ${
-          isLight ? "border-slate-200 bg-white/95 text-slate-700 shadow-[0_16px_48px_rgba(15,23,42,0.12)]" : "border-neutral-800 bg-[#0b0b0b]/95 text-neutral-300"
-        }`}>
-          {toast.text}
+        {/* A toast is not touching the page either, so it takes the same
+            elevation as a menu rather than a card's contact shadow. */}
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-sm)] text-[var(--text-muted)] shadow-[var(--floating)]">
+          {toast.visible ? toast.text : ""}
         </div>
       </div>
 
-      <style jsx global>{`
-        * {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(136, 136, 136, 0.65) transparent;
-        }
-
-        *::-webkit-scrollbar {
-          width: 10px;
-          height: 10px;
-        }
-
-        *::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        *::-webkit-scrollbar-thumb {
-          background: rgba(136, 136, 136, 0.72);
-          border-radius: 999px;
-          border: 2px solid transparent;
-          background-clip: padding-box;
-        }
-
-        *::-webkit-scrollbar-thumb:hover {
-          background: rgba(172, 172, 172, 0.82);
-          border: 2px solid transparent;
-          background-clip: padding-box;
-        }
-
-        *::-webkit-scrollbar-corner {
-          background: transparent;
-        }
-      `}</style>
+      {/* The scrollbar rules that used to live here were a raw-rgba copy of
+          the ones in globals.css, and being last in the cascade they won --
+          which is why the IDE's scrollbars stayed grey in both themes while
+          the rest of the app followed the tokens. Deleted, not moved. */}
     </main>
     </IdeProvider>
   );
@@ -2880,7 +3115,7 @@ export default function IdePage() {
   return (
     <Suspense
       fallback={
-        <main className="flex h-screen w-screen items-center justify-center bg-[var(--background)] text-sm text-[var(--muted-foreground)]">
+        <main className="flex h-screen w-screen items-center justify-center bg-[var(--surface-page)] text-[length:var(--text-sm)] text-[var(--text-muted)]">
           Loading IDE...
         </main>
       }

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import type { CSSProperties } from "react";
 
 export type Testimonial = {
   text: string;
@@ -10,94 +9,90 @@ export type Testimonial = {
   role: string;
 };
 
+/*
+ * Two props are gone from this component, and both removals are deliberate:
+ *
+ *   duration  set how long one loop of the perpetual upward scroll took. The
+ *             loop is gone -- text that slides away while you are reading it is
+ *             a cost with no benefit, and it had no pause control -- so each
+ *             column now renders its testimonials once, statically.
+ *   isLight   told the component which theme was active so it could pick
+ *             colors. Colors come from tokens now, and tokens swap themselves.
+ *
+ * Removing the loop also removed the reason for the height cap and mask fade
+ * that wrapped this component on the home page; both are gone from there too.
+ */
 export function TestimonialsColumn({
   className = "",
   testimonials,
-  duration = 18,
-  isLight,
   inView = false,
   entranceDelay = 0,
 }: {
   className?: string;
   testimonials: Testimonial[];
-  duration?: number;
-  isLight: boolean;
   inView?: boolean;
   entranceDelay?: number;
 }) {
   return (
     <div
-      className={`w-full transition-[transform,opacity] duration-[720ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+      /* motion-reduce:translate-y-0, not motion-reduce:transform-none: Tailwind
+         v4 compiles translate-y-* to the `translate` property, which
+         `transform: none` does not cancel. The opacity fade stays -- a fade has
+         no motion to reduce. */
+      className={`w-full transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:translate-y-0 ${
         inView
           ? "translate-y-0 opacity-100"
           : "translate-y-5 opacity-0"
       } ${className}`}
       style={{ transitionDelay: `${entranceDelay}ms` }}
     >
-      <div
-        className="testimonial-scroll flex flex-col gap-5 pb-5"
-        style={{ ["--scroll-duration" as string]: `${duration}s` } as CSSProperties}
-      >
-        {Array.from({ length: 2 }, (_, index) => (
-          <div key={index} className="flex flex-col gap-5">
-            {testimonials.map(({ text, image, name, role }) => (
-              <article
-                key={`${index}-${name}`}
-                className={`group relative mx-auto w-full max-w-sm overflow-hidden rounded-[2rem] border p-6 transition-transform duration-300 hover:-translate-y-1 md:p-7 ${
-                  isLight
-                    ? "border-slate-200/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,249,253,0.94))] shadow-[0_20px_44px_rgba(15,23,42,0.08)]"
-                    : "border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.038),rgba(255,255,255,0.014))] shadow-[0_0_0_1px_rgba(255,255,255,0.01)] backdrop-blur-sm"
-                }`}
-              >
-                <div
-                  className={`pointer-events-none absolute inset-0 bg-gradient-to-b opacity-60 ${
-                    isLight
-                      ? "from-cyan-100/70 via-sky-100/18 to-transparent"
-                      : "from-cyan-400/16 via-sky-400/6 to-transparent"
-                  }`}
+      <div className="flex flex-col gap-[var(--space-5)]">
+        {testimonials.map(({ text, image, name, role }) => (
+          <article
+            key={name}
+            /* A quote is read, not pressed, so the card lies off the page on the
+               card rung and stays put on hover.
+               It also no longer answers the cursor with a swept band of light.
+               That band was a -16deg gradient travelling across the card on a
+               loop -- a second light source, and a moving one, over a card
+               whose every other edge is lit from directly above. site-shell
+               deleted the same treatment from the nav bar and named the reason
+               there; docs/page.tsx deleted the decorative glows behind the
+               changelog and cited tokens.css, which reserves the accent for
+               interactive emphasis and says outright it is never decoration.
+               The static top-down tint below is the card's own colour and
+               stays. */
+            className="relative mx-auto w-full max-w-sm overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-6)] shadow-[var(--raised-lg)] md:p-[var(--space-8)]"
+          >
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,var(--accent-subtle),transparent_60%)]" />
+
+            <div className="relative z-10">
+              <p className="text-[length:var(--text-base)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
+                {text}
+              </p>
+
+              <div className="mt-[var(--space-6)] flex items-center gap-[var(--space-3)]">
+                <Image
+                  src={image}
+                  alt={name}
+                  width={44}
+                  height={44}
+                  /* The border seats the photo into the card instead of letting
+                     it float as a cut-out; an inset shadow would paint over the
+                     image itself. */
+                  className="h-11 w-11 rounded-[var(--radius-full)] border border-[var(--border-subtle)] object-cover"
                 />
-                <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                  <div className="absolute -left-[34%] top-0 h-full w-[28%] -skew-x-[16deg] bg-[linear-gradient(90deg,transparent,rgba(82,183,255,0.14),transparent)] animate-[cardSweep_8s_ease-in-out_infinite]" />
-                </div>
-
-                <div className="relative z-10">
-                  <p
-                    className={`text-[0.95rem] leading-7 ${
-                      isLight ? "text-slate-700" : "text-neutral-200"
-                    }`}
-                  >
-                    {text}
-                  </p>
-
-                  <div className="mt-6 flex items-center gap-3">
-                    <Image
-                      src={image}
-                      alt={name}
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 rounded-full object-cover"
-                    />
-                    <div>
-                      <div
-                        className={`text-sm font-semibold tracking-tight ${
-                          isLight ? "text-slate-900" : "text-white"
-                        }`}
-                      >
-                        {name}
-                      </div>
-                      <div
-                        className={`text-[0.78rem] uppercase tracking-[0.18em] ${
-                          isLight ? "text-slate-500" : "text-cyan-100/55"
-                        }`}
-                      >
-                        {role}
-                      </div>
-                    </div>
+                <div>
+                  <div className="text-[length:var(--text-sm)] font-semibold tracking-tight text-[var(--text-primary)]">
+                    {name}
+                  </div>
+                  <div className="text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
+                    {role}
                   </div>
                 </div>
-              </article>
-            ))}
-          </div>
+              </div>
+            </div>
+          </article>
         ))}
       </div>
     </div>

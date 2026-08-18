@@ -13,6 +13,25 @@ import {
 const RESTING_MESSAGE =
   "Create an account to save your projects. Every new account starts on Free.";
 
+/*
+ * The footer links. Same treatment as the login page's footer.
+ *
+ * A link is not an object, so it does not travel on press the way Button does --
+ * there is nothing here to push in. Its two states are carried by the underline
+ * (hover) and a deepened accent (held), which is the most a run of text can do
+ * without pretending to be a control.
+ *
+ * The global :focus-visible ring in globals.css covers keyboard focus, so there
+ * is deliberately no per-link ring here. The transition is colour-only, and the
+ * reduced-motion block in globals.css zeroes the travel tokens, so nothing here
+ * moves for a reader who asked for less motion.
+ */
+const FOOTER_LINK = [
+  "text-[var(--accent-text)] underline-offset-4",
+  "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]",
+  "hover:underline active:text-[var(--accent-hover)]",
+].join(" ");
+
 export default function SignupPage() {
   const router = useRouter();
   const supabase = getSupabaseBrowserClient();
@@ -53,21 +72,16 @@ export default function SignupPage() {
     <AuthPageShell>
       <AuthPanel
         title="Create account"
-        className="page-enter"
         footer={
-          <div className="flex flex-wrap items-center gap-x-[var(--space-3)] gap-y-[var(--space-2)] text-[length:var(--text-sm)] text-[var(--text-soft)]">
+          // Muted rather than soft: AuthPanel renders this on the raised panel,
+          // and soft is only measured against the page behind it.
+          <div className="flex flex-wrap items-center gap-x-[var(--space-3)] gap-y-[var(--space-2)] text-[length:var(--text-sm)] text-[var(--text-muted)]">
             <span>Already have an account?</span>
-            <Link
-              href="/login"
-              className="text-[var(--accent-text)] underline-offset-4 hover:underline"
-            >
+            <Link href="/login" className={FOOTER_LINK}>
               Sign in
             </Link>
             <span aria-hidden="true">·</span>
-            <Link
-              href="/subscriptions"
-              className="text-[var(--accent-text)] underline-offset-4 hover:underline"
-            >
+            <Link href="/subscriptions" className={FOOTER_LINK}>
               View pricing
             </Link>
           </div>
