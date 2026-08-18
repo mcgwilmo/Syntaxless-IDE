@@ -16,10 +16,13 @@
 
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import YAML from "yaml";
 
-const CONTENT_ROOT = "src/content/lessons";
+// Resolved against this script rather than the working directory. The exports
+// below are imported by tests, and a relative path would quietly read from
+// wherever the runner happened to start.
+const CONTENT_ROOT = fileURLToPath(new URL("../src/content/lessons", import.meta.url));
 const OUTPUT = path.join(CONTENT_ROOT, "generated.ts");
 const TABS = ["operators", "data-structures-algorithms"];
 
@@ -96,7 +99,16 @@ function validateLesson(raw, file) {
           const built = { id: requireId(example?.id, `${at}.id`, problems) };
           for (const mode of EXAMPLE_MODES) {
             const lines = asLines(example?.[mode], `${at}.${mode}`, problems);
-            if (lines.length === 0) problems.push(`${at}.${mode} must have at least one line`);
+            if (lines.length === 0) {
+              problems.push(`${at}.${mode} must have at least one line`);
+            } else if (lines.every((line) => !line.trim())) {
+              // A blank line is fine inside a program -- it separates blocks --
+              // but a mode that is nothing but blank lines renders as an empty
+              // panel, which reads as a bug in the app rather than in the YAML.
+              // `strict: ""` used to pass here: asLines turns it into [""],
+              // which is one line, so the length check above had nothing to say.
+              problems.push(`${at}.${mode} must have at least one line with text on it`);
+            }
             built[mode] = lines;
           }
           return built;
@@ -195,7 +207,10 @@ async function main() {
   console.log(`lessons: ${counts.join("  |  ")}`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// `process.argv[1]` is undefined when this module is imported rather than run
+// -- from a test, or from `node -e`. pathToFileURL throws on undefined, so the
+// guard has to check before it asks.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     console.error(`\n${error.message}\n`);
     process.exit(1);
