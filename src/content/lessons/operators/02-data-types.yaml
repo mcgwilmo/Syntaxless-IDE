@@ -15,17 +15,18 @@ topics:
     examples:
       - id: common-data-types-example
         strict:
-          - Set name to "Ava".
-          - Set age to 19.
-          - Set is_enrolled to TRUE.
+          - Create a variable called name.
+          - Set name to the text "Ava".
+          - Create a variable called age.
+          - Set age to the number 19.
+          - Create a variable called is_enrolled.
+          - Set is_enrolled to true.
         standard:
           - Set name to "Ava".
           - Set age to 19.
-          - Set is_enrolled to TRUE.
+          - Set is_enrolled to true.
         abstraction:
-          - Set name to "Ava".
-          - Set age to 19.
-          - Set is_enrolled to TRUE.
+          - Record a student named "Ava", aged 19, who is enrolled.
         pseudocode:
           - SET name TO "Ava"
           - SET age TO 19
@@ -37,20 +38,20 @@ topics:
     examples:
       - id: why-type-matters-example
         strict:
+          - Create a variable called a.
           - Set a to 4.
+          - Create a variable called b.
           - Set b to 7.
-          - Set is_smaller to a < b.
-          - Set full_name to "Ada" + " Lovelace".
+          - Check whether a is less than b.
+          - Store that answer in a variable called is_smaller.
+          - Join the text "Ada" and the text " Lovelace".
+          - Store the joined text in a variable called full_name.
         standard:
-          - Set a to 4.
-          - Set b to 7.
-          - Set is_smaller to a < b.
-          - Set full_name to "Ada" + " Lovelace".
+          - Set a to 4 and b to 7.
+          - Work out whether a is less than b and store it as is_smaller.
+          - Join "Ada" and " Lovelace" and store the result as full_name.
         abstraction:
-          - Set a to 4.
-          - Set b to 7.
-          - Set is_smaller to a < b.
-          - Set full_name to "Ada" + " Lovelace".
+          - Work out whether 4 is less than 7, and join "Ada" and " Lovelace" into a full name.
         pseudocode:
           - SET a TO 4
           - SET b TO 7
