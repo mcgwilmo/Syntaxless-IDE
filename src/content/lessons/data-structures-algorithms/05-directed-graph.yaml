@@ -1,0 +1,165 @@
+# Directed Graph
+#
+# Lesson 5 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: directed-graph
+number: 5
+title: Directed Graph
+overview: A directed graph stores edges that point from one vertex to another in a specific direction. This is the natural model for web links, task dependencies, one-way streets, and state transitions.
+topics:
+  - id: directed-graph-initialization
+    title: Initialization with outgoing adjacency lists
+    definition: Initialization creates a map from each vertex to its outgoing neighbors. Adding a directed edge records only the forward direction.
+    howAndWhy: This is used because direction changes meaning. The edge A -> B says A can reach B directly, but B does not automatically reach A.
+    examples:
+      - id: directed-graph-initialization-example
+        strict:
+          - Create a class named DirectedGraph.
+          - "                  Define a function named initialize."
+          - "                  Set self.adj to empty map."
+          - "                  Define a function named add_vertex that takes v."
+          - "                  If v NOT in self.adj, then."
+          - "                  Set self.adj[v] to empty list."
+          - "                  End the if."
+          - "                  Define a function named add_edge that takes u, v, weight."
+          - "                  Call add_vertex(u)."
+          - "                  Call add_vertex(v)."
+          - "                  Append (v, weight) to self.adj[u]."
+        standard:
+          - Create DirectedGraph with an empty adjacency map.
+          - "                  Define add_vertex(v) to create an empty outgoing list when needed."
+          - "                  Define add_edge(u, v, weight) to add both vertices and append the weighted outgoing edge from u."
+        abstraction:
+          - Build a directed weighted graph by storing outgoing edges in each vertex's adjacency list.
+        pseudocode:
+          - CLASS DirectedGraph
+          - "                  FUNCTION initialize()"
+          - "                  SET self.adj = empty map"
+          - "                  FUNCTION add_vertex(v)"
+          - "                  IF v NOT IN self.adj THEN"
+          - "                  SET self.adj[v] = empty list"
+          - "                  END IF"
+          - "                  FUNCTION add_edge(u, v, weight)"
+          - "                  CALL add_vertex(u)"
+          - "                  CALL add_vertex(v)"
+          - "                  APPEND (v, weight) TO self.adj[u]"
+  - id: directed-graph-reachability-and-path-search-with-bfs
+    title: Reachability and path search with BFS
+    definition: In a directed graph, BFS still explores level by level, but only along outgoing edges.
+    howAndWhy: It is used for questions such as whether one state can reach another, how many transitions separate two states, or what the minimum number of directed steps is in an unweighted setting.
+    examples:
+      - id: directed-graph-reachability-and-path-search-with-bfs-example
+        strict:
+          - Define a function named directed_bfs that takes start, goal.
+          - "                  Create queue."
+          - "                  Enqueue start."
+          - "                  Set visited to {start}."
+          - "                  Set parent[start] to null."
+          - "                  While queue is not empty."
+          - "                  Set current to dequeue queue."
+          - "                  If current = goal, then."
+          - "                  Stop the current loop."
+          - "                  End the if."
+          - "                  For each (neighbor, weight) in self.adj[current]."
+          - "                  If neighbor NOT in visited, then."
+          - "                  Add neighbor to visited."
+          - "                  Set parent[neighbor] to current."
+          - "                  Enqueue neighbor."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the while."
+        standard:
+          - Define directed_bfs(start, goal).
+          - "                  Use a queue, visited set, and parent map starting from start."
+          - "                  Follow outgoing edges only while processing the queue."
+          - "                  Record parents for newly discovered neighbors until goal is reached."
+        abstraction:
+          - Use BFS on outgoing edges to test reachability and recover a directed path.
+        pseudocode:
+          - FUNCTION directed_bfs(start, goal)
+          - "                  CREATE queue"
+          - "                  ENQUEUE start"
+          - "                  SET visited = {start}"
+          - "                  SET parent[start] = null"
+          - "                  WHILE queue IS NOT empty"
+          - "                  SET current = DEQUEUE queue"
+          - "                  IF current = goal THEN"
+          - "                  BREAK END IF FOR EACH (neighbor, weight) IN self.adj[current] IF neighbor NOT IN visited THEN ADD"
+          - "                  neighbor TO visited SET parent[neighbor] = current ENQUEUE neighbor END IF END FOR END WHILE"
+  - id: directed-graph-dijkstra
+    title: Dijkstra for directed non-negative weighted graphs
+    definition: Dijkstra also works on directed graphs, as long as edge weights are non-negative.
+    howAndWhy: It is used when each directed edge has a cost, such as time, fuel, or penalty, and the task is to find the cheapest directed route from a source.
+    examples:
+      - id: directed-graph-dijkstra-example
+        strict:
+          - Define a function named dijkstra that takes start.
+          - "                  Initialize all distances to infinity."
+          - "                  Set distance[start] to 0."
+          - "                  Create priority_queue with (0, start)."
+          - "                  While priority_queue is not empty."
+          - "                  Extract current vertex."
+          - "                  For each (neighbor, weight) in self.adj[current]."
+          - "                  If distance[current] + weight < distance[neighbor], then."
+          - "                  Set distance[neighbor] to distance[current] + weight."
+          - "                  Set parent[neighbor] to current."
+          - "                  Insert (distance[neighbor], neighbor)."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the while."
+        standard:
+          - Define dijkstra(start).
+          - "                  Initialize distances and push start into the priority queue."
+          - "                  Repeatedly extract the current vertex and relax each outgoing weighted edge."
+          - "                  Update distance and parent whenever a shorter path is found."
+        abstraction:
+          - Run Dijkstra on the directed weighted graph from start.
+        pseudocode:
+          - FUNCTION dijkstra(start)
+          - "                  INITIALIZE all distances to infinity"
+          - "                  SET distance[start] = 0"
+          - "                  CREATE priority_queue with (0, start)"
+          - "                  WHILE priority_queue IS NOT empty"
+          - "                  EXTRACT current vertex FOR EACH (neighbor, weight) IN self.adj[current] IF distance[current] +"
+          - "                  weight < distance[neighbor] THEN SET distance[neighbor] = distance[current] + weight SET"
+          - "                  parent[neighbor] = current INSERT (distance[neighbor], neighbor) END IF END FOR END WHILE"
+  - id: directed-graph-bellman-ford
+    title: Bellman-Ford for directed graphs with negative edges
+    definition: Bellman-Ford computes shortest paths when directed edges may be negative, as long as no negative cycle is reachable from the source.
+    howAndWhy: It is used because Dijkstra can fail when a later negative edge should improve a path that was assumed to be settled too early. Bellman-Ford systematically relaxes every edge multiple times and can also detect negative cycles.
+    examples:
+      - id: directed-graph-bellman-ford-example
+        strict:
+          - Define a function named bellman_ford that takes start.
+          - "                  Initialize all distances to infinity."
+          - "                  Set distance[start] to 0."
+          - "                  Repeat |v| - 1 times."
+          - "                  For each edge (u, v, weight)."
+          - "                  If distance[u] is not infinity and distance[u] + weight < distance[v], then."
+          - "                  Set distance[v] to distance[u] + weight."
+          - "                  Set parent[v] to u."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the repeat."
+          - "                  For each edge (u, v, weight)."
+          - "                  If distance[u] is not infinity and distance[u] + weight < distance[v], then."
+          - "                  Report negative_cycle."
+          - "                  End the if."
+          - "                  End the for."
+        standard:
+          - Define bellman_ford(start).
+          - "                  Initialize all distances to infinity except start."
+          - "                  Relax every edge |V| - 1 times, updating distance and parent."
+          - "                  Scan the edges one more time to detect any further improvement."
+          - "                  Report negative_cycle if one is found."
+        abstraction:
+          - Repeatedly relax all edges and then check once more for a negative cycle.
+        pseudocode:
+          - FUNCTION bellman_ford(start)
+          - "                  INITIALIZE all distances to infinity"
+          - "                  SET distance[start] = 0"
+          - "                  REPEAT |V| - 1 TIMES FOR EACH edge (u, v, weight) IF distance[u] IS NOT infinity AND distance[u] +"
+          - "                  weight < distance[v] THEN SET distance[v] = distance[u] + weight SET parent[v] = u END IF END FOR"
+          - "                  END REPEAT FOR EACH edge (u, v, weight) IF distance[u] IS NOT infinity AND distance[u] + weight <"
+          - "                  distance[v] THEN REPORT negative_cycle END IF END FOR"

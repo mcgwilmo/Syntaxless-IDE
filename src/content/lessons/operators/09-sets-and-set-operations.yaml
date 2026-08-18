@@ -1,0 +1,167 @@
+# Sets and set operations
+#
+# Lesson 9 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: sets-and-set-operations
+number: 9
+title: Sets and set operations
+overview: A set is an unordered collection of unique values. Sets are useful when duplicates do not matter and the main goal is fast membership, uniqueness, or set-style comparison.
+topics:
+  - id: creating-sets
+    title: Creating sets
+    definition: Creating a set means storing unique values together without caring about order.
+    howAndWhy: Sets are used for tags, categories, permissions, and duplicate removal.
+    examples:
+      - id: creating-sets-example
+        strict:
+          - Set subjects to {"math", "science", "history"}.
+          - Print subjects.
+        standard:
+          - Create a set subjects with math, science, and history, then print it.
+        abstraction:
+          - Print the set {"math", "science", "history"}.
+        pseudocode:
+          - SET subjects TO {"math", "science", "history"}
+          - PRINT subjects
+  - id: adding-items
+    title: Adding items
+    definition: Adding inserts a value into the set if it is not already present.
+    howAndWhy: This is used to build a unique collection over time.
+    examples:
+      - id: adding-items-example
+        strict:
+          - Set subjects to {"math", "science"}.
+          - Add "art" to subjects.
+          - Print subjects.
+        standard:
+          - Set subjects to {"math", "science"}.
+          - Add "art" and print subjects.
+        abstraction:
+          - Print subjects after adding "art".
+        pseudocode:
+          - SET subjects TO {"math", "science"}
+          - ADD "art" TO subjects
+          - PRINT subjects
+  - id: removing-items
+    title: Removing items
+    definition: Removing deletes a value from the set.
+    howAndWhy: This is used when access, labels, or categories change.
+    examples:
+      - id: removing-items-example
+        strict:
+          - Set subjects to {"math", "science", "art"}.
+          - Remove "science" from subjects.
+          - Print subjects.
+        standard:
+          - Set subjects to {"math", "science", "art"}.
+          - Remove "science" and print subjects.
+        abstraction:
+          - Print subjects after removing "science".
+        pseudocode:
+          - SET subjects TO {"math", "science", "art"}
+          - REMOVE "science" FROM subjects
+          - PRINT subjects
+  - id: membership-in-sets
+    title: Membership in sets
+    definition: Membership checks test whether a value is part of the set.
+    howAndWhy: This is one of the main reasons sets exist because membership checks are simple and meaningful.
+    examples:
+      - id: membership-in-sets-example
+        strict:
+          - Set subjects to {"math", "science", "art"}.
+          - Set has_math to "math" IS IN subjects.
+          - Print has_math.
+        standard:
+          - Set subjects to {"math", "science", "art"}.
+          - Check whether "math" is in subjects and print the result.
+        abstraction:
+          - Print whether "math" is in the subjects set.
+        pseudocode:
+          - SET subjects TO {"math", "science", "art"}
+          - SET has_math TO "math" IS IN subjects
+          - PRINT has_math
+  - id: union
+    title: Union
+    definition: A union combines all unique values from two sets.
+    howAndWhy: This is used when two groups must be merged without duplicates.
+    examples:
+      - id: union-example
+        strict:
+          - Set group_a to {"Ava", "Noah"}.
+          - Set group_b to {"Noah", "Liam"}.
+          - Set everyone to UNION OF group_a AND group_b.
+          - Print everyone.
+        standard:
+          - Set group_a to {"Ava", "Noah"} and group_b to {"Noah", "Liam"}.
+          - Find their union and print everyone.
+        abstraction:
+          - Print the union of {"Ava", "Noah"} and {"Noah", "Liam"}.
+        pseudocode:
+          - SET group_a TO {"Ava", "Noah"}
+          - SET group_b TO {"Noah", "Liam"}
+          - SET everyone TO UNION OF group_a AND group_b
+          - PRINT everyone
+  - id: intersection
+    title: Intersection
+    definition: An intersection keeps only the values that appear in both sets.
+    howAndWhy: It is used to find overlap, shared permissions, or common interests.
+    examples:
+      - id: intersection-example
+        strict:
+          - Set club_a to {"Ava", "Noah", "Liam"}.
+          - Set club_b to {"Noah", "Liam", "Maya"}.
+          - Set shared_students to INTERSECTION OF club_a AND club_b.
+          - Print shared_students.
+        standard:
+          - Set club_a to {"Ava", "Noah", "Liam"} and club_b to {"Noah", "Liam", "Maya"}.
+          - Find their intersection and print shared_students.
+        abstraction:
+          - Print the shared students in both clubs.
+        pseudocode:
+          - SET club_a TO {"Ava", "Noah", "Liam"}
+          - SET club_b TO {"Noah", "Liam", "Maya"}
+          - SET shared_students TO INTERSECTION OF club_a AND club_b
+          - PRINT shared_students
+  - id: difference
+    title: Difference
+    definition: A difference keeps the values that appear in the first set but not in the second.
+    howAndWhy: This is used to find what is missing, what remains, or what belongs only to one group.
+    examples:
+      - id: difference-example
+        strict:
+          - Set club_a to {"Ava", "Noah", "Liam"}.
+          - Set club_b to {"Noah", "Maya"}.
+          - Set only_a to DIFFERENCE OF club_a AND club_b.
+          - Print only_a.
+        standard:
+          - Set club_a to {"Ava", "Noah", "Liam"} and club_b to {"Noah", "Maya"}.
+          - Find what is only in club_a and print it.
+        abstraction:
+          - Print the values that appear only in club_a.
+        pseudocode:
+          - SET club_a TO {"Ava", "Noah", "Liam"}
+          - SET club_b TO {"Noah", "Maya"}
+          - SET only_a TO DIFFERENCE OF club_a AND club_b
+          - PRINT only_a
+  - id: subset-checks
+    title: Subset checks
+    definition: A subset check asks whether every value in one set also appears in another.
+    howAndWhy: This is useful for permission systems, requirement checks, and category containment.
+    examples:
+      - id: subset-checks-example
+        strict:
+          - Set required_skills to {"python", "sql"}.
+          - Set student_skills to {"python", "sql", "excel"}.
+          - Set qualifies to required_skills IS SUBSET OF student_skills.
+          - Print qualifies.
+        standard:
+          - Set required_skills to {"python", "sql"} and student_skills to {"python", "sql", "excel"}.
+          - Check whether required_skills is a subset and print the result.
+        abstraction:
+          - Print whether {"python", "sql"} is a subset of the student skills.
+        pseudocode:
+          - SET required_skills TO {"python", "sql"}
+          - SET student_skills TO {"python", "sql", "excel"}
+          - SET qualifies TO required_skills IS SUBSET OF student_skills
+          - PRINT qualifies

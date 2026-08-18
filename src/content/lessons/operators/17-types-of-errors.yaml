@@ -1,0 +1,62 @@
+# Types of errors
+#
+# Lesson 17 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: types-of-errors
+number: 17
+title: Types of errors
+overview: Errors are problems that stop a program from working correctly. Learning error types helps students debug more calmly because they can identify what kind of mistake happened.
+topics:
+  - id: syntax-errors
+    title: Syntax errors
+    definition: A syntax error means the program structure is written in an invalid way.
+    howAndWhy: This prevents the program from running at all because the instructions cannot be parsed correctly.
+    examples:
+      - id: syntax-errors-example
+        strict:
+          - If, then.
+          - Print "Hello".
+        standard:
+          - If.
+          - Print "Hello".
+        abstraction:
+          - Show an incomplete if statement, then try to print "Hello".
+        pseudocode:
+          - IF THEN
+          - PRINT "Hello"
+  - id: runtime-errors
+    title: Runtime errors
+    definition: A runtime error happens while the program is executing.
+    howAndWhy: The program may start correctly but crash when it hits an invalid action such as dividing by zero or looking up a missing value.
+    examples:
+      - id: runtime-errors-example
+        strict:
+          - Set value to 10 / 0.
+          - Print value.
+        standard:
+          - Divide 10 by 0, store it in value, and try to print it.
+        abstraction:
+          - Show a divide-by-zero runtime error.
+        pseudocode:
+          - SET value TO 10 / 0
+          - PRINT value
+  - id: logic-errors
+    title: Logic errors
+    definition: A logic error means the program runs, but it produces the wrong result.
+    howAndWhy: These are often the hardest errors because nothing crashes. The idea is simply wrong.
+    examples:
+      - id: logic-errors-example
+        strict:
+          - Set total to 80 + 90.
+          - Set average to total / 3.
+          - Print average.
+        standard:
+          - Set total to 80 + 90.
+          - Divide by 3 instead of 2 and print the average.
+        abstraction:
+          - Print an incorrect average caused by the wrong divisor.
+        pseudocode:
+          - SET total TO 80 + 90
+          - SET average TO total / 3
+          - PRINT average

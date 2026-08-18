@@ -1,0 +1,275 @@
+# Lists and list operations
+#
+# Lesson 7 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: lists-and-list-operations
+number: 7
+title: Lists and list operations
+overview: A list is an ordered collection of values. Lists are used when a program must store many items in a meaningful order.
+topics:
+  - id: creating-a-list
+    title: Creating a list
+    definition: Creating a list means putting several values into one ordered collection.
+    howAndWhy: Use a list when values belong together and may need to be processed one by one.
+    examples:
+      - id: creating-a-list-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Print scores.
+        standard:
+          - Create a list scores with 80, 90, and 100, then print it.
+        abstraction:
+          - Print the list [80, 90, 100].
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - PRINT scores
+  - id: accessing-list-items
+    title: Accessing list items
+    definition: Accessing a list item means retrieving the value at a particular position.
+    howAndWhy: This is used when the program needs a specific element, such as the first score or last task.
+    examples:
+      - id: accessing-list-items-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Set first_score to ITEM 0 OF scores.
+          - Print first_score.
+        standard:
+          - Set scores to [80, 90, 100].
+          - Print item 0 of scores.
+        abstraction:
+          - Print the first item of [80, 90, 100].
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - SET first_score TO ITEM 0 OF scores
+          - PRINT first_score
+  - id: changing-a-list-item
+    title: Changing a list item
+    definition: A list item can be updated by replacing the value at a particular position.
+    howAndWhy: This is used when an old value is no longer correct and needs to be revised.
+    examples:
+      - id: changing-a-list-item-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Set item 1 of scores to 95.
+          - Print scores.
+        standard:
+          - Set scores to [80, 90, 100].
+          - Change item 1 to 95 and print scores.
+        abstraction:
+          - Print scores after replacing item 1 with 95.
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - SET ITEM 1 OF scores TO 95
+          - PRINT scores
+  - id: appending
+    title: Appending
+    definition: Appending adds a new item to the end of the list.
+    howAndWhy: This is used when new data arrives over time and order matters.
+    examples:
+      - id: appending-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Append 110 to scores.
+          - Print scores.
+        standard:
+          - Set scores to [80, 90, 100].
+          - Append 110 and print scores.
+        abstraction:
+          - Print scores after appending 110.
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - APPEND 110 TO scores PRINT scores
+  - id: inserting
+    title: Inserting
+    definition: Inserting adds a value at a chosen position and shifts later items to the right.
+    howAndWhy: Use this when order matters and the new value must appear in the middle rather than at the end.
+    examples:
+      - id: inserting-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Insert 85 AT POSITION 1 IN scores.
+          - Print scores.
+        standard:
+          - Set scores to [80, 90, 100].
+          - Insert 85 at position 1 and print scores.
+        abstraction:
+          - Print scores after inserting 85 at position 1.
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - INSERT 85 AT POSITION 1 IN scores
+          - PRINT scores
+  - id: removing-by-value
+    title: Removing by value
+    definition: Removing by value deletes the first matching value from the list.
+    howAndWhy: This is used when the item itself matters more than its exact position.
+    examples:
+      - id: removing-by-value-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Remove 90 from scores.
+          - Print scores.
+        standard:
+          - Set scores to [80, 90, 100].
+          - Remove 90 and print scores.
+        abstraction:
+          - Print scores after removing 90.
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - REMOVE 90 FROM scores
+          - PRINT scores
+  - id: removing-by-position
+    title: Removing by position
+    definition: Removing by position deletes the item at a chosen index.
+    howAndWhy: This is used when the program knows where the unwanted item is located.
+    examples:
+      - id: removing-by-position-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Remove item 0 from scores.
+          - Print scores.
+        standard:
+          - Set scores to [80, 90, 100].
+          - Remove item 0 and print scores.
+        abstraction:
+          - Print scores after removing item 0.
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - REMOVE ITEM 0 FROM scores
+          - PRINT scores
+  - id: length-of-a-list
+    title: Length of a list
+    definition: The length of a list is the number of items it contains.
+    howAndWhy: Length is used for counting, validation, and loop control.
+    examples:
+      - id: length-of-a-list-example
+        strict:
+          - Set tasks to ["study", "eat", "sleep"].
+          - Set task_count to LENGTH OF tasks.
+          - Print task_count.
+        standard:
+          - Set tasks to ["study", "eat", "sleep"].
+          - Print the length of tasks.
+        abstraction:
+          - Print how many items are in ["study", "eat", "sleep"].
+        pseudocode:
+          - SET tasks TO ["study", "eat", "sleep"]
+          - SET task_count TO LENGTH OF tasks
+          - PRINT task_count
+  - id: membership-in-a-list
+    title: Membership in a list
+    definition: Membership checks test whether a value appears anywhere in the list.
+    howAndWhy: This is useful for search, permission checks, and avoiding duplicates.
+    examples:
+      - id: membership-in-a-list-example
+        strict:
+          - Set tasks to ["study", "eat", "sleep"].
+          - Set has_study to "study" IS IN tasks.
+          - Print has_study.
+        standard:
+          - Set tasks to ["study", "eat", "sleep"].
+          - Check whether "study" is in tasks and print the result.
+        abstraction:
+          - Print whether "study" is in ["study", "eat", "sleep"].
+        pseudocode:
+          - SET tasks TO ["study", "eat", "sleep"]
+          - SET has_study TO "study" IS IN tasks
+          - PRINT has_study
+  - id: slicing-a-list
+    title: Slicing a list
+    definition: Slicing a list means taking a sub-list from a start position to an end position.
+    howAndWhy: This is used for pagination, batching, or extracting part of a sequence.
+    examples:
+      - id: slicing-a-list-example
+        strict:
+          - Set values to [10, 20, 30, 40].
+          - Set first_two to ITEMS 0 THROUGH 1 OF values.
+          - Print first_two.
+        standard:
+          - Set values to [10, 20, 30, 40].
+          - Print items 0 through 1 of values.
+        abstraction:
+          - Print the first two items of [10, 20, 30, 40].
+        pseudocode:
+          - SET values TO [10, 20, 30, 40]
+          - SET first_two TO ITEMS 0 THROUGH 1 OF values
+          - PRINT first_two
+  - id: sorting-a-list
+    title: Sorting a list
+    definition: Sorting rearranges the items of a list into order.
+    howAndWhy: It is used whenever the program needs smallest-to-largest, largest-to-smallest, or alphabetical order.
+    examples:
+      - id: sorting-a-list-example
+        strict:
+          - Set numbers to [9, 3, 12, 1, 5].
+          - Sort numbers.
+          - Print numbers.
+        standard:
+          - Set numbers to [9, 3, 12, 1, 5].
+          - Sort them and print the result.
+        abstraction:
+          - Print [9, 3, 12, 1, 5] after sorting it.
+        pseudocode:
+          - SET numbers TO [9, 3, 12, 1, 5]
+          - SORT numbers
+          - PRINT numbers
+  - id: reversing-a-list
+    title: Reversing a list
+    definition: Reversing changes the order so the last item becomes first.
+    howAndWhy: This is used for countdowns, recent-first views, and simple ordering changes.
+    examples:
+      - id: reversing-a-list-example
+        strict:
+          - Set names to ["Ava", "Noah", "Liam"].
+          - Reverse names.
+          - Print names.
+        standard:
+          - Set names to ["Ava", "Noah", "Liam"].
+          - Reverse them and print the result.
+        abstraction:
+          - Print ["Ava", "Noah", "Liam"] after reversing it.
+        pseudocode:
+          - SET names TO ["Ava", "Noah", "Liam"]
+          - REVERSE names PRINT names
+  - id: counting-values
+    title: Counting values
+    definition: Counting values means finding how many times a certain item appears.
+    howAndWhy: This is useful for frequency checks, duplicate detection, and summaries.
+    examples:
+      - id: counting-values-example
+        strict:
+          - Set values to [2, 1, 2, 3, 2].
+          - Set two_count to COUNT OF 2 IN values.
+          - Print two_count.
+        standard:
+          - Set values to [2, 1, 2, 3, 2].
+          - Count how many times 2 appears and print the result.
+        abstraction:
+          - Print how many times 2 appears in [2, 1, 2, 3, 2].
+        pseudocode:
+          - SET values TO [2, 1, 2, 3, 2]
+          - SET two_count TO COUNT OF 2 IN values
+          - PRINT two_count
+  - id: aggregating-a-list
+    title: Aggregating a list
+    definition: Aggregation means turning many values into one summary such as a sum, average, minimum, or maximum.
+    howAndWhy: This is used constantly in real programs because raw data is often less useful than a summary.
+    examples:
+      - id: aggregating-a-list-example
+        strict:
+          - Set scores to [80, 90, 100].
+          - Set total to SUM OF scores.
+          - Set average to total / LENGTH OF scores.
+          - Print total.
+          - Print average.
+        standard:
+          - Set scores to [80, 90, 100].
+          - Find total and average, then print both.
+        abstraction:
+          - Print the total and average of [80, 90, 100].
+        pseudocode:
+          - SET scores TO [80, 90, 100]
+          - SET total TO SUM OF scores
+          - SET average TO total / LENGTH OF scores
+          - PRINT total
+          - PRINT average

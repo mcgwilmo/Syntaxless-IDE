@@ -1,0 +1,148 @@
+# Dictionaries and dictionary operations
+#
+# Lesson 10 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: dictionaries-and-dictionary-operations
+number: 10
+title: Dictionaries and dictionary operations
+overview: A dictionary stores key-value pairs. A key is the label used to look up a value. Dictionaries are used whenever information is naturally described by name.
+topics:
+  - id: creating-dictionaries
+    title: Creating dictionaries
+    definition: Creating a dictionary means linking keys to values.
+    howAndWhy: Dictionaries are used when lookup by name matters more than lookup by position.
+    examples:
+      - id: creating-dictionaries-example
+        strict:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Print grades.
+        standard:
+          - Create a dictionary grades with Ava and Noah, then print it.
+        abstraction:
+          - "Print the dictionary {\"Ava\": 92, \"Noah\": 88}."
+        pseudocode:
+          - "SET grades TO {\"Ava\": 92, \"Noah\": 88}"
+          - PRINT grades
+  - id: accessing-values-by-key
+    title: Accessing values by key
+    definition: Accessing by key means retrieving a value using its label.
+    howAndWhy: This is used because the key describes what the value means.
+    examples:
+      - id: accessing-values-by-key-example
+        strict:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Set ava_grade to VALUE FOR KEY "Ava" IN grades.
+          - Print ava_grade.
+        standard:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Look up "Ava" and print the value.
+        abstraction:
+          - Print the value stored for key "Ava".
+        pseudocode:
+          - "SET grades TO {\"Ava\": 92, \"Noah\": 88}"
+          - SET ava_grade TO VALUE FOR KEY "Ava" IN grades
+          - PRINT ava_grade
+  - id: adding-or-updating-keys
+    title: Adding or updating keys
+    definition: Adding or updating means assigning a value to a key whether that key is new or already exists.
+    howAndWhy: This is used when data changes over time or new entries are added.
+    examples:
+      - id: adding-or-updating-keys-example
+        strict:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Set the key Maya in grades to 95.
+          - Set the key Noah in grades to 90.
+          - Print grades.
+        standard:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Add Maya with 95, update Noah to 90, and print grades.
+        abstraction:
+          - Print grades after adding Maya and updating Noah.
+        pseudocode:
+          - "SET grades TO {\"Ava\": 92, \"Noah\": 88}"
+          - SET KEY "Maya" IN grades TO 95
+          - SET KEY "Noah" IN grades TO 90
+          - PRINT grades
+  - id: removing-keys
+    title: Removing keys
+    definition: Removing deletes a key and its value from the dictionary.
+    howAndWhy: This is used when data is no longer needed or is no longer valid.
+    examples:
+      - id: removing-keys-example
+        strict:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Remove key "ava" from grades.
+          - Print grades.
+        standard:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Remove key "Ava" and print grades.
+        abstraction:
+          - Print grades after removing key "Ava".
+        pseudocode:
+          - "SET grades TO {\"Ava\": 92, \"Noah\": 88}"
+          - REMOVE KEY "Ava" FROM grades
+          - PRINT grades
+  - id: checking-keys
+    title: Checking keys
+    definition: Checking keys means testing whether a certain label exists in the dictionary.
+    howAndWhy: This prevents lookup errors and supports safe validation.
+    examples:
+      - id: checking-keys-example
+        strict:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Set has_maya to KEY "Maya" EXISTS IN grades.
+          - Print has_maya.
+        standard:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Check whether key "Maya" exists and print the result.
+        abstraction:
+          - Print whether the dictionary contains key "Maya".
+        pseudocode:
+          - "SET grades TO {\"Ava\": 92, \"Noah\": 88}"
+          - SET has_maya TO KEY "Maya" EXISTS IN grades
+          - PRINT has_maya
+  - id: keys-values-and-items
+    title: Keys, values, and items
+    definition: A dictionary can expose all of its keys, all of its values, or all key-value pairs.
+    howAndWhy: This is useful for iteration, summaries, and reporting.
+    examples:
+      - id: keys-values-and-items-example
+        strict:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Set student_names to ALL KEYS OF grades.
+          - Set score_values to ALL VALUES OF grades.
+          - Print student_names.
+          - Print score_values.
+        standard:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Get the keys and values, then print both.
+        abstraction:
+          - Print the keys and values from the grades dictionary.
+        pseudocode:
+          - "SET grades TO {\"Ava\": 92, \"Noah\": 88}"
+          - SET student_names TO ALL KEYS OF grades
+          - SET score_values TO ALL VALUES OF grades
+          - PRINT student_names
+          - PRINT score_values
+  - id: looping-through-dictionaries
+    title: Looping through dictionaries
+    definition: Looping through a dictionary means visiting each key or each key-value pair.
+    howAndWhy: This is used when the program must process all records one by one.
+    examples:
+      - id: looping-through-dictionaries-example
+        strict:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - For each student, score in grades.
+          - Print student.
+          - Print score.
+        standard:
+          - "Set grades to {\"Ava\": 92, \"Noah\": 88}."
+          - Loop through each student and score, then print both.
+        abstraction:
+          - Print each student and score in the grades dictionary.
+        pseudocode:
+          - "SET grades TO {\"Ava\": 92, \"Noah\": 88}"
+          - FOR EACH student, score IN grades
+          - PRINT student
+          - PRINT score

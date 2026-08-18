@@ -1,0 +1,409 @@
+# Operators
+#
+# Lesson 6 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: operators
+number: 6
+title: Operators
+overview: Operators are the symbols or actions that combine, compare, update, or test values. A student should know what each operator means, when it should be used, and what result it produces.
+topics:
+  - id: arithmetic-operators
+    title: Arithmetic operators
+    definition: Arithmetic operators perform mathematical calculations. Common arithmetic operators include addition, subtraction, multiplication, division, exponentiation, floor division, and remainder.
+    howAndWhy: They are used to total values, compute averages, find growth, split quantities into groups, and test divisibility.
+    examples:
+      - id: arithmetic-operators-example-1
+        strict:
+          - Set result to 4 + 6.
+          - Print result.
+        standard:
+          - Add 4 and 6, store the result in result, and print it.
+        abstraction:
+          - Print the result of 4 + 6.
+        pseudocode:
+          - SET result TO 4 + 6
+          - PRINT result
+      - id: arithmetic-operators-example-2
+        strict:
+          - Set result to 10 - 3.
+          - Print result.
+        standard:
+          - Subtract 3 from 10, store the result in result, and print it.
+        abstraction:
+          - Print the result of 10 - 3.
+        pseudocode:
+          - SET result TO 10 - 3
+          - PRINT result
+      - id: arithmetic-operators-example-3
+        strict:
+          - Set result to 7 * 5.
+          - Print result.
+        standard:
+          - Multiply 7 by 5, store the result in result, and print it.
+        abstraction:
+          - Print the result of 7 * 5.
+        pseudocode:
+          - SET result TO 7 * 5
+          - PRINT result
+      - id: arithmetic-operators-example-4
+        strict:
+          - Set result to 20 / 4.
+          - Print result.
+        standard:
+          - Divide 20 by 4, store the result in result, and print it.
+        abstraction:
+          - Print the result of 20 / 4.
+        pseudocode:
+          - SET result TO 20 / 4
+          - PRINT result
+      - id: arithmetic-operators-example-5
+        strict:
+          - Set result to 2 ^ 3.
+          - Print result.
+        standard:
+          - Raise 2 to the power of 3, store the result in result, and print it.
+        abstraction:
+          - Print the result of 2 ^ 3.
+        pseudocode:
+          - SET result TO 2 ^ 3
+          - PRINT result
+      - id: arithmetic-operators-example-6
+        strict:
+          - Set result to FLOOR DIVISION OF 10 BY 3.
+          - Print result.
+        standard:
+          - Floor-divide 10 by 3, store the result in result, and print it.
+        abstraction:
+          - Print the floor division result of 10 by 3.
+        pseudocode:
+          - SET result TO FLOOR DIVISION OF 10 BY 3
+          - PRINT result
+      - id: arithmetic-operators-example-7
+        strict:
+          - Set result to 10 MOD 3.
+          - Print result.
+        standard:
+          - Find 10 MOD 3, store the result in result, and print it.
+        abstraction:
+          - Print the remainder of 10 divided by 3.
+        pseudocode:
+          - SET result TO 10 MOD 3
+          - PRINT result
+  - id: assignment-operators
+    title: Assignment operators
+    definition: Assignment operators store a value in a variable. They can also update a variable based on its current value.
+    howAndWhy: They are used to create state and then change it over time as the program runs.
+    examples:
+      - id: assignment-operators-example-1
+        strict:
+          - Set count to 5.
+          - Print count.
+        standard:
+          - Set count to 5 and print it.
+        abstraction:
+          - Print count after setting it to 5.
+        pseudocode:
+          - SET count TO 5
+          - PRINT count
+      - id: assignment-operators-example-2
+        strict:
+          - Set count to count + 1.
+          - Print count.
+        standard:
+          - Increase count by 1, then print it.
+        abstraction:
+          - Print count after adding 1.
+        pseudocode:
+          - SET count TO count + 1
+          - PRINT count
+      - id: assignment-operators-example-3
+        strict:
+          - Set count to count - 2.
+          - Print count.
+        standard:
+          - Decrease count by 2, then print it.
+        abstraction:
+          - Print count after subtracting 2.
+        pseudocode:
+          - SET count TO count - 2
+          - PRINT count
+      - id: assignment-operators-example-4
+        strict:
+          - Set count to count * 3.
+          - Print count.
+        standard:
+          - Multiply count by 3, then print it.
+        abstraction:
+          - Print count after multiplying it by 3.
+        pseudocode:
+          - SET count TO count * 3
+          - PRINT count
+      - id: assignment-operators-example-5
+        strict:
+          - Set count to count / 2.
+          - Print count.
+        standard:
+          - Divide count by 2, then print it.
+        abstraction:
+          - Print count after dividing it by 2.
+        pseudocode:
+          - SET count TO count / 2
+          - PRINT count
+  - id: comparison-operators
+    title: Comparison operators
+    definition: Comparison operators compare two values and return true or false. Common comparisons include equal to, not equal to, greater than, less than, greater than or equal to, and less than or equal to.
+    howAndWhy: They are used in decisions, filters, thresholds, and validation rules.
+    examples:
+      - id: comparison-operators-example-1
+        strict:
+          - Set result to 9 = 9.
+          - Print result.
+        standard:
+          - Compare 9 and 9, store the result in result, and print it.
+        abstraction:
+          - Print whether 9 equals 9.
+        pseudocode:
+          - SET result TO 9 = 9
+          - PRINT result
+      - id: comparison-operators-example-2
+        strict:
+          - Set result to 9 != 4.
+          - Print result.
+        standard:
+          - Compare 9 and 4 for inequality, store the result in result, and print it.
+        abstraction:
+          - Print whether 9 is not equal to 4.
+        pseudocode:
+          - SET result TO 9 != 4
+          - PRINT result
+      - id: comparison-operators-example-3
+        strict:
+          - Set result to 12 > 5.
+          - Print result.
+        standard:
+          - Compare 12 and 5, store whether 12 is greater in result, and print it.
+        abstraction:
+          - Print whether 12 is greater than 5.
+        pseudocode:
+          - SET result TO 12 > 5
+          - PRINT result
+      - id: comparison-operators-example-4
+        strict:
+          - Set result to 3 < 7.
+          - Print result.
+        standard:
+          - Compare 3 and 7, store whether 3 is smaller in result, and print it.
+        abstraction:
+          - Print whether 3 is less than 7.
+        pseudocode:
+          - SET result TO 3 < 7
+          - PRINT result
+      - id: comparison-operators-example-5
+        strict:
+          - Set result to 8 >= 8.
+          - Print result.
+        standard:
+          - Compare 8 and 8, store whether 8 is at least 8 in result, and print it.
+        abstraction:
+          - Print whether 8 is greater than or equal to 8.
+        pseudocode:
+          - SET result TO 8 >= 8
+          - PRINT result
+      - id: comparison-operators-example-6
+        strict:
+          - Set result to 6 <= 9.
+          - Print result.
+        standard:
+          - Compare 6 and 9, store whether 6 is at most 9 in result, and print it.
+        abstraction:
+          - Print whether 6 is less than or equal to 9.
+        pseudocode:
+          - SET result TO 6 <= 9
+          - PRINT result
+  - id: logical-operators
+    title: Logical operators
+    definition: Logical operators combine boolean conditions. The most common are AND, OR, and NOT.
+    howAndWhy: They are used when a decision depends on multiple requirements or on reversing a condition.
+    examples:
+      - id: logical-operators-example-1
+        strict:
+          - Set passed_exam to TRUE.
+          - Set submitted_assignment to TRUE.
+          - Set can_pass_course to passed_exam AND submitted_assignment.
+          - Print can_pass_course.
+        standard:
+          - Set passed_exam and submitted_assignment to TRUE.
+          - Set can_pass_course to their AND result and print it.
+        abstraction:
+          - Print whether passed_exam AND submitted_assignment is TRUE.
+        pseudocode:
+          - SET passed_exam TO TRUE
+          - SET submitted_assignment TO TRUE
+          - SET can_pass_course TO passed_exam AND submitted_assignment
+          - PRINT can_pass_course
+      - id: logical-operators-example-2
+        strict:
+          - Set is_admin to FALSE.
+          - Set is_teacher to TRUE.
+          - Set has_access to is_admin OR is_teacher.
+          - Print has_access.
+        standard:
+          - Set is_admin to FALSE and is_teacher to TRUE.
+          - Set has_access to their OR result and print it.
+        abstraction:
+          - Print whether is_admin OR is_teacher gives access.
+        pseudocode:
+          - SET is_admin TO FALSE
+          - SET is_teacher TO TRUE
+          - SET has_access TO is_admin OR is_teacher
+          - PRINT has_access
+      - id: logical-operators-example-3
+        strict:
+          - Set is_logged_in to FALSE.
+          - Set needs_login to NOT is_logged_in.
+          - Print needs_login.
+        standard:
+          - Set is_logged_in to FALSE.
+          - Negate it into needs_login and print the result.
+        abstraction:
+          - Print the opposite of FALSE in needs_login.
+        pseudocode:
+          - SET is_logged_in TO FALSE
+          - SET needs_login TO NOT is_logged_in
+          - PRINT needs_login
+  - id: membership-operators
+    title: Membership operators
+    definition: Membership operators test whether a value is inside a collection or inside a piece of text.
+    howAndWhy: They are useful for search, validation, filtering, and permission checks.
+    examples:
+      - id: membership-operators-example-1
+        strict:
+          - Set values to [1, 2, 3, 4].
+          - Set result to 4 IS IN values.
+          - Print result.
+        standard:
+          - Set values to [1, 2, 3, 4].
+          - Check whether 4 is in values and print the result.
+        abstraction:
+          - Print whether 4 appears in [1, 2, 3, 4].
+        pseudocode:
+          - SET values TO [1, 2, 3, 4]
+          - SET result TO 4 IS IN values
+          - PRINT result
+      - id: membership-operators-example-2
+        strict:
+          - Set sentence to "I like math and science".
+          - Set result to "math" IS IN sentence.
+          - Print result.
+        standard:
+          - Set sentence to "I like math and science".
+          - Check whether it contains "math" and print the result.
+        abstraction:
+          - Print whether "math" appears in "I like math and science".
+        pseudocode:
+          - SET sentence TO "I like math and science"
+          - SET result TO "math" IS IN sentence
+          - PRINT result
+  - id: identity-operators
+    title: Identity operators
+    definition: Identity checks ask whether two names refer to the exact same object, not just equal values.
+    howAndWhy: This matters when programs reuse the same list or object through different variable names. Two values can look equal while still being different objects.
+    examples:
+      - id: identity-operators-example
+        strict:
+          - Set numbers to [1, 2, 3].
+          - Set alias to numbers.
+          - Set same_object to alias IS THE SAME OBJECT AS numbers.
+          - Print same_object.
+        standard:
+          - Set numbers to [1, 2, 3] and alias to numbers.
+          - Check whether alias and numbers are the same object and print the result.
+        abstraction:
+          - Print whether alias and numbers refer to the same object.
+        pseudocode:
+          - SET numbers TO [1, 2, 3]
+          - SET alias TO numbers
+          - SET same_object TO alias IS THE SAME OBJECT AS numbers
+          - PRINT same_object
+  - id: bitwise-operators
+    title: Bitwise operators
+    definition: Bitwise operators work on the binary representation of integers. Common ones include AND, OR, XOR, left shift, right shift, and bitwise NOT.
+    howAndWhy: These are used less often in beginner programs, but they matter in low-level tasks, compact flag systems, and performance-oriented logic.
+    examples:
+      - id: bitwise-operators-example-1
+        strict:
+          - Set result to BITWISE AND OF 6 AND 3.
+          - Print result.
+        standard:
+          - Apply bitwise AND to 6 and 3, store the result in result, and print it.
+        abstraction:
+          - Print the bitwise AND of 6 and 3.
+        pseudocode:
+          - SET result TO BITWISE AND OF 6 AND 3
+          - PRINT result
+      - id: bitwise-operators-example-2
+        strict:
+          - Set result to BITWISE OR OF 6 AND 3.
+          - Print result.
+        standard:
+          - Apply bitwise OR to 6 and 3, store the result in result, and print it.
+        abstraction:
+          - Print the bitwise OR of 6 and 3.
+        pseudocode:
+          - SET result TO BITWISE OR OF 6 AND 3
+          - PRINT result
+      - id: bitwise-operators-example-3
+        strict:
+          - Set result to BITWISE XOR OF 6 AND 3.
+          - Print result.
+        standard:
+          - Apply bitwise XOR to 6 and 3, store the result in result, and print it.
+        abstraction:
+          - Print the bitwise XOR of 6 and 3.
+        pseudocode:
+          - SET result TO BITWISE XOR OF 6 AND 3
+          - PRINT result
+      - id: bitwise-operators-example-4
+        strict:
+          - Set result to 3 SHIFT LEFT BY 2.
+          - Print result.
+        standard:
+          - Shift 3 left by 2, store the result in result, and print it.
+        abstraction:
+          - Print the result of shifting 3 left by 2.
+        pseudocode:
+          - SET result TO 3 SHIFT LEFT BY 2
+          - PRINT result
+      - id: bitwise-operators-example-5
+        strict:
+          - Set result to 16 SHIFT RIGHT BY 2.
+          - Print result.
+        standard:
+          - Shift 16 right by 2, store the result in result, and print it.
+        abstraction:
+          - Print the result of shifting 16 right by 2.
+        pseudocode:
+          - SET result TO 16 SHIFT RIGHT BY 2
+          - PRINT result
+  - id: operator-precedence
+    title: Operator precedence
+    definition: Operator precedence is the rule that decides which operation happens first when several operators appear in one expression.
+    howAndWhy: Understanding precedence prevents mistakes. Multiplication usually happens before addition unless grouping symbols force a different order.
+    examples:
+      - id: operator-precedence-example
+        strict:
+          - Set first_result to 2 + 3 * 4.
+          - Set second_result to (2 + 3) * 4.
+          - Print first_result.
+          - Print second_result.
+        standard:
+          - Set first_result to 2 + 3 * 4 and second_result to (2 + 3) * 4.
+          - Print both results.
+        abstraction:
+          - Print the two results from 2 + 3 * 4 and (2 + 3) * 4.
+        pseudocode:
+          - SET first_result TO 2 + 3 * 4
+          - SET second_result TO (2 + 3) * 4
+          - PRINT first_result
+          - PRINT second_result

@@ -1,0 +1,206 @@
+# Linked List
+#
+# Lesson 1 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: linked-list
+number: 1
+title: Linked List
+overview: A linked list stores values in nodes, where each node points to the next node. Unlike an array-like structure, elements do not have to sit next to each other in memory, which makes insertion and deletion near known locations natural while ordinary searching still requires stepping through the chain one node at a time.
+topics:
+  - id: linked-list-initialization-with-classes
+    title: Initialization with classes
+    definition: Initialization is the process of defining the node object and the list object, then setting the head pointer to the first node or to empty. In an object-oriented design, the list class owns the head and any helper methods.
+    howAndWhy: "This is used because a linked list is not just a bag of values. It is a relationship between nodes. By using a Node class and a LinkedList class, the learner sees exactly what the structure must remember: where the first node is, how new nodes are attached, and how the chain is traversed."
+    examples:
+      - id: linked-list-initialization-with-classes-example
+        strict:
+          - Create a class named Node.
+          - "                  Define a function named initialize that takes value."
+          - "                  Set self.value to value."
+          - "                  Set self.next to null."
+          - "                  Create a class named LinkedList."
+          - "                  Define a function named initialize."
+          - "                  Set self.head to null."
+          - "                  Define a function named append that takes value."
+          - "                  Create new_node as Node(value)."
+          - "                  If self.head is null, then."
+          - "                  Set self.head to new_node."
+          - "                  Return."
+          - "                  End the if."
+          - "                  Set current to self.head."
+          - "                  While current.next is not null."
+          - "                  Set current to current.next."
+          - "                  End the while."
+          - "                  Set current.next to new_node."
+          - "                  Create numbers as LinkedList()."
+          - "                  Call numbers.append(7)."
+          - "                  Call numbers.append(11)."
+          - "                  Call numbers.append(15)."
+        standard:
+          - Create Node with initialize storing value and next.
+          - "                  Create LinkedList with initialize setting head to null."
+          - "                  Define append(value) to create new_node, set head if empty, otherwise walk to the end and attach it."
+          - "                  Create numbers and append 7, 11, and 15."
+        abstraction:
+          - Build Node and LinkedList classes, then append 7, 11, and 15 to numbers.
+        pseudocode:
+          - CLASS Node
+          - "                  FUNCTION initialize(value)"
+          - "                  SET self.value = value"
+          - "                  SET self.next = null"
+          - "                  CLASS LinkedList"
+          - "                  FUNCTION initialize()"
+          - "                  SET self.head = null"
+          - "                  FUNCTION append(value)"
+          - "                  CREATE new_node AS Node(value)"
+          - "                  IF self.head IS null THEN"
+          - "                  SET self.head = new_node"
+          - "                  RETURN"
+          - "                  END IF"
+          - "                  SET current = self.head"
+          - "                  WHILE current.next IS NOT null"
+          - "                  SET current = current.next"
+          - "                  END WHILE"
+          - "                  SET current.next = new_node"
+          - "                  CREATE numbers AS LinkedList()"
+          - "                  CALL numbers.append(7)"
+          - "                  CALL numbers.append(11)"
+          - "                  CALL numbers.append(15)"
+  - id: linked-list-linear-search
+    title: Linear search
+    definition: Linear search in a linked list means starting at the head and checking each node until the target is found or the list ends.
+    howAndWhy: It is used because linked lists do not support direct indexing the way arrays do. The only reliable way to find a value is to follow the next pointers one by one. This makes the cost proportional to how far through the chain the value appears.
+    examples:
+      - id: linked-list-linear-search-example
+        strict:
+          - Define a function named contains that takes target.
+          - "                  Set current to self.head."
+          - "                  While current is not null."
+          - "                  If current.value = target, then."
+          - "                  Return true."
+          - "                  End the if."
+          - "                  Set current to current.next."
+          - "                  End the while."
+          - "                  Return false."
+        standard:
+          - Define contains(target).
+          - "                  Start current at self.head and walk through the list."
+          - "                  Return true when current.value = target."
+          - "                  Otherwise move to current.next until the list ends."
+          - "                  Return false if target is never found."
+        abstraction:
+          - Traverse from head to tail and return whether target appears.
+        pseudocode:
+          - FUNCTION contains(target)
+          - "                  SET current = self.head"
+          - "                  WHILE current IS NOT null"
+          - "                  IF current.value = target THEN"
+          - "                  RETURN true"
+          - "                  END IF"
+          - "                  SET current = current.next"
+          - "                  END WHILE"
+          - "                  RETURN false"
+  - id: linked-list-insert-at-the-front
+    title: Insert at the front
+    definition: Insert at the front creates a new node and makes that node the new head of the list.
+    howAndWhy: This is one of the main strengths of a linked list. The operation is constant-time because no existing values need to shift. Only the head reference and the new node's next reference need to be updated.
+    examples:
+      - id: linked-list-insert-at-the-front-example
+        strict:
+          - Define a function named push_front that takes value.
+          - "                  Create new_node as Node(value)."
+          - "                  Set new_node.next to self.head."
+          - "                  Set self.head to new_node."
+        standard:
+          - Define push_front(value).
+          - "                  Create new_node, point it to the old head, and make it the new head."
+        abstraction:
+          - Insert a new node at the front of the list.
+        pseudocode:
+          - FUNCTION push_front(value)
+          - "                  CREATE new_node AS Node(value)"
+          - "                  SET new_node.next = self.head"
+          - "                  SET self.head = new_node"
+  - id: linked-list-insert-after-a-known-node
+    title: Insert after a known node
+    definition: Insert after a known node means splicing a new node into the chain after a node that has already been located.
+    howAndWhy: It is used when the program already has a pointer to the position where the new value belongs. This is efficient because the list does not have to shift later elements. Only a few references are rewired.
+    examples:
+      - id: linked-list-insert-after-a-known-node-example
+        strict:
+          - Define a function named insert_after that takes node, value.
+          - "                  If node is null, then."
+          - "                  Return."
+          - "                  End the if."
+          - "                  Create new_node as Node(value)."
+          - "                  Set new_node.next to node.next."
+          - "                  Set node.next to new_node."
+        standard:
+          - Define insert_after(node, value).
+          - "                  Return if node is null."
+          - "                  Create new_node, preserve node.next, and link new_node after node."
+        abstraction:
+          - Splice a new node in immediately after a known node.
+        pseudocode:
+          - FUNCTION insert_after(node, value)
+          - "                  IF node IS null THEN"
+          - "                  RETURN"
+          - "                  END IF"
+          - "                  CREATE new_node AS Node(value)"
+          - "                  SET new_node.next = node.next"
+          - "                  SET node.next = new_node"
+  - id: linked-list-delete-by-value
+    title: Delete by value
+    definition: Delete by value removes the first node whose value matches the target and reconnects the surrounding nodes so the chain remains intact.
+    howAndWhy: It is used when the goal is to remove a logical item from the list. Deletion is natural in a linked list because values do not need to shift left. The key challenge is keeping track of the node before the node being removed.
+    examples:
+      - id: linked-list-delete-by-value-example
+        strict:
+          - Define a function named delete_value that takes target.
+          - "                  If self.head is null, then."
+          - "                  Return false."
+          - "                  End the if."
+          - "                  If self.head.value = target, then."
+          - "                  Set self.head to self.head.next."
+          - "                  Return true."
+          - "                  End the if."
+          - "                  Set previous to self.head."
+          - "                  Set current to self.head.next."
+          - "                  While current is not null."
+          - "                  If current.value = target, then."
+          - "                  Set previous.next to current.next."
+          - "                  Return true."
+          - "                  End the if."
+          - "                  Set previous to current."
+          - "                  Set current to current.next."
+          - "                  End the while."
+          - "                  Return false."
+        standard:
+          - Define delete_value(target).
+          - "                  Handle the empty list and the case where the head matches."
+          - "                  Walk previous and current through the list until target is found."
+          - "                  Bypass the matching node and return true."
+          - "                  Return false if no node matches."
+        abstraction:
+          - Remove the first node whose value equals target and report success.
+        pseudocode:
+          - FUNCTION delete_value(target)
+          - "                  IF self.head IS null THEN"
+          - "                  RETURN false"
+          - "                  END IF"
+          - "                  IF self.head.value = target THEN"
+          - "                  SET self.head = self.head.next"
+          - "                  RETURN true"
+          - "                  END IF"
+          - "                  SET previous = self.head"
+          - "                  SET current = self.head.next"
+          - "                  WHILE current IS NOT null"
+          - "                  IF current.value = target THEN"
+          - "                  SET previous.next = current.next"
+          - "                  RETURN true"
+          - "                  END IF"
+          - "                  SET previous = current"
+          - "                  SET current = current.next"
+          - "                  END WHILE"
+          - "                  RETURN false"

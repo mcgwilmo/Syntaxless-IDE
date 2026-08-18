@@ -1,0 +1,34 @@
+# Case or match logic
+#
+# Lesson 12 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: case-or-match-logic
+number: 12
+title: Case or match logic
+overview: Case logic compares one value against several possible exact options. It is cleaner than many repeated if statements when the program is choosing between named cases.
+topics:
+  - id: case-selection
+    title: Case selection
+    definition: Case logic selects one branch based on the value of a variable.
+    howAndWhy: It is used in menus, role selection, command processing, and category dispatch.
+    examples:
+      - id: case-selection-example
+        strict:
+          - Set day to "Monday".
+          - Match day.
+          - If the case is "Monday", then print "start of week".
+          - If the case is "Friday", then print "end of week".
+          - In the default case, print "middle of week".
+        standard:
+          - Set day to "Monday".
+          - Match day.
+          - If the value is "Monday", print "start of week".
+          - If the value is "Friday", print "end of week".
+          - Otherwise, print "middle of week".
+        abstraction:
+          - Match day and print the message for Monday, Friday, or the default case.
+        pseudocode:
+          - SET day TO "Monday"
+          - "MATCH day CASE \"Monday\": PRINT \"Start of week\" CASE \"Friday\": PRINT \"End of week\" DEFAULT:"
+          - PRINT "Middle of week"

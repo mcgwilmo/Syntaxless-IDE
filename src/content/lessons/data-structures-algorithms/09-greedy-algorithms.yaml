@@ -1,0 +1,149 @@
+# Greedy Algorithms
+#
+# Lesson 9 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: greedy-algorithms
+number: 9
+title: Greedy Algorithms
+overview: A greedy algorithm makes the best-looking local choice at each step and does not reconsider that choice later. Greedy methods are powerful when a problem has a structure that guarantees local decisions build a global optimum.
+topics:
+  - id: greedy-activity-selection
+    title: Activity selection
+    definition: The activity selection problem asks for the maximum number of non-overlapping activities. The classic greedy rule is to keep choosing the activity that finishes first among those still available.
+    howAndWhy: It is used because finishing early leaves as much room as possible for future activities. This is a case where the locally best decision provably supports the globally best schedule.
+    examples:
+      - id: greedy-activity-selection-example
+        strict:
+          - Define a function named activity_selection that takes activities.
+          - "                  Sort activities by finish time."
+          - "                  Create empty answer."
+          - "                  Set last_finish to -infinity."
+          - "                  For each activity in activities."
+          - "                  If activity.start >= last_finish, then."
+          - "                  Append activity to answer."
+          - "                  Set last_finish to activity.finish."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Return answer."
+        standard:
+          - Define activity_selection(activities).
+          - "                  Sort the activities by finish time."
+          - "                  Walk through them in that order and choose an activity whenever its start is at least the last chosen finish."
+          - "                  Return the chosen set."
+        abstraction:
+          - Greedily keep the earliest-finishing compatible activities.
+        pseudocode:
+          - FUNCTION activity_selection(activities)
+          - "                  SORT activities by finish time"
+          - "                  CREATE empty answer"
+          - "                  SET last_finish = -infinity"
+          - "                  FOR EACH activity IN activities"
+          - "                  IF activity.start >= last_finish THEN"
+          - "                  APPEND activity TO answer SET last_finish = activity.finish END IF END FOR RETURN answer"
+  - id: greedy-fractional-knapsack
+    title: Fractional knapsack
+    definition: In fractional knapsack, each item has value and weight, and fractions of items may be taken. The greedy rule is to take as much as possible of the item with highest value-to-weight ratio first.
+    howAndWhy: It is used because every partial unit of an item contributes proportionally. That proportional structure is exactly what makes the greedy choice correct here, unlike in the 0-1 version where items are indivisible.
+    examples:
+      - id: greedy-fractional-knapsack-example
+        strict:
+          - Define a function named fractional_knapsack that takes items, capacity.
+          - "                  Sort items by value_per_weight in descending order."
+          - "                  Set total_value to 0."
+          - "                  For each item in items."
+          - "                  If capacity = 0, then."
+          - "                  Stop the current loop."
+          - "                  End the if."
+          - "                  If item.weight <= capacity, then."
+          - "                  Take all of item."
+          - "                  Decrease capacity by item.weight."
+          - "                  Increase total_value by item.value."
+          - "                  Otherwise."
+          - "                  Take fraction = capacity / item.weight of item."
+          - "                  Increase total_value by fraction * item.value."
+          - "                  Set capacity to 0."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Return total_value."
+        standard:
+          - Define fractional_knapsack(items, capacity).
+          - "                  Sort items by value_per_weight descending."
+          - "                  Take each whole item while it fits."
+          - "                  When the next item no longer fits, take only the needed fraction and stop."
+          - "                  Return total_value."
+        abstraction:
+          - Greedily fill the knapsack by value density, taking a fraction of the last item if needed.
+        pseudocode:
+          - FUNCTION fractional_knapsack(items, capacity)
+          - "                  SORT items by value_per_weight in descending order"
+          - "                  SET total_value = 0"
+          - "                  FOR EACH item IN items"
+          - "                  IF capacity = 0 THEN"
+          - "                  BREAK END IF IF item.weight <= capacity THEN TAKE all of item DECREASE capacity by item.weight"
+          - "                  INCREASE total_value by item.value ELSE TAKE fraction = capacity / item.weight of item INCREASE"
+          - "                  total_value by fraction * item.value SET capacity = 0 END IF END FOR RETURN total_value"
+  - id: greedy-huffman-coding
+    title: Huffman coding
+    definition: Huffman coding builds an optimal prefix code by repeatedly combining the two least frequent symbols into a new tree node.
+    howAndWhy: It is used in compression because frequent symbols should get shorter codes and rare symbols can tolerate longer ones. The greedy choice of merging the two least frequent symbols is what makes the final code optimal.
+    examples:
+      - id: greedy-huffman-coding-example
+        strict:
+          - Define a function named huffman that takes frequencies.
+          - "                  Create min_heap of one-node trees keyed by frequency."
+          - "                  While heap size > 1."
+          - "                  Extract smallest tree x."
+          - "                  Extract smallest tree y."
+          - "                  Create new parent with weight x.weight + y.weight."
+          - "                  Set parent.left to x."
+          - "                  Set parent.right to y."
+          - "                  Insert parent back into heap."
+          - "                  End the while."
+          - "                  Return remaining tree."
+        standard:
+          - Define huffman(frequencies).
+          - "                  Create a min-heap of one-node trees."
+          - "                  Repeatedly remove the two lightest trees, join them under a new parent, and push that parent back."
+          - "                  Return the final remaining tree."
+        abstraction:
+          - Build the Huffman tree by repeatedly merging the two least frequent trees.
+        pseudocode:
+          - FUNCTION huffman(frequencies)
+          - "                  CREATE min_heap of one-node trees keyed by frequency"
+          - "                  WHILE heap size > 1"
+          - "                  EXTRACT smallest tree x EXTRACT smallest tree y CREATE new parent with weight x.weight + y.weight"
+          - "                  SET parent.left = x SET parent.right = y INSERT parent back into heap END WHILE RETURN remaining"
+          - "                  tree"
+  - id: greedy-minimum-spanning-tree-with-kruskals-idea
+    title: Minimum spanning tree with Kruskal's idea
+    definition: A minimum spanning tree connects all vertices in a weighted undirected graph using the smallest possible total edge weight without creating cycles. Kruskal's greedy rule adds the smallest safe edge next.
+    howAndWhy: It is used in network design because it minimizes total wiring, road cost, or infrastructure cost while still keeping the system connected. The key is that an edge is chosen only if it does not form a cycle with edges already chosen.
+    examples:
+      - id: greedy-minimum-spanning-tree-with-kruskals-idea-example
+        strict:
+          - Define a function named kruskal that takes vertices, edges.
+          - "                  Sort edges by weight."
+          - "                  Make each vertex its own set."
+          - "                  Create empty tree_edges."
+          - "                  For each edge (u, v, w) in sorted edges."
+          - "                  If find(u) != find(v), then."
+          - "                  Append edge to tree_edges."
+          - "                  Union sets of u and v."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Return tree_edges."
+        standard:
+          - Define kruskal(vertices, edges).
+          - "                  Sort edges by weight and place each vertex in its own set."
+          - "                  Scan edges from lightest to heaviest."
+          - "                  Add an edge only when its endpoints are in different sets, then union those sets."
+          - "                  Return tree_edges."
+        abstraction:
+          - Build the MST by adding the lightest edges that do not create a cycle.
+        pseudocode:
+          - FUNCTION kruskal(vertices, edges)
+          - "                  SORT edges by weight"
+          - "                  MAKE each vertex its own set CREATE empty tree_edges FOR EACH edge (u, v, w) IN sorted edges IF"
+          - "                  find(u) != find(v) THEN APPEND edge TO tree_edges UNION sets of u and v END IF END FOR RETURN"
+          - "                  tree_edges"

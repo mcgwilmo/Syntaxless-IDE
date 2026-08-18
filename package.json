@@ -8,8 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "copy:monaco": "node scripts/copy-monaco.mjs",
-    "predev": "npm run copy:monaco",
-    "prebuild": "npm run copy:monaco",
+    "predev": "npm run copy:monaco && npm run build:lessons",
+    "prebuild": "npm run copy:monaco && npm run build:lessons",
+    "build:lessons": "node scripts/build-lessons.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:contrast": "node scripts/check-contrast.mjs"
@@ -33,6 +34,7 @@
     "jsdom": "^30.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "yaml": "^2.9.0"
   }
 }

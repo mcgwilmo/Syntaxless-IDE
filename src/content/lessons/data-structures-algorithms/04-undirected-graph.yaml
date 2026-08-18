@@ -1,0 +1,165 @@
+# Undirected Graph
+#
+# Lesson 4 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: undirected-graph
+number: 4
+title: Undirected Graph
+overview: An undirected graph stores objects as vertices and connections as edges, where each connection works both ways. This is the right model for roads without one-way restrictions, friendship relationships, and physical network links.
+topics:
+  - id: undirected-graph-initialization
+    title: Initialization with a Graph class and adjacency lists
+    definition: Initialization creates a graph object whose main state is an adjacency list. Each vertex maps to the vertices connected to it. In an undirected graph, adding an edge means recording the relationship in both directions.
+    howAndWhy: This is used because graphs are about relationships, not just storage. An adjacency list is compact and natural when most vertices connect to only a few others. Using a class keeps the rules for adding vertices and edges inside one object.
+    examples:
+      - id: undirected-graph-initialization-example
+        strict:
+          - Create a class named UndirectedGraph.
+          - "                  Define a function named initialize."
+          - "                  Set self.adj to empty map."
+          - "                  Define a function named add_vertex that takes v."
+          - "                  If v NOT in self.adj, then."
+          - "                  Set self.adj[v] to empty list."
+          - "                  End the if."
+          - "                  Define a function named add_edge that takes u, v."
+          - "                  Call add_vertex(u)."
+          - "                  Call add_vertex(v)."
+          - "                  Append v to self.adj[u]."
+          - "                  Append u to self.adj[v]."
+        standard:
+          - Create UndirectedGraph with an empty adjacency map.
+          - "                  Define add_vertex(v) to create an empty neighbor list when needed."
+          - "                  Define add_edge(u, v) to add both endpoints and append each vertex to the other's list."
+        abstraction:
+          - Build an undirected graph by storing each edge in both adjacency lists.
+        pseudocode:
+          - CLASS UndirectedGraph
+          - "                  FUNCTION initialize()"
+          - "                  SET self.adj = empty map"
+          - "                  FUNCTION add_vertex(v)"
+          - "                  IF v NOT IN self.adj THEN"
+          - "                  SET self.adj[v] = empty list"
+          - "                  END IF"
+          - "                  FUNCTION add_edge(u, v)"
+          - "                  CALL add_vertex(u)"
+          - "                  CALL add_vertex(v)"
+          - "                  APPEND v TO self.adj[u] APPEND u TO self.adj[v]"
+  - id: undirected-graph-breadth-first-search
+    title: Breadth-first search for unweighted shortest paths
+    definition: Breadth-first search visits vertices level by level. In an unweighted graph, this means the first time a vertex is reached, it has been reached by the shortest number of edges.
+    howAndWhy: "It is used because many graph questions are really minimum-step questions: what is the fewest number of hops, roads, or friend links needed to go from one place to another. BFS answers that exactly in unweighted settings."
+    examples:
+      - id: undirected-graph-breadth-first-search-example
+        strict:
+          - Define a function named bfs_shortest_path that takes start, goal.
+          - "                  Create queue."
+          - "                  Enqueue start."
+          - "                  Set visited to {start}."
+          - "                  Set parent[start] to null."
+          - "                  While queue is not empty."
+          - "                  Set current to dequeue queue."
+          - "                  If current = goal, then."
+          - "                  Stop the current loop."
+          - "                  End the if."
+          - "                  For each neighbor in self.adj[current]."
+          - "                  If neighbor NOT in visited, then."
+          - "                  Add neighbor to visited."
+          - "                  Set parent[neighbor] to current."
+          - "                  Enqueue neighbor."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the while."
+          - "                  Reconstruct path from parent map."
+        standard:
+          - Define bfs_shortest_path(start, goal).
+          - "                  Use a queue, visited set, and parent map starting from start."
+          - "                  Process vertices level by level until goal is reached."
+          - "                  Record parent links for newly discovered neighbors."
+          - "                  Reconstruct the path from the parent map."
+        abstraction:
+          - Use BFS to find and reconstruct the shortest unweighted path from start to goal.
+        pseudocode:
+          - FUNCTION bfs_shortest_path(start, goal)
+          - "                  CREATE queue"
+          - "                  ENQUEUE start"
+          - "                  SET visited = {start}"
+          - "                  SET parent[start] = null"
+          - "                  WHILE queue IS NOT empty"
+          - "                  SET current = DEQUEUE queue"
+          - "                  IF current = goal THEN"
+          - "                  BREAK END IF FOR EACH neighbor IN self.adj[current] IF neighbor NOT IN visited THEN ADD neighbor"
+          - "                  TO visited SET parent[neighbor] = current ENQUEUE neighbor END IF END FOR END WHILE"
+          - "                  RECONSTRUCT path from parent map"
+  - id: undirected-graph-depth-first-search
+    title: Depth-first search for exploration and components
+    definition: Depth-first search follows one branch as far as possible before backtracking.
+    howAndWhy: It is used when the program wants to explore structure, find connected components, or test reachability. DFS is not an unweighted shortest-path algorithm, but it is excellent for understanding shape and connectivity.
+    examples:
+      - id: undirected-graph-depth-first-search-example
+        strict:
+          - Define a function named dfs that takes vertex.
+          - "                  Add vertex to visited."
+          - "                  For each neighbor in self.adj[vertex]."
+          - "                  If neighbor NOT in visited, then."
+          - "                  Call dfs(neighbor)."
+          - "                  End the if."
+          - "                  End the for."
+        standard:
+          - Define dfs(vertex).
+          - "                  Mark vertex visited."
+          - "                  Recursively visit each unvisited neighbor."
+        abstraction:
+          - Depth-first search visits a vertex, marks it, and recurses on unvisited neighbors.
+        pseudocode:
+          - FUNCTION dfs(vertex)
+          - "                  ADD vertex TO visited"
+          - "                  FOR EACH neighbor IN self.adj[vertex]"
+          - "                  IF neighbor NOT IN visited THEN"
+          - "                  CALL dfs(neighbor)"
+          - "                  END IF"
+          - "                  END FOR"
+  - id: undirected-graph-dijkstra
+    title: Dijkstra for weighted graphs with non-negative edges
+    definition: Dijkstra's algorithm computes the shortest path from a source to all other vertices when every edge weight is non-negative.
+    howAndWhy: It is used when the graph measures cost, distance, or time instead of just step count. The algorithm repeatedly finalizes the smallest known tentative distance and relaxes outgoing edges.
+    examples:
+      - id: undirected-graph-dijkstra-example
+        strict:
+          - Define a function named dijkstra that takes start.
+          - "                  For each vertex."
+          - "                  Set distance[vertex] to infinity."
+          - "                  End the for."
+          - "                  Set distance[start] to 0."
+          - "                  Create priority_queue."
+          - "                  Insert (0, start)."
+          - "                  While priority_queue is not empty."
+          - "                  Extract vertex with smallest tentative distance."
+          - "                  For each (neighbor, weight) adjacent to vertex."
+          - "                  If distance[vertex] + weight < distance[neighbor], then."
+          - "                  Set distance[neighbor] to distance[vertex] + weight."
+          - "                  Set parent[neighbor] to vertex."
+          - "                  Insert (distance[neighbor], neighbor)."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  End the while."
+        standard:
+          - Define dijkstra(start).
+          - "                  Initialize all distances to infinity except start."
+          - "                  Use a priority queue to repeatedly extract the closest vertex."
+          - "                  Relax each adjacent edge, updating distance and parent when a shorter path is found."
+        abstraction:
+          - Use Dijkstra's algorithm to update shortest distances and parents from start.
+        pseudocode:
+          - FUNCTION dijkstra(start)
+          - "                  FOR EACH vertex"
+          - "                  SET distance[vertex] = infinity"
+          - "                  END FOR"
+          - "                  SET distance[start] = 0"
+          - "                  CREATE priority_queue"
+          - "                  INSERT (0, start)"
+          - "                  WHILE priority_queue IS NOT empty"
+          - "                  EXTRACT vertex with smallest tentative distance FOR EACH (neighbor, weight) ADJACENT TO vertex IF"
+          - "                  distance[vertex] + weight < distance[neighbor] THEN SET distance[neighbor] = distance[vertex] +"
+          - "                  weight SET parent[neighbor] = vertex INSERT (distance[neighbor], neighbor) END IF END FOR END"
+          - "                  WHILE"

@@ -1,0 +1,31 @@
+# While loops
+#
+# Lesson 13 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: while-loops
+number: 13
+title: While loops
+overview: A while loop repeats as long as a condition stays true. It is useful when the number of repetitions is not known in advance.
+topics:
+  - id: basic-while-loop
+    title: Basic while loop
+    definition: A while loop checks the condition before each repetition.
+    howAndWhy: Use it for counting, retrying, waiting, and repeated processing until a state changes.
+    examples:
+      - id: basic-while-loop-example
+        strict:
+          - Set count to 1.
+          - While count <= 3.
+          - Print count.
+          - Set count to count + 1.
+        standard:
+          - Set count to 1.
+          - Repeat while count <= 3, printing count and increasing it each time.
+        abstraction:
+          - Print the numbers 1 through 3 with a while loop.
+        pseudocode:
+          - SET count TO 1
+          - WHILE count <= 3 DO
+          - PRINT count
+          - SET count TO count + 1

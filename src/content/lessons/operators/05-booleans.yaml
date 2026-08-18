@@ -1,0 +1,52 @@
+# Booleans
+#
+# Lesson 5 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: booleans
+number: 5
+title: Booleans
+overview: A boolean is a value that is either true or false. Booleans let programs represent decisions, conditions, tests, and logical checks.
+topics:
+  - id: boolean-values
+    title: Boolean values
+    definition: A boolean stores whether something is true or false.
+    howAndWhy: Use booleans whenever the program needs to remember the result of a check, such as whether a user is logged in or whether a number is even.
+    examples:
+      - id: boolean-values-example
+        strict:
+          - Set is_greater to 8 > 5.
+          - Print is_greater.
+        standard:
+          - Set is_greater to whether 8 is greater than 5.
+          - Print is_greater.
+        abstraction:
+          - Print whether 8 is greater than 5.
+        pseudocode:
+          - SET is_greater TO 8 > 5
+          - PRINT is_greater
+  - id: truthiness-and-falsiness
+    title: Truthiness and falsiness
+    definition: Some values naturally behave like true or false when checked in a condition. Empty values often act false, and present values often act true.
+    howAndWhy: This is useful for concise checks such as testing whether a list has items or whether a string is empty.
+    examples:
+      - id: truthiness-and-falsiness-example
+        strict:
+          - Set message to "".
+          - If message is EMPTY, then.
+          - Print FALSE.
+          - Otherwise.
+          - Print TRUE.
+        standard:
+          - Set message to "".
+          - If message is EMPTY.
+          - Print FALSE.
+          - Otherwise, print TRUE.
+        abstraction:
+          - Print FALSE if message is empty, otherwise print TRUE.
+        pseudocode:
+          - SET message TO ""
+          - IF message IS EMPTY THEN
+          - PRINT FALSE
+          - ELSE
+          - PRINT TRUE

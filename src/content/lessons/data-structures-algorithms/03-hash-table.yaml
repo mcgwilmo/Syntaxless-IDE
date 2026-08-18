@@ -1,0 +1,133 @@
+# Hash Table
+#
+# Lesson 3 of the data-structures-algorithms track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: hash-table
+number: 3
+title: Hash Table
+overview: A hash table stores key-value pairs by transforming each key into an index with a hash function. When designed well, it gives very fast average-case lookup, insertion, and deletion. In Python, dictionaries already provide this behavior, but teaching the structure through classes makes the underlying idea visible.
+topics:
+  - id: hash-table-initialization-with-buckets
+    title: Initialization with buckets
+    definition: Initialization creates an array of buckets and chooses a hash rule that maps keys into bucket positions. Each bucket may store a small chain or list of entries to handle collisions.
+    howAndWhy: "This is used because a hash table is really two ideas combined: a fast address calculation and a collision strategy. Building the class explicitly teaches that keys can collide and that the table must still preserve every key-value pair correctly."
+    examples:
+      - id: hash-table-initialization-with-buckets-example
+        strict:
+          - Create a class named HashTable.
+          - "                  Define a function named initialize that takes capacity."
+          - "                  Set self.capacity to capacity."
+          - "                  Set self.buckets to array of empty lists of length capacity."
+          - "                  Define a function named hash that takes key."
+          - "                  Return computed_index_from_key mod self.capacity."
+        standard:
+          - Create HashTable with capacity and an array of empty bucket lists.
+          - "                  Define hash(key) to compute an index modulo capacity."
+        abstraction:
+          - Initialize a hash table with bucket storage and a hash-to-index function.
+        pseudocode:
+          - CLASS HashTable
+          - "                  FUNCTION initialize(capacity)"
+          - "                  SET self.capacity = capacity"
+          - "                  SET self.buckets = array of empty lists of length capacity"
+          - "                  FUNCTION hash(key)"
+          - "                  RETURN computed_index_from_key MOD self.capacity"
+  - id: hash-table-search-by-key
+    title: Search by key
+    definition: Searching in a hash table first hashes the key to find the correct bucket and then searches only within that bucket for the matching key.
+    howAndWhy: It is used because the hash function narrows the search area dramatically. Instead of scanning every entry, the program jumps directly to the small bucket where the key should live. This is why hash tables are a common choice for symbol tables, caches, and frequency counters.
+    examples:
+      - id: hash-table-search-by-key-example
+        strict:
+          - Define a function named get that takes key.
+          - "                  Set index to hash(key)."
+          - "                  For each pair in self.buckets[index]."
+          - "                  If pair.key = key, then."
+          - "                  Return pair.value."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Return not_found."
+        standard:
+          - Define get(key).
+          - "                  Hash the key to choose a bucket."
+          - "                  Scan the bucket for a matching pair and return its value."
+          - "                  Return not_found if the key is missing."
+        abstraction:
+          - Look up a key by hashing to its bucket and scanning that bucket.
+        pseudocode:
+          - FUNCTION get(key)
+          - "                  SET index = hash(key)"
+          - "                  FOR EACH pair IN self.buckets[index]"
+          - "                  IF pair.key = key THEN"
+          - "                  RETURN pair.value"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  RETURN not_found"
+  - id: hash-table-insert-or-update
+    title: Insert or update
+    definition: Insertion places a new key-value pair into its bucket. If the key already exists, the value is updated rather than duplicated.
+    howAndWhy: This is used because many table operations really mean assign a value to a key, whether that key is new or already present. Update-on-duplicate is what makes hash tables natural for counting and memoization tasks.
+    examples:
+      - id: hash-table-insert-or-update-example
+        strict:
+          - Define a function named put that takes key, value.
+          - "                  Set index to hash(key)."
+          - "                  For each pair in self.buckets[index]."
+          - "                  If pair.key = key, then."
+          - "                  Set pair.value to value."
+          - "                  Return."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Append (key, value) to self.buckets[index]."
+        standard:
+          - Define put(key, value).
+          - "                  Hash the key to choose a bucket."
+          - "                  Update the value if the key already exists there."
+          - "                  Otherwise append a new key-value pair to that bucket."
+        abstraction:
+          - Hash the key, update it if present, or append a new entry if absent.
+        pseudocode:
+          - FUNCTION put(key, value)
+          - "                  SET index = hash(key)"
+          - "                  FOR EACH pair IN self.buckets[index]"
+          - "                  IF pair.key = key THEN"
+          - "                  SET pair.value = value"
+          - "                  RETURN"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  APPEND (key, value) TO self.buckets[index]"
+  - id: hash-table-delete-by-key
+    title: Delete by key
+    definition: Deletion removes the pair whose key matches the target from the correct bucket.
+    howAndWhy: It is used when stale data should no longer be returned. Because the hash table can jump directly to the right bucket, deletion is local rather than global.
+    examples:
+      - id: hash-table-delete-by-key-example
+        strict:
+          - Define a function named delete that takes key.
+          - "                  Set index to hash(key)."
+          - "                  For i from 0 to length(self.buckets[index]) - 1."
+          - "                  If self.buckets[index][i].key = key, then."
+          - "                  Remove entry at position i from self.buckets[index]."
+          - "                  Return true."
+          - "                  End the if."
+          - "                  End the for."
+          - "                  Return false."
+        standard:
+          - Define delete(key).
+          - "                  Hash the key to choose a bucket."
+          - "                  Scan the bucket positions until the key is found."
+          - "                  Remove the matching entry and return true."
+          - "                  Return false if the key does not exist."
+        abstraction:
+          - Remove a key from its bucket and report whether deletion happened.
+        pseudocode:
+          - FUNCTION delete(key)
+          - "                  SET index = hash(key)"
+          - "                  FOR i FROM 0 TO length(self.buckets[index]) - 1"
+          - "                  IF self.buckets[index][i].key = key THEN"
+          - "                  REMOVE entry at position i from self.buckets[index]"
+          - "                  RETURN true"
+          - "                  END IF"
+          - "                  END FOR"
+          - "                  RETURN false"

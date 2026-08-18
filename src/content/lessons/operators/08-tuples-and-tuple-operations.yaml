@@ -1,0 +1,87 @@
+# Tuples and tuple operations
+#
+# Lesson 8 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: tuples-and-tuple-operations
+number: 8
+title: Tuples and tuple operations
+overview: A tuple is an ordered collection like a list, but it is meant to stay fixed after creation. Tuples are useful for grouped values that belong together and should not be changed casually.
+topics:
+  - id: creating-tuples
+    title: Creating tuples
+    definition: Creating a tuple means storing a fixed group of values together.
+    howAndWhy: This is used for coordinates, date parts, color values, and any bundle that should behave like one unit.
+    examples:
+      - id: creating-tuples-example
+        strict:
+          - Set point to (4, 9).
+          - Print point.
+        standard:
+          - Create a tuple point with 4 and 9, then print it.
+        abstraction:
+          - Print the tuple (4, 9).
+        pseudocode:
+          - SET point TO (4, 9)
+          - PRINT point
+  - id: accessing-tuple-items
+    title: Accessing tuple items
+    definition: Tuple items can be accessed by position just like list items.
+    howAndWhy: This is used when the grouped values have predictable meaning by order.
+    examples:
+      - id: accessing-tuple-items-example
+        strict:
+          - Set point to (4, 9).
+          - Set x_value to ITEM 0 OF point.
+          - Print x_value.
+        standard:
+          - Set point to (4, 9).
+          - Print item 0 of point.
+        abstraction:
+          - Print the first item of (4, 9).
+        pseudocode:
+          - SET point TO (4, 9)
+          - SET x_value TO ITEM 0 OF point
+          - PRINT x_value
+  - id: unpacking-tuples
+    title: Unpacking tuples
+    definition: Unpacking means taking the separate values from a tuple and storing them in separate variables.
+    howAndWhy: This makes grouped output easier to reuse in later calculations.
+    examples:
+      - id: unpacking-tuples-example
+        strict:
+          - Set point to (4, 9).
+          - Set x to FIRST ITEM OF point.
+          - Set y to SECOND ITEM OF point.
+          - Print x.
+          - Print y.
+        standard:
+          - Set point to (4, 9).
+          - Unpack it into x and y, then print both.
+        abstraction:
+          - Print the two unpacked values from (4, 9).
+        pseudocode:
+          - SET point TO (4, 9)
+          - SET x TO FIRST ITEM OF point
+          - SET y TO SECOND ITEM OF point
+          - PRINT x
+          - PRINT y
+  - id: length-and-membership
+    title: Length and membership
+    definition: Tuples support checks like length and membership even though they are fixed.
+    howAndWhy: These operations are useful when the tuple is used like a protected list of options or values.
+    examples:
+      - id: length-and-membership-example
+        strict:
+          - Set point to (4, 9).
+          - Set has_nine to 9 IS IN point.
+          - Print has_nine.
+        standard:
+          - Set point to (4, 9).
+          - Check whether 9 is in point and print the result.
+        abstraction:
+          - Print whether 9 appears in (4, 9).
+        pseudocode:
+          - SET point TO (4, 9)
+          - SET has_nine TO 9 IS IN point
+          - PRINT has_nine

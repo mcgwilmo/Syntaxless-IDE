@@ -1,0 +1,85 @@
+# If else logic
+#
+# Lesson 11 of the operators track.
+# See ../README.md for what each field means and how to add a lesson.
+
+id: if-else-logic
+number: 11
+title: If else logic
+overview: If else logic lets a program choose between actions based on conditions. It is the simplest way to make a program behave differently in different situations.
+topics:
+  - id: basic-if
+    title: Basic if
+    definition: An if statement runs a block only when its condition is true.
+    howAndWhy: It is used to guard actions so they happen only when a rule is satisfied.
+    examples:
+      - id: basic-if-example
+        strict:
+          - Set score to 72.
+          - If score >= 50, then.
+          - Print "Pass".
+        standard:
+          - Set score to 72.
+          - If score >= 50.
+          - Print "Pass".
+        abstraction:
+          - Print "Pass" if score is at least 50.
+        pseudocode:
+          - SET score TO 72
+          - IF score >= 50 THEN
+          - PRINT "Pass"
+  - id: if-else
+    title: If else
+    definition: If else chooses between two paths.
+    howAndWhy: It is used when both success and failure behavior matter.
+    examples:
+      - id: if-else-example
+        strict:
+          - Set score to 42.
+          - If score >= 50, then.
+          - Print "Pass".
+          - Otherwise.
+          - Print "Fail".
+        standard:
+          - Set score to 42.
+          - If score >= 50.
+          - Print "Pass".
+          - Otherwise, print "Fail".
+        abstraction:
+          - Print "Pass" if score is at least 50, otherwise print "Fail".
+        pseudocode:
+          - SET score TO 42
+          - IF score >= 50 THEN
+          - PRINT "Pass"
+          - ELSE
+          - PRINT "Fail"
+  - id: if-elif-else
+    title: If elif else
+    definition: This form handles several cases in order.
+    howAndWhy: It is used for grade bands, menu logic, and category selection.
+    examples:
+      - id: if-elif-else-example
+        strict:
+          - Set score to 84.
+          - If score >= 90, then.
+          - Print "A".
+          - Otherwise, if score >= 80, then.
+          - Print "B".
+          - Otherwise.
+          - Print "C".
+        standard:
+          - Set score to 84.
+          - If score >= 90.
+          - Print "A".
+          - Otherwise, if score >= 80, print "B".
+          - Otherwise, print "C".
+        abstraction:
+          - Print A for 90+, B for 80+, otherwise C.
+        pseudocode:
+          - SET score TO 84
+          - IF score >= 90 THEN
+          - PRINT "A"
+          - ELSE IF score >= 80 THEN
+          - PRINT "B"
+          - ELSE
+          - PRINT "C"
