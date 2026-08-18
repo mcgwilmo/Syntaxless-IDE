@@ -170,7 +170,87 @@ export type BackendArtifact = {
   [key: string]: unknown;
 };
 
-export type RunListResponse = { runs: PersistedRun[] };
+/**
+ * One row of run history.
+ *
+ * NOT a `PersistedRun`. `GET /runs` returns exactly these six fields -- no
+ * document, no generated Python, and no `interpretation_lines`. Typing the list
+ * as full runs (which this did) type-checks code that reads
+ * `item.interpretation_lines`, gets `undefined`, and silently treats a program
+ * as having no steps at all.
+ */
+export type RunSummary = {
+  id: string;
+  timestamp: string;
+  status: string;
+  mode?: IdeMode;
+  active_file_path?: string;
+  artifact_count?: number;
+};
+
+export type RunListResponse = { runs: RunSummary[] };
+
+/** How one step differs between two runs. Stable keys; the prose is separate. */
+export type RunDiffChange =
+  | "changed"
+  | "added"
+  | "removed"
+  | "moved"
+  | "reworded"
+  | "unchanged";
+
+/**
+ * One step's difference between two runs.
+ *
+ * `description`, `detail` and the `*_location` labels arrive already written in
+ * the requested language. The IDE has no locale catalog, so it may position and
+ * style these strings but must never compose its own -- anything it adds arrives
+ * in English and undoes the translation.
+ */
+export type RunDiffEntry = {
+  change: RunDiffChange;
+  base_line_number: number | null;
+  compare_line_number: number | null;
+  /** Localized, e.g. "Línea 7". Null when the step exists on only one side. */
+  base_location: string | null;
+  compare_location: string | null;
+  /** The student's own words. Never translated. */
+  base_text: string | null;
+  compare_text: string | null;
+  description: string;
+  /** Only ever set for `changed`, and only when something specific differs. */
+  detail: string | null;
+  /** Internal step name, for grouping. Not for display -- it is not localized. */
+  step: string | null;
+};
+
+export type RunDiffSide = {
+  run_id: string | null;
+  timestamp: string | null;
+  status: string | null;
+  mode: string | null;
+  active_file_path: string | null;
+};
+
+/**
+ * GET /runs/{base}/diff/{compare} -- what changed between two runs, by meaning.
+ *
+ * `semantic` is false when a side carried no interpreted structure (a vibe run).
+ * The comparison then rests on wording alone, `notice` says so, and the result
+ * should be presented as the weaker thing it is.
+ */
+export type RunDiff = {
+  locale: string;
+  base: RunDiffSide;
+  compare: RunDiffSide;
+  headline: string;
+  summary: Record<RunDiffChange, number>;
+  /** Localized names for each count, so the IDE never writes one itself. */
+  summary_labels: Record<RunDiffChange, string>;
+  entries: RunDiffEntry[];
+  semantic: boolean;
+  notice: string | null;
+};
 
 /**
  * Events streamed over WS /run/{run_id}/stream.

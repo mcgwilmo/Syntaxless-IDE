@@ -25,6 +25,14 @@ import {
 } from "@/lib/supabase/client";
 import { useTheme } from "@/components/theme-provider";
 import { STORAGE_KEYS } from "@/config/brand";
+import { compareRuns } from "@/lib/api";
+import { BackendUnreachableError } from "@/lib/api/config";
+import type { RunDiff } from "@/lib/api/types";
+import {
+  COMPARISON_SIZE,
+  orderForComparison,
+  toggleRunSelection,
+} from "@/features/ide/lib/run-compare";
 import {
   applyRunEvent,
   runStreamFailureEffects,
@@ -186,6 +194,14 @@ export function useIdeState() {
   const [visualArtifacts, setVisualArtifacts] = useState<VisualArtifact[]>([]);
   const [artifactErrors, setArtifactErrors] = useState<Record<string, boolean>>({});
   const [runs, setRuns] = useState<RunHistoryItem[]>([]);
+  // Run ids, never indices: `reload_runs` replaces the whole array whenever any
+  // run finishes, so an index-based selection would silently point elsewhere.
+  const [comparedRunIds, setComparedRunIds] = useState<string[]>([]);
+  const [runDiff, setRunDiff] = useState<RunDiff | null>(null);
+  const [runDiffError, setRunDiffError] = useState<string | null>(null);
+  const [isComparingRuns, setIsComparingRuns] = useState(false);
+  const [showRunCompare, setShowRunCompare] = useState(false);
+  const runComparisonToken = useRef(0);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [devVisionEnabled, setDevVisionEnabled] = useState(false);
   const [devVisionPassword, setDevVisionPassword] = useState("");
@@ -242,6 +258,20 @@ export function useIdeState() {
   const synthFileLimit = getSynthFileLimit(activeTier);
   const currentSynthFileCount = useMemo(() => countSynthFiles(explorerTree), [explorerTree]);
   const problemStorageKey = useMemo(() => STORAGE_KEYS.problem(projectId), [projectId]);
+
+  /**
+   * The two selected runs, oldest first -- or null when they cannot be compared.
+   *
+   * Null when fewer than two are selected, and also when a selected run is no
+   * longer in `runs`, which happens because the array is replaced whenever any
+   * run finishes. Deriving it here rather than checking at click time is what
+   * keeps the button from being visible but inert: the control and the action
+   * are gated on the same value.
+   */
+  const comparisonPair = useMemo(
+    () => orderForComparison(comparedRunIds, runs),
+    [comparedRunIds, runs],
+  );
 
   const sidebarContainerClass = useMemo(
     () => (sidebarOpen ? "w-[17rem] opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-6"),
@@ -800,6 +830,84 @@ export function useIdeState() {
       console.error(error);
       setStatusMessage("Failed to load run history.");
     }
+  }
+
+  /**
+   * Fetch a comparison between two runs.
+   *
+   * Deliberately NOT built on `loadRunDetails`. That function restores a run
+   * into the workspace -- it rewrites the editor, the generated Python, the
+   * terminal and the student's selected mode. Using it to populate either side
+   * of a comparison would wipe the work of anyone who merely wanted to look at
+   * what changed.
+   */
+  async function loadRunComparison(baseId: string, compareId: string) {
+    // Clearing the previous result is not tidiness. The panel renders the
+    // headline, the counts and the notice as soon as a diff exists, so leaving
+    // the old one up while a new pair is fetched puts a confident, fully
+    // composed verdict about runs A and B above the word "Comparing..." for
+    // runs B and C.
+    setRunDiff(null);
+    setRunDiffError(null);
+    setIsComparingRuns(true);
+
+    // Only the newest request may write a result. Two overlapping fetches
+    // otherwise resolve in whatever order the network returns them, so a slow
+    // earlier comparison can land last and overwrite the pair the student is
+    // actually looking at, with no sign anything went wrong.
+    const token = ++runComparisonToken.current;
+
+    try {
+      const diff = await compareRuns(baseId, compareId, projectId, getRequestLocale());
+      if (token !== runComparisonToken.current) return;
+      setRunDiff(diff);
+    } catch (error) {
+      if (token !== runComparisonToken.current) return;
+      setRunDiff(null);
+      // `compareRuns` goes through the typed client, which wraps a network
+      // failure in BackendUnreachableError. That is not a TypeError, so the
+      // raw-fetch check the rest of this hook uses never matches it, and a
+      // student with the backend down was told their runs were the problem.
+      if (error instanceof BackendUnreachableError) {
+        setRunDiffError(`Backend is not reachable at ${backendUrl}.`);
+      } else {
+        console.error(error);
+        setRunDiffError("Could not compare those runs.");
+      }
+    } finally {
+      if (token === runComparisonToken.current) setIsComparingRuns(false);
+    }
+  }
+
+  function toggleRunForComparison(runId: string) {
+    const next = toggleRunSelection(comparedRunIds, runId);
+    setComparedRunIds(next);
+    // A selection that is no longer a pair has nothing to show, and leaving the
+    // previous result on screen would attribute it to the new selection.
+    if (next.length !== COMPARISON_SIZE) {
+      setRunDiff(null);
+      setRunDiffError(null);
+      setShowRunCompare(false);
+    }
+  }
+
+  function openRunComparison() {
+    // Unreachable from the UI -- the button is gated on the same value -- but a
+    // stale call must not open an empty panel.
+    if (!comparisonPair) return;
+    setShowRunCompare(true);
+    void loadRunComparison(comparisonPair.baseId, comparisonPair.compareId);
+  }
+
+  function closeRunComparison() {
+    setShowRunCompare(false);
+  }
+
+  function clearRunComparison() {
+    setComparedRunIds([]);
+    setRunDiff(null);
+    setRunDiffError(null);
+    setShowRunCompare(false);
   }
 
   async function loadRunDetails(runId: string) {
@@ -1999,7 +2107,18 @@ export function useIdeState() {
     isLight,
     isRunning,
     layoutMode,
+    clearRunComparison,
+    closeRunComparison,
+    comparedRunIds,
+    comparisonPair,
+    isComparingRuns,
+    loadRunComparison,
     loadRunDetails,
+    openRunComparison,
+    runDiff,
+    runDiffError,
+    showRunCompare,
+    toggleRunForComparison,
     menuButtonClass,
     menuItemClass,
     menuPanelClass,
