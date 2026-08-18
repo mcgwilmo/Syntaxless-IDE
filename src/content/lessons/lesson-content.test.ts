@@ -81,28 +81,10 @@ const MINIMUM_LESSONS: Record<TabId, number> = {
 /**
  * Examples whose strict, standard and abstraction columns are the same
  * sentences three times over, so the lesson's central contrast is absent.
- * All of them are in operators 2-4, which suggests one authoring session.
+ * Empty, and meant to stay that way: an example added here is one shipping
+ * without the comparison that is the whole point of the four modes.
  */
-const IDENTICAL_RENDERINGS = [
-  "common-data-types-example",
-  "why-type-matters-example",
-  "integers-and-decimals-example",
-  "numeric-operations-example",
-  "creating-strings-example",
-  "string-length-example",
-  "indexing-example",
-  "slicing-strings-example",
-  "concatenation-example",
-  "repetition-example",
-  "changing-case-example",
-  "removing-extra-spaces-example",
-  "replacing-text-example",
-  "searching-inside-strings-example",
-  "starts-with-and-ends-with-example",
-  "splitting-strings-example",
-  "joining-strings-example",
-  "formatting-strings-example",
-];
+const IDENTICAL_RENDERINGS: string[] = [];
 
 /** Prose modes holding a line that stops without punctuation, as `exampleId:mode`. */
 const UNPUNCTUATED_PROSE = ["assign-multiple-values-example:standard"];
