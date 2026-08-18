@@ -15,14 +15,15 @@ topics:
     examples:
       - id: integers-and-decimals-example
         strict:
-          - Set student_count to 8.
-          - Set average_grade to 92.5.
+          - Create a variable called student_count.
+          - Set student_count to the whole number 8.
+          - Create a variable called average_grade.
+          - Set average_grade to the decimal number 92.5.
         standard:
           - Set student_count to 8.
           - Set average_grade to 92.5.
         abstraction:
-          - Set student_count to 8.
-          - Set average_grade to 92.5.
+          - Record a class of 8 students whose average grade is 92.5.
         pseudocode:
           - SET student_count TO 8
           - SET average_grade TO 92.5
@@ -33,17 +34,19 @@ topics:
     examples:
       - id: numeric-operations-example
         strict:
-          - Set total to 88 + 91 + 95.
-          - Set average to total / 3.
+          - Create a variable called total.
+          - Add 88, 91 and 95 together.
+          - Store that sum in total.
+          - Create a variable called average.
+          - Divide total by 3.
+          - Store that result in average.
           - Print average.
         standard:
-          - Set total to 88 + 91 + 95.
-          - Set average to total / 3.
+          - Add 88, 91 and 95 together and store the sum as total.
+          - Divide total by 3 and store the result as average.
           - Print average.
         abstraction:
-          - Set total to 88 + 91 + 95.
-          - Set average to total / 3.
-          - Print average.
+          - Print the average of the three scores 88, 91 and 95.
         pseudocode:
           - SET total TO 88 + 91 + 95
           - SET average TO total / 3

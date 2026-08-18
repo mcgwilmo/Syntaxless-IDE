@@ -148,19 +148,20 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "common-data-types-example",
               "strict": [
-                "Set name to \"Ava\".",
-                "Set age to 19.",
-                "Set is_enrolled to TRUE."
+                "Create a variable called name.",
+                "Set name to the text \"Ava\".",
+                "Create a variable called age.",
+                "Set age to the number 19.",
+                "Create a variable called is_enrolled.",
+                "Set is_enrolled to true."
               ],
               "standard": [
                 "Set name to \"Ava\".",
                 "Set age to 19.",
-                "Set is_enrolled to TRUE."
+                "Set is_enrolled to true."
               ],
               "abstraction": [
-                "Set name to \"Ava\".",
-                "Set age to 19.",
-                "Set is_enrolled to TRUE."
+                "Record a student named \"Ava\", aged 19, who is enrolled."
               ],
               "pseudocode": [
                 "SET name TO \"Ava\"",
@@ -179,22 +180,22 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "why-type-matters-example",
               "strict": [
+                "Create a variable called a.",
                 "Set a to 4.",
+                "Create a variable called b.",
                 "Set b to 7.",
-                "Set is_smaller to a < b.",
-                "Set full_name to \"Ada\" + \" Lovelace\"."
+                "Check whether a is less than b.",
+                "Store that answer in a variable called is_smaller.",
+                "Join the text \"Ada\" and the text \" Lovelace\".",
+                "Store the joined text in a variable called full_name."
               ],
               "standard": [
-                "Set a to 4.",
-                "Set b to 7.",
-                "Set is_smaller to a < b.",
-                "Set full_name to \"Ada\" + \" Lovelace\"."
+                "Set a to 4 and b to 7.",
+                "Work out whether a is less than b and store it as is_smaller.",
+                "Join \"Ada\" and \" Lovelace\" and store the result as full_name."
               ],
               "abstraction": [
-                "Set a to 4.",
-                "Set b to 7.",
-                "Set is_smaller to a < b.",
-                "Set full_name to \"Ada\" + \" Lovelace\"."
+                "Work out whether 4 is less than 7, and join \"Ada\" and \" Lovelace\" into a full name."
               ],
               "pseudocode": [
                 "SET a TO 4",
@@ -222,16 +223,17 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "integers-and-decimals-example",
               "strict": [
-                "Set student_count to 8.",
-                "Set average_grade to 92.5."
+                "Create a variable called student_count.",
+                "Set student_count to the whole number 8.",
+                "Create a variable called average_grade.",
+                "Set average_grade to the decimal number 92.5."
               ],
               "standard": [
                 "Set student_count to 8.",
                 "Set average_grade to 92.5."
               ],
               "abstraction": [
-                "Set student_count to 8.",
-                "Set average_grade to 92.5."
+                "Record a class of 8 students whose average grade is 92.5."
               ],
               "pseudocode": [
                 "SET student_count TO 8",
@@ -249,19 +251,21 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "numeric-operations-example",
               "strict": [
-                "Set total to 88 + 91 + 95.",
-                "Set average to total / 3.",
+                "Create a variable called total.",
+                "Add 88, 91 and 95 together.",
+                "Store that sum in total.",
+                "Create a variable called average.",
+                "Divide total by 3.",
+                "Store that result in average.",
                 "Print average."
               ],
               "standard": [
-                "Set total to 88 + 91 + 95.",
-                "Set average to total / 3.",
+                "Add 88, 91 and 95 together and store the sum as total.",
+                "Divide total by 3 and store the result as average.",
                 "Print average."
               ],
               "abstraction": [
-                "Set total to 88 + 91 + 95.",
-                "Set average to total / 3.",
-                "Print average."
+                "Print the average of the three scores 88, 91 and 95."
               ],
               "pseudocode": [
                 "SET total TO 88 + 91 + 95",
@@ -288,13 +292,14 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "creating-strings-example",
               "strict": [
+                "Create a variable called greeting.",
                 "Set greeting to \"Hello world\"."
               ],
               "standard": [
                 "Set greeting to \"Hello world\"."
               ],
               "abstraction": [
-                "Set greeting to \"Hello world\"."
+                "Store the text \"Hello world\" as greeting."
               ],
               "pseudocode": [
                 "SET greeting TO \"Hello world\""
@@ -311,19 +316,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "string-length-example",
               "strict": [
+                "Create a variable called username.",
                 "Set username to \"matthew\".",
-                "Set character_count to LENGTH OF username.",
+                "Count the characters in username.",
+                "Store that count in a variable called character_count.",
                 "Print character_count."
               ],
               "standard": [
                 "Set username to \"matthew\".",
-                "Set character_count to LENGTH OF username.",
+                "Count how many characters username has and store it as character_count.",
                 "Print character_count."
               ],
               "abstraction": [
-                "Set username to \"matthew\".",
-                "Set character_count to LENGTH OF username.",
-                "Print character_count."
+                "Print how many characters are in the username \"matthew\"."
               ],
               "pseudocode": [
                 "SET username TO \"matthew\"",
@@ -342,19 +347,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "indexing-example",
               "strict": [
+                "Create a variable called word.",
                 "Set word to \"banana\".",
-                "Set first_character to CHARACTER 0 OF word.",
+                "Take the character at position 0 of word, which is the first character.",
+                "Store that character in a variable called first_character.",
                 "Print first_character."
               ],
               "standard": [
                 "Set word to \"banana\".",
-                "Set first_character to CHARACTER 0 OF word.",
+                "Take the character at position 0 of word and store it as first_character.",
                 "Print first_character."
               ],
               "abstraction": [
-                "Set word to \"banana\".",
-                "Set first_character to CHARACTER 0 OF word.",
-                "Print first_character."
+                "Print the first character of the word \"banana\"."
               ],
               "pseudocode": [
                 "SET word TO \"banana\"",
@@ -373,19 +378,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "slicing-strings-example",
               "strict": [
+                "Create a variable called date_text.",
                 "Set date_text to \"2026-04-15\".",
-                "Set year_text to CHARACTERS 0 THROUGH 3 OF date_text.",
+                "Take the characters from position 0 through position 3 of date_text.",
+                "Store those characters in a variable called year_text.",
                 "Print year_text."
               ],
               "standard": [
                 "Set date_text to \"2026-04-15\".",
-                "Set year_text to CHARACTERS 0 THROUGH 3 OF date_text.",
+                "Take the characters from position 0 through position 3 of date_text and store them as year_text.",
                 "Print year_text."
               ],
               "abstraction": [
-                "Set date_text to \"2026-04-15\".",
-                "Set year_text to CHARACTERS 0 THROUGH 3 OF date_text.",
-                "Print year_text."
+                "Print the first four characters of the date \"2026-04-15\"."
               ],
               "pseudocode": [
                 "SET date_text TO \"2026-04-15\"",
@@ -404,22 +409,22 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "concatenation-example",
               "strict": [
+                "Create a variable called first_name.",
                 "Set first_name to \"Grace\".",
+                "Create a variable called last_name.",
                 "Set last_name to \"Hopper\".",
-                "Set full_name to first_name + \" \" + last_name.",
+                "Join first_name, a single space, and last_name into one piece of text.",
+                "Store that text in a variable called full_name.",
                 "Print full_name."
               ],
               "standard": [
                 "Set first_name to \"Grace\".",
                 "Set last_name to \"Hopper\".",
-                "Set full_name to first_name + \" \" + last_name.",
+                "Join first_name and last_name with a space between them and store the result as full_name.",
                 "Print full_name."
               ],
               "abstraction": [
-                "Set first_name to \"Grace\".",
-                "Set last_name to \"Hopper\".",
-                "Set full_name to first_name + \" \" + last_name.",
-                "Print full_name."
+                "Print the first name \"Grace\" and the last name \"Hopper\" joined with a space between them."
               ],
               "pseudocode": [
                 "SET first_name TO \"Grace\"",
@@ -439,16 +444,16 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "repetition-example",
               "strict": [
-                "Set divider to \"-\" REPEATED 5 TIMES.",
+                "Repeat the text \"-\" five times to make one longer piece of text.",
+                "Store that text in a variable called divider.",
                 "Print divider."
               ],
               "standard": [
-                "Set divider to \"-\" REPEATED 5 TIMES.",
+                "Set divider to the text \"-\" repeated five times.",
                 "Print divider."
               ],
               "abstraction": [
-                "Set divider to \"-\" REPEATED 5 TIMES.",
-                "Print divider."
+                "Print the text \"-\" repeated five times."
               ],
               "pseudocode": [
                 "SET divider TO \"-\" REPEATED 5 TIMES",
@@ -466,19 +471,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "changing-case-example",
               "strict": [
+                "Create a variable called subject.",
                 "Set subject to \"Math\".",
-                "Set normalized_subject to LOWERCASE OF subject.",
+                "Convert subject to lowercase.",
+                "Store the lowercase text in a variable called normalized_subject.",
                 "Print normalized_subject."
               ],
               "standard": [
                 "Set subject to \"Math\".",
-                "Set normalized_subject to LOWERCASE OF subject.",
+                "Convert subject to lowercase and store it as normalized_subject.",
                 "Print normalized_subject."
               ],
               "abstraction": [
-                "Set subject to \"Math\".",
-                "Set normalized_subject to LOWERCASE OF subject.",
-                "Print normalized_subject."
+                "Print the subject \"Math\" converted to lowercase."
               ],
               "pseudocode": [
                 "SET subject TO \"Math\"",
@@ -497,19 +502,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "removing-extra-spaces-example",
               "strict": [
-                "Set raw_name to \"  Ava  \".",
-                "Set clean_name to TRIM raw_name.",
+                "Create a variable called raw_name.",
+                "Set raw_name to \"  Ava  \", which has extra spaces at each end.",
+                "Remove the spaces from each end of raw_name.",
+                "Store the tidied text in a variable called clean_name.",
                 "Print clean_name."
               ],
               "standard": [
                 "Set raw_name to \"  Ava  \".",
-                "Set clean_name to TRIM raw_name.",
+                "Remove the spaces from each end of raw_name and store it as clean_name.",
                 "Print clean_name."
               ],
               "abstraction": [
-                "Set raw_name to \"  Ava  \".",
-                "Set clean_name to TRIM raw_name.",
-                "Print clean_name."
+                "Print the name \"  Ava  \" with the spaces at each end removed."
               ],
               "pseudocode": [
                 "SET raw_name TO \"  Ava  \"",
@@ -528,19 +533,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "replacing-text-example",
               "strict": [
+                "Create a variable called sentence.",
                 "Set sentence to \"The cat is sleeping\".",
-                "Set updated_sentence to REPLACE \"cat\" WITH \"dog\" IN sentence.",
+                "Find the word cat inside sentence and change it to dog.",
+                "Store the changed sentence in a variable called updated_sentence.",
                 "Print updated_sentence."
               ],
               "standard": [
                 "Set sentence to \"The cat is sleeping\".",
-                "Set updated_sentence to REPLACE \"cat\" WITH \"dog\" IN sentence.",
+                "Replace cat with dog in sentence and store the result as updated_sentence.",
                 "Print updated_sentence."
               ],
               "abstraction": [
-                "Set sentence to \"The cat is sleeping\".",
-                "Set updated_sentence to REPLACE \"cat\" WITH \"dog\" IN sentence.",
-                "Print updated_sentence."
+                "Print the sentence \"The cat is sleeping\" with cat replaced by dog."
               ],
               "pseudocode": [
                 "SET sentence TO \"The cat is sleeping\"",
@@ -559,19 +564,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "searching-inside-strings-example",
               "strict": [
+                "Create a variable called message.",
                 "Set message to \"system error detected\".",
-                "Set has_error to message CONTAINS \"error\".",
+                "Check whether message contains the word error.",
+                "Store the true or false answer in a variable called has_error.",
                 "Print has_error."
               ],
               "standard": [
                 "Set message to \"system error detected\".",
-                "Set has_error to message CONTAINS \"error\".",
+                "Check whether message contains the word error and store the answer as has_error.",
                 "Print has_error."
               ],
               "abstraction": [
-                "Set message to \"system error detected\".",
-                "Set has_error to message CONTAINS \"error\".",
-                "Print has_error."
+                "Print whether the message \"system error detected\" contains the word error."
               ],
               "pseudocode": [
                 "SET message TO \"system error detected\"",
@@ -590,19 +595,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "starts-with-and-ends-with-example",
               "strict": [
+                "Create a variable called file_name.",
                 "Set file_name to \"notes.pdf\".",
-                "Set is_pdf to file_name ENDS WITH \".pdf\".",
+                "Check whether file_name ends in .pdf.",
+                "Store the true or false answer in a variable called is_pdf.",
                 "Print is_pdf."
               ],
               "standard": [
                 "Set file_name to \"notes.pdf\".",
-                "Set is_pdf to file_name ENDS WITH \".pdf\".",
+                "Check whether file_name ends in .pdf and store the answer as is_pdf.",
                 "Print is_pdf."
               ],
               "abstraction": [
-                "Set file_name to \"notes.pdf\".",
-                "Set is_pdf to file_name ENDS WITH \".pdf\".",
-                "Print is_pdf."
+                "Print whether the file name \"notes.pdf\" ends in .pdf."
               ],
               "pseudocode": [
                 "SET file_name TO \"notes.pdf\"",
@@ -621,19 +626,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "splitting-strings-example",
               "strict": [
+                "Create a variable called colors_text.",
                 "Set colors_text to \"red,blue,green\".",
-                "Set colors to SPLIT colors_text BY \",\".",
+                "Break colors_text into separate pieces at each comma.",
+                "Store those pieces in a variable called colors.",
                 "Print colors."
               ],
               "standard": [
                 "Set colors_text to \"red,blue,green\".",
-                "Set colors to SPLIT colors_text BY \",\".",
+                "Split colors_text at each comma and store the pieces as colors.",
                 "Print colors."
               ],
               "abstraction": [
-                "Set colors_text to \"red,blue,green\".",
-                "Set colors to SPLIT colors_text BY \",\".",
-                "Print colors."
+                "Print the pieces of \"red,blue,green\" split at each comma."
               ],
               "pseudocode": [
                 "SET colors_text TO \"red,blue,green\"",
@@ -652,19 +657,19 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "joining-strings-example",
               "strict": [
-                "Set names to [\"Ava\", \"Noah\", \"Liam\"].",
-                "Set roster_text to JOIN names WITH \", \".",
+                "Create a list called names.",
+                "Put \"Ava\", \"Noah\" and \"Liam\" into names, in that order.",
+                "Join the three names into one piece of text, with a comma and a space between them.",
+                "Store that text in a variable called roster_text.",
                 "Print roster_text."
               ],
               "standard": [
-                "Set names to [\"Ava\", \"Noah\", \"Liam\"].",
-                "Set roster_text to JOIN names WITH \", \".",
+                "Set names to a list of \"Ava\", \"Noah\" and \"Liam\".",
+                "Join the names with a comma and a space and store the result as roster_text.",
                 "Print roster_text."
               ],
               "abstraction": [
-                "Set names to [\"Ava\", \"Noah\", \"Liam\"].",
-                "Set roster_text to JOIN names WITH \", \".",
-                "Print roster_text."
+                "Print the names \"Ava\", \"Noah\" and \"Liam\" joined with a comma and a space."
               ],
               "pseudocode": [
                 "SET names TO [\"Ava\", \"Noah\", \"Liam\"]",
@@ -683,22 +688,22 @@ export const LESSONS_BY_TAB: Record<TabId, Lesson[]> = {
             {
               "id": "formatting-strings-example",
               "strict": [
+                "Create a variable called student_name.",
                 "Set student_name to \"Maya\".",
+                "Create a variable called score.",
                 "Set score to 94.",
-                "Set message to FORMAT \"Maya scored 94\" USING student_name AND score.",
+                "Build the sentence \"Maya scored 94\", taking the name from student_name and the number from score.",
+                "Store that sentence in a variable called message.",
                 "Print message."
               ],
               "standard": [
                 "Set student_name to \"Maya\".",
                 "Set score to 94.",
-                "Set message to FORMAT \"Maya scored 94\" USING student_name AND score.",
+                "Build the sentence \"Maya scored 94\" from student_name and score, and store it as message.",
                 "Print message."
               ],
               "abstraction": [
-                "Set student_name to \"Maya\".",
-                "Set score to 94.",
-                "Set message to FORMAT \"Maya scored 94\" USING student_name AND score.",
-                "Print message."
+                "Print a sentence saying that the student \"Maya\" scored 94."
               ],
               "pseudocode": [
                 "SET student_name TO \"Maya\"",
