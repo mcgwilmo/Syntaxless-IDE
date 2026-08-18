@@ -182,6 +182,98 @@ describe("the student's own words", () => {
   });
 });
 
+describe("strikethrough means the words are gone", () => {
+  /*
+   * The bug this guards: every entry with a `base_text` was struck through,
+   * including a `moved` step -- whose wording is identical on both sides, so the
+   * struck copy was the ONLY rendering of it. A reorder was drawn exactly like a
+   * deletion, directly under a sentence saying the step still runs. Counting
+   * occurrences, as the test above does, cannot catch it; which side survived is
+   * the whole question.
+   */
+
+  function struck(text: string): boolean {
+    const node = screen.getByText(text);
+    return node.className.includes("line-through");
+  }
+
+  it("does not strike a moved step, whose words did not go anywhere", () => {
+    mountWith({
+      runDiff: diff({
+        entries: [
+          entry({
+            change: "moved",
+            base_location: "Línea 3",
+            compare_location: "Línea 2",
+            base_text: "ordena la lista",
+            compare_text: "ordena la lista",
+            description: "El mismo paso, ahora se ejecuta en otro punto.",
+            detail: null,
+          }),
+        ],
+      }),
+    });
+
+    expect(struck("ordena la lista")).toBe(false);
+  });
+
+  it("does not strike a changed step whose wording stayed put", () => {
+    mountWith({
+      runDiff: diff({
+        entries: [
+          entry({ base_text: "ordena la lista", compare_text: "ordena la lista" }),
+        ],
+      }),
+    });
+
+    expect(struck("ordena la lista")).toBe(false);
+  });
+
+  it("strikes a removed step, which really is gone", () => {
+    mountWith({
+      runDiff: diff({
+        entries: [
+          entry({
+            change: "removed",
+            compare_text: null,
+            compare_location: null,
+            compare_line_number: null,
+            description: "Se eliminó este paso.",
+            detail: null,
+          }),
+        ],
+      }),
+    });
+
+    expect(struck("ordena por cuenta")).toBe(true);
+  });
+
+  it("strikes only the replaced half of a rewrite", () => {
+    mountWith({ runDiff: diff() });
+
+    expect(struck("ordena por cuenta")).toBe(true);
+    expect(struck("ordena por longitud")).toBe(false);
+  });
+});
+
+describe("every change kind renders", () => {
+  // The suite previously rendered only `changed` and `added`, so a mutation
+  // erasing a removed step's text entirely survived both suites.
+  const KINDS = ["changed", "added", "removed", "moved", "reworded", "unchanged"] as const;
+
+  it.each(KINDS)("shows the student's words and the backend's sentence for %s", (change) => {
+    mountWith({
+      runDiff: diff({
+        summary: { changed: 0, added: 0, removed: 0, moved: 0, reworded: 0, unchanged: 0, [change]: 1 },
+        entries: [entry({ change, description: `sentencia-${change}` })],
+      }),
+    });
+
+    expect(screen.getByText(`sentencia-${change}`)).toBeDefined();
+    expect(screen.getByText("ordena por cuenta")).toBeDefined();
+  });
+});
+
 describe("states other than success", () => {
   it("reports an error instead of an empty comparison", () => {
     mountWith({ runDiff: null, runDiffError: "Could not compare those runs." });
