@@ -13,6 +13,7 @@ import {
 import { ThemeToggleButton, useTheme } from "@/components/theme-provider";
 import { IdeProvider } from "@/features/ide/state/ide-context";
 import { useIdeState } from "@/features/ide/state/use-ide-state";
+import { RunComparePanel } from "@/features/ide/components/run-compare-panel";
 import type {
   BugReportCategory,
   BugReportFormValues,
@@ -735,6 +736,10 @@ function IdePageContent() {
     activeFileId,
     activeRunId,
     addMenuRef,
+    comparedRunIds,
+    comparisonPair,
+    openRunComparison,
+    toggleRunForComparison,
     analysisOpen,
     artifactErrors,
     bottomTabs,
@@ -1087,8 +1092,17 @@ function IdePageContent() {
                         showRunsSection ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-70"
                       }`}
                     >
-                      <div className="min-h-0 overflow-hidden">
-                        <div className="h-full space-y-1 overflow-auto pr-1">
+                      <div className="flex min-h-0 flex-col overflow-hidden">
+                        {comparisonPair && (
+                          <button
+                            onClick={openRunComparison}
+                            className="mb-1.5 shrink-0 rounded-[var(--radius-md)] border border-[var(--accent-border)] bg-[var(--accent-subtle)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent-text)] transition-[box-shadow,transform] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] active:translate-y-[var(--press-travel)] motion-reduce:transform-none"
+                          >
+                            Compare selected runs
+                          </button>
+                        )}
+
+                        <div className="min-h-0 flex-1 space-y-1 overflow-auto pr-1">
                           {runs.length === 0 ? (
                             <div className={`rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-2 text-[12px] shadow-[var(--inlaid)] ${sectionMetaClass}`}>
                               No runs yet
@@ -1108,7 +1122,13 @@ function IdePageContent() {
                               // layout pickers) completes.
                               <div
                                 key={run.id}
-                                className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-2.5 py-2 shadow-[var(--raised)] transition-[box-shadow,transform] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] hover:shadow-[var(--lifted)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none"
+                                className={joinClasses(
+                                  "rounded-[var(--radius-md)] border bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] px-2.5 py-2 shadow-[var(--raised)]",
+                                  comparedRunIds.includes(run.id)
+                                    ? "border-[var(--accent-solid)]"
+                                    : "border-[var(--border-subtle)]",
+                                  "transition-[box-shadow,transform] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] hover:shadow-[var(--lifted)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none",
+                                )}
                               >
                                 <div className="flex items-start gap-2">
                                   <button
@@ -1121,9 +1141,9 @@ function IdePageContent() {
                                       </div>
                                       {run.mode && (
                                         <div
-                                          className={`shrink-0 text-[9px] font-semibold uppercase tracking-[var(--tracking-label)] ${MODE_META[run.mode].badge}`}
+                                          className={`shrink-0 text-[9px] font-semibold uppercase tracking-[var(--tracking-label)] ${MODE_META[run.mode]?.badge ?? ""}`}
                                         >
-                                          {MODE_META[run.mode].label}
+                                          {MODE_META[run.mode]?.label ?? run.mode}
                                         </div>
                                       )}
                                     </div>
@@ -1135,6 +1155,22 @@ function IdePageContent() {
                                         {run.active_file_path}
                                       </div>
                                     )}
+                                  </button>
+
+                                  <button
+                                    onClick={() => toggleRunForComparison(run.id)}
+                                    aria-pressed={comparedRunIds.includes(run.id)}
+                                    className={joinClasses(
+                                      "mt-0.5 h-6 w-6 shrink-0 text-[length:var(--text-xs)]",
+                                      SIDEBAR_ICON_BUTTON_CLASS,
+                                      comparedRunIds.includes(run.id)
+                                        ? "text-[var(--accent-text)]"
+                                        : SIDEBAR_ICON_BUTTON_RESTING_CLASS
+                                    )}
+                                    aria-label={`Compare run ${run.id.slice(0, 8)}`}
+                                    title="Select for comparison"
+                                  >
+                                    {comparedRunIds.includes(run.id) ? "\u25c9" : "\u25ce"}
                                   </button>
 
                                   <button
@@ -2998,6 +3034,8 @@ function IdePageContent() {
           </div>
         </div>
       </div>
+
+      <RunComparePanel />
 
       <BugReportModal
         open={showBugModal}

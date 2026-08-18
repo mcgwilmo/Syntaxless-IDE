@@ -15,6 +15,7 @@ import type {
   InterpretResponse,
   PersistedRun,
   PipelineRequest,
+  RunDiff,
   RunListResponse,
   RunStartResponse,
 } from "./types";
@@ -64,6 +65,31 @@ export function listRuns(projectId: string): Promise<RunListResponse> {
 export function getRun(runId: string, projectId: string): Promise<PersistedRun> {
   return request<PersistedRun>(
     `/runs/${encodeURIComponent(runId)}?project_id=${encodeURIComponent(projectId)}`,
+  );
+}
+
+/**
+ * What changed between two runs, by meaning rather than by text.
+ *
+ * Order matters: every sentence in the result describes a change *from*
+ * `baseRunId` *to* `compareRunId`, so the older run belongs first. The backend
+ * deliberately does not sort them -- comparing backwards is a real question
+ * ("what did I undo?") and silently reversing it would answer a different one.
+ *
+ * Every user-facing sentence comes back already written, because the IDE has no
+ * locale catalog to write one with.
+ */
+export function compareRuns(
+  baseRunId: string,
+  compareRunId: string,
+  projectId: string,
+  locale?: string | null,
+): Promise<RunDiff> {
+  const params = new URLSearchParams({ project_id: projectId });
+  if (locale) params.set("locale", locale);
+  return request<RunDiff>(
+    `/runs/${encodeURIComponent(baseRunId)}` +
+      `/diff/${encodeURIComponent(compareRunId)}?${params.toString()}`,
   );
 }
 
