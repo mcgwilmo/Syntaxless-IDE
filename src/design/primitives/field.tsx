@@ -53,7 +53,9 @@ export function Field({
           "w-full rounded-[var(--radius-md)] border px-[var(--space-4)] py-[var(--space-3)]",
           "text-[length:var(--text-base)] text-[var(--text-primary)]",
           // Placeholder uses muted, not soft: the recessed well is darker than a
-          // card, and soft text measures 4.22:1 against it.
+          // card, and soft text measures only 4.60:1 against it in light (6.09
+          // in dark). That clears AA by a tenth of a point, which is not enough
+          // margin to spend on the lowest-priority text in the component.
           "bg-[var(--surface-sunken)] placeholder:text-[var(--text-muted)]",
           // Recessed, not raised. An input is a well you put something into, so
           // it takes the opposite lighting to a button -- shadow at the top,
@@ -72,7 +74,7 @@ export function Field({
       {/* Muted, not soft, for the same reason as the placeholder above: a Field
           is almost always sitting on a raised card, and soft is only measured
           against --surface-page. On a sheened card in the dark theme soft drops
-          to 4.90:1 -- nominally AA, but with no margin left. */}
+          to 4.63:1 -- nominally AA, but with no margin left. */}
       {hint && !error && (
         <p id={`${fieldId}-hint`} className="text-[length:var(--text-sm)] text-[var(--text-muted)]">
           {hint}

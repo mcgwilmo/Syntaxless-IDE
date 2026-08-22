@@ -122,8 +122,10 @@ const activeItemClass =
 
 /*
  * --text-soft is deliberately absent from this page. It clears AA against the
- * page itself but not against a raised card in dark or a sunken well in light,
- * and this layout puts secondary text on both.
+ * page itself with room to spare, but only barely against the two grounds this
+ * layout actually puts secondary text on: 4.63:1 on a sheened raised card in
+ * dark, 4.60:1 in a sunken well in light. Both are nominally AA and neither has
+ * a tenth of a point of margin, so this page uses muted throughout.
  */
 const mutedTextClass = "text-[var(--text-muted)]";
 
@@ -501,7 +503,8 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                           isLessonActive
                             // Raised surface, not accent-subtle: the card behind
                             // it is already tinted, and stacking the two tints
-                            // drops accent text to 3.9:1.
+                            // over the sunken row drops accent text to 4.36:1
+                            // in light -- still under the 4.5:1 AA floor.
                             ? "border-[var(--accent-border)] bg-[var(--surface-raised)] text-[var(--accent-text)]"
                             : "border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)]"
                         )}
@@ -891,7 +894,12 @@ export function LearningCenterLessonPage({ tabId }: { tabId: TabId }) {
                           <pre
                             className={cn(
                               "mt-3 overflow-x-auto whitespace-pre-wrap rounded-[var(--radius-lg)] border px-4 py-4",
-                              "text-[length:var(--text-sm)] leading-[var(--leading-relaxed)]",
+                              /* The lesson's worked example is the same code the
+                                 learner is about to type into the editor, so it
+                                 is set in the editor's face -- indentation is
+                                 the thing being taught here, and it only lines
+                                 up in a monospace. */
+                              "font-mono text-[length:var(--text-sm)] leading-[var(--leading-relaxed)]",
                               codeSurfaceClass
                             )}
                           >

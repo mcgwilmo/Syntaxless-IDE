@@ -131,7 +131,7 @@ function IconContainer({ item, delay }: { item: OrbitalItem; delay: number }) {
           "radar-node relative z-50 flex w-[5.25rem] flex-col items-center justify-center gap-[var(--space-2)] sm:w-[7.5rem] md:w-[10rem]",
           // Unavailable is said by the tile's material and by the label text,
           // not by fading the node: a blanket opacity took the Coming Soon
-          // label to 3.6:1 on the light page, under AA for the one word that
+          // label to 3.74:1 on the light page, under AA for the one word that
           // has to be readable.
           isLesson ? "cursor-pointer" : "cursor-default"
         )}

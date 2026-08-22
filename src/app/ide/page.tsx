@@ -30,7 +30,7 @@ import {
   PAGE_HEADING_CLASS,
 } from "@/features/ide/types";
 import {
-  ensureMonacoThemes,
+  EDITOR_FONT_FAMILY,
   formatDurationMs,
   formatIntentLabel,
   formatRunTimestamp,
@@ -42,6 +42,7 @@ import {
   getProblemStatusLabel,
   getSeverity,
   joinClasses,
+  prepareMonaco,
   terminalStreamLabel,
   setAllFoldersOpen,
 } from "@/features/ide/lib";
@@ -214,9 +215,15 @@ const PANEL_SUBROW_CLASS =
  *
  * Each tint is composited over --surface-raised rather than left to fall on
  * whatever is behind it. The blocks sit inside the terminal well, which is
- * --surface-sunken, and a 9%-alpha tint dropped straight onto that darker
- * ground pulled the light-theme label text down to 3.93:1 -- below AA. Painting
- * the same tint over a raised base restores it and is also the truer reading:
+ * --surface-sunken, and under the previous palette a 9%-alpha tint dropped
+ * straight onto that darker ground pulled the light-theme label text down to
+ * 3.93:1 -- below AA.
+ *
+ * The Academy/Ink palette no longer fails that way on its own: the same tints
+ * over --surface-sunken now measure 4.83:1 for warning and 4.73:1 for blocked
+ * in light. The raised base stays regardless, for the two reasons that outlive
+ * the numbers -- it keeps roughly a point of headroom on a pairing that would
+ * otherwise sit a rounding error above the floor, and it is the truer reading:
  * an output block is an object set into the well, not a stain on it.
  */
 const TERMINAL_STREAM_TONES: Record<
@@ -1724,16 +1731,17 @@ function IdePageContent() {
                       onMount={(editor, monaco) => {
                         editorRef.current = editor;
                         monacoRef.current = monaco;
-                        ensureMonacoThemes(monaco);
+                        prepareMonaco(monaco);
                       }}
                       height="100%"
                       language="plaintext"
                       value={activeFile.content}
                       onChange={(value) => updateActiveFileContent(value || "")}
-                      beforeMount={ensureMonacoThemes}
+                      beforeMount={prepareMonaco}
                       theme={isLight ? "ide-light" : "ide-dark"}
                       options={{
                         minimap: { enabled: false },
+                        fontFamily: EDITOR_FONT_FAMILY,
                         fontSize: minimalist ? 17 : 15,
                         lineHeight: minimalist ? 32 : 28,
                         wordWrap: "on",
@@ -1970,7 +1978,15 @@ function IdePageContent() {
                                         <span>{entry.text.split(/\r?\n/).filter(Boolean).length || 1} line</span>
                                       </div>
                                       <pre
-                                        className={`whitespace-pre-wrap px-3 py-2.5 text-[13px] leading-6 ${terminalTextClass}`}
+                                        /* Program output is code's other half:
+                                           it comes back column-aligned from a
+                                           print() the learner wrote, and only
+                                           the code face keeps those columns. A
+                                           <pre> would otherwise fall to the
+                                           browser's default monospace, which is
+                                           not the face the editor above it is
+                                           using. */
+                                        className={`whitespace-pre-wrap px-3 py-2.5 font-mono text-[13px] leading-6 ${terminalTextClass}`}
                                         style={protectedDarkTerminalTextStyle}
                                       >
                                         {entry.text}
@@ -1994,7 +2010,10 @@ function IdePageContent() {
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter") handleSendTerminalInput();
                                   }}
-                                  className={`flex-1 rounded-[var(--radius-md)] px-3 py-2 text-[13px] outline-none transition-[border-color,box-shadow] duration-[var(--duration-fast)] focus:border-[var(--accent-solid)] ${inputSurfaceClass}`}
+                                  /* Mono: what is typed here is echoed into
+                                     the terminal transcript above, so it should
+                                     be the same face when it gets there. */
+                                  className={`flex-1 rounded-[var(--radius-md)] px-3 py-2 font-mono text-[13px] outline-none transition-[border-color,box-shadow] duration-[var(--duration-fast)] focus:border-[var(--accent-solid)] ${inputSurfaceClass}`}
                                   placeholder="Type input for the running program..."
                                 />
                                 <button
@@ -2308,7 +2327,7 @@ function IdePageContent() {
                   </div>
 
                   <Editor
-                    beforeMount={ensureMonacoThemes}
+                    beforeMount={prepareMonaco}
                     height="100%"
                     language="python"
                     value={generatedPython}
@@ -2316,6 +2335,7 @@ function IdePageContent() {
                     options={{
                       readOnly: true,
                       minimap: { enabled: false },
+                      fontFamily: EDITOR_FONT_FAMILY,
                       fontSize: 14,
                       lineHeight: 26,
                       scrollBeyondLastLine: false,

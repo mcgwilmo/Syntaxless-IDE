@@ -387,7 +387,7 @@ export default function SubscriptionsPage() {
             <TypingHeading
               text="Pricing"
               as="h1"
-              className="mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]"
+              className="mx-auto max-w-3xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[1.05] tracking-[-0.045em] text-[var(--text-primary)]"
             />
 
             <p className="mx-auto mt-4 max-w-xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)] md:text-[length:var(--text-base)]">
@@ -518,7 +518,7 @@ export default function SubscriptionsPage() {
                           </Badge>
                         </div>
 
-                        <h2 className="text-[length:var(--text-3xl)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]">
+                        <h2 className="text-[length:var(--text-3xl)] font-bold leading-[1.05] tracking-[-0.045em] text-[var(--text-primary)]">
                           {meta.label}
                         </h2>
 

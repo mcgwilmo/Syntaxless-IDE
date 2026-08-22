@@ -152,7 +152,7 @@ export default function AboutPage() {
             <TypingHeading
               text="Learn by thinking, build by reasoning"
               as="h1"
-              className="mx-auto max-w-4xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[0.95] text-[var(--text-primary)]"
+              className="mx-auto max-w-4xl text-[clamp(2.4rem,6vw,4.8rem)] font-bold leading-[1.05] text-[var(--text-primary)]"
             />
 
             <p
@@ -243,14 +243,23 @@ export default function AboutPage() {
                   )}
                 >
                   {/*
-                   * Set at --text-xl/bold, not --text-sm/semibold. --accent-text
-                   * on --accent-subtle measures 4.9:1 over a raised card, which
-                   * is where the rest of the app uses this pair, but only 4.33:1
-                   * over --surface-sunken -- under the 4.5:1 AA floor for body
-                   * sizes. 20px bold clears the large-text floor of 3:1 instead,
-                   * so the pairing stays identical to Badge and every other
-                   * accent chip in the app rather than this one page inventing
-                   * its own colour.
+                   * Set at --text-xl/bold, not --text-sm/semibold.
+                   *
+                   * This size was originally a contrast workaround: under the
+                   * previous palette --accent-text on --accent-subtle measured
+                   * only 4.33:1 over --surface-sunken (the card this tile sits
+                   * in), under the 4.5:1 AA floor for body sizes, so 20px bold
+                   * was used to clear the 3:1 large-text floor instead -- which
+                   * kept the pairing identical to Badge and every other accent
+                   * chip rather than this one page inventing its own colour.
+                   *
+                   * The Academy/Ink palette retired that constraint: the same
+                   * pair now measures 5.65:1 over a sheened raised card and
+                   * 4.85:1 over --surface-sunken, so it clears the body floor
+                   * outright and no longer depends on the type size. The size
+                   * stays because the letter reads as a tile monogram at 20px,
+                   * but it is now a visual choice and may be changed freely --
+                   * it is no longer load-bearing for accessibility.
                    *
                    * The letter repeats the heading directly beneath it, so it is
                    * hidden from assistive tech rather than read out twice.
