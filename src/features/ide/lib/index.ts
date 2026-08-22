@@ -255,34 +255,154 @@ export function ensureMonacoThemes(monaco: Monaco) {
   monaco.editor.defineTheme("ide-dark", {
     base: "vs-dark",
     inherit: true,
+    // Empty on purpose. `vs-dark`'s syntax colours were measured against this
+    // theme's #100e09 editor and the worst of them is 4.82:1, so there is
+    // nothing to correct. See the note on ide-light, which is not so lucky.
     rules: [],
     colors: {
-      "editor.background": "#100f0e", // --surface-sunken
-      "editor.foreground": "#f5f3f0", // --text-primary
-      "editorLineNumber.foreground": "#9c9691", // --text-soft
-      "editorLineNumber.activeForeground": "#f5f3f0", // --text-primary
-      "editorCursor.foreground": "#5eead4", // --accent-text
-      "editor.lineHighlightBackground": "#171614", // --surface-page
-      "editor.selectionBackground": "#2dd4bf4d", // --accent-border
-      "editor.inactiveSelectionBackground": "#2dd4bf1f", // --accent-subtle
+      "editor.background": "#100e09", // --surface-sunken
+      "editor.foreground": "#e6dfd1", // --text-primary
+      "editorLineNumber.foreground": "#98907f", // --text-soft
+      "editorLineNumber.activeForeground": "#e6dfd1", // --text-primary
+      "editorCursor.foreground": "#e0a64f", // --accent-text
+      "editor.lineHighlightBackground": "#17150f", // --surface-page
+      "editor.selectionBackground": "#e3a2444d", // --accent-border
+      "editor.inactiveSelectionBackground": "#e3a2441f", // --accent-subtle
     },
   });
 
   monaco.editor.defineTheme("ide-light", {
     base: "vs",
     inherit: true,
-    rules: [],
+    /*
+     * Three syntax colours, and the reason they are here rather than inherited.
+     *
+     * `inherit: true` keeps Monaco's stock `vs` palette for everything else,
+     * and that palette was drawn for Monaco's own #FFFFFE editor. Ours is
+     * --surface-sunken (#e8edf8), which is darker, so every stock colour lost
+     * contrast the moment the editor moved onto the app's material. Measured on
+     * #e8edf8, three of them landed under the 4.5:1 AA floor -- and they are the
+     * three that Python emits most: numbers, comments, and the second level of
+     * bracket-pair colourisation.
+     *
+     *   token         stock      on #e8edf8   ->  here       on #e8edf8
+     *   number        #098658      3.92          #08764d       4.83
+     *   comment       #008000      4.38          #007800       4.84
+     *   bracket lvl2  #319331      3.35          #277627       4.85
+     *
+     * Each is its own stock colour scaled toward black -- hue and chroma are
+     * untouched, so the editor still reads as a normal light editor rather than
+     * as a second palette. The rest of `vs` was measured on the same ground and
+     * clears the floor already (keyword 7.32, string 6.69, delimiter 17.90,
+     * number.hex 7.75, bracket lvl1 6.34, lvl3 7.40), which is why nothing else
+     * is overridden. The current line is LIGHTER than the editor
+     * (--surface-page over --surface-sunken), so #e8edf8 is the worst case and
+     * every ratio above improves by ~0.45 on the active line.
+     *
+     * ide-dark needs none of this: `vs-dark` measured on #100e09 bottoms out at
+     * 4.82 (its string red) with comment at 4.87, so it clears AA as shipped.
+     */
+    rules: [
+      { token: "number", foreground: "08764d" },
+      { token: "comment", foreground: "007800" },
+    ],
     colors: {
-      "editor.background": "#f2f0ed", // --surface-sunken
-      "editor.foreground": "#1c1a17", // --text-primary
-      "editorLineNumber.foreground": "#78716c", // --text-soft
-      "editorLineNumber.activeForeground": "#1c1a17", // --text-primary
-      "editorCursor.foreground": "#0f766e", // --accent-solid
-      "editor.lineHighlightBackground": "#faf9f7", // --surface-page
-      "editor.selectionBackground": "#0f766e47", // --accent-border
-      "editor.inactiveSelectionBackground": "#0f766e14", // --accent-subtle
+      "editor.background": "#e8edf8", // --surface-sunken
+      "editor.foreground": "#141a2e", // --text-primary
+      "editorLineNumber.foreground": "#646a7b", // --text-soft
+      "editorLineNumber.activeForeground": "#141a2e", // --text-primary
+      "editorCursor.foreground": "#3b4edb", // --accent-solid
+      "editor.lineHighlightBackground": "#f5f7fc", // --surface-page
+      "editor.selectionBackground": "#3b4edb47", // --accent-border
+      "editor.inactiveSelectionBackground": "#3b4edb14", // --accent-subtle
+      // Bracket-pair colourisation level 2. Not a token -- it is Monaco's own
+      // green, darkened just enough to clear the floor on the ground above.
+      "editorBracketHighlight.foreground2": "#277627", // 4.85 on --surface-sunken
     },
   });
+}
+
+/*
+ * The code face, for every Monaco instance in the app.
+ *
+ * This one IS a custom property, unlike the colours above, and the difference is
+ * not an inconsistency. Monaco reads those colours in JavaScript -- it parses
+ * the hex, derives shades from it, and paints some of them onto a canvas -- so
+ * `var(--surface-sunken)` would arrive as an unparseable string. fontFamily is
+ * never parsed: it is copied verbatim into the `font-family` of a rule Monaco
+ * writes for its own editor DOM, and into the hidden element it measures
+ * character widths with. Both of those live in this document, so the variable
+ * resolves for rendering and for measurement alike, and the two agree.
+ *
+ * A literal "JetBrains Mono" would not work here even if we wanted one: the face
+ * is loaded by next/font under a hashed family name, and the variable set in
+ * layout.tsx is the only handle on it.
+ */
+export const EDITOR_FONT_FAMILY = "var(--font-mono)";
+
+/*
+ * Re-measure the editor's character grid once the code face has actually
+ * arrived.
+ *
+ * Monaco measures a character's width by rendering it into a hidden element and
+ * reading offsetWidth, then caches the result forever: the ONLY thing in the
+ * standalone build that clears that cache is monaco.editor.remeasureFonts(),
+ * and nothing calls it on its own -- there is no document.fonts listener
+ * anywhere in the editor. So whatever face is on screen at the instant the
+ * first editor mounts becomes the grid for the rest of the session.
+ *
+ * That was harmless while the editor had no fontFamily of its own: Monaco fell
+ * back to Menlo, which is installed and therefore ready synchronously. A
+ * webfont is not. If Monaco measures during the swap it records the metrics of
+ * next/font's fallback face and keeps them, and every column after that is off
+ * by the difference -- a drift that grows across the line, so the cursor sits
+ * beside the character it is on, selection rectangles hang past their text, and
+ * the gutter diagnostics point at the wrong column. On a fast machine the font
+ * wins the race and none of this happens, which is what makes it worth guarding
+ * against rather than waiting to see: it would show up only on the slow school
+ * network this app already ships its own copy of Monaco for.
+ *
+ * Loading the family explicitly rather than just awaiting document.fonts.ready
+ * closes the other half of the race -- `ready` resolves immediately if nothing
+ * has requested the face yet, which is the normal state on a page whose editor
+ * has not painted.
+ */
+let monacoFontRemeasureRequested = false;
+
+export function remeasureMonacoFontsWhenLoaded(monaco: Monaco) {
+  // Once per document. Both editors run this, and the source editor runs it from
+  // beforeMount and onMount both, but the face only loads once.
+  if (monacoFontRemeasureRequested) {
+    return;
+  }
+  if (typeof document === "undefined" || !document.fonts) {
+    return;
+  }
+
+  const family = getComputedStyle(document.documentElement)
+    .getPropertyValue("--font-mono")
+    .trim();
+  if (!family) {
+    return;
+  }
+
+  monacoFontRemeasureRequested = true;
+  document.fonts
+    .load(`16px ${family}`)
+    .then(() => monaco.editor.remeasureFonts())
+    // A failed load is not a reason to break mounting: the editor stays on
+    // whatever it measured, which is what would have happened anyway.
+    .catch(() => undefined);
+}
+
+/*
+ * Everything a freshly loaded Monaco needs before it paints. Both editors on the
+ * page take this as beforeMount, so neither can be given the themes and miss the
+ * font measurement or the reverse.
+ */
+export function prepareMonaco(monaco: Monaco) {
+  ensureMonacoThemes(monaco);
+  remeasureMonacoFontsWhenLoaded(monaco);
 }
 
 

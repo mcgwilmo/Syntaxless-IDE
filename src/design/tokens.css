@@ -15,45 +15,87 @@
 
 :root {
   /* ---- Surfaces -------------------------------------------------------- */
-  /* Warm off-white paper, not clinical white and not the old cold slate. */
-  --surface-page: #faf9f7;
+  /*
+   * "Academy" -- pale blue-white paper, Khan Academy lineage. Cool, not warm:
+   * the page carries a faint blue cast so that white cards read as lifted off
+   * it rather than merged into it.
+   *
+   * IMPORTANT for anyone recomputing contrast here. --surface-raised is pure
+   * white, so --material-sheen (white at 8%) composites over it to white again
+   * -- in this theme the sheen cannot lighten a raised card at all. The tight
+   * ground for dark text is therefore NOT the card but --surface-sunken, which
+   * is where Callout, Field, Badge and every terminal well put their text.
+   * Every ratio below is quoted page / sheened card / sunken, and sunken is the
+   * one that binds. (Dark is the mirror image: there the sheened card binds.)
+   */
+  --surface-page: #f5f7fc;
   --surface-raised: #ffffff;
-  --surface-sunken: #f2f0ed;
-  --surface-overlay: rgba(28, 26, 23, 0.45);
+  --surface-sunken: #e8edf8;
+  --surface-overlay: rgba(20, 26, 46, 0.45);
 
   /* ---- Text ------------------------------------------------------------ */
-  --text-primary: #1c1a17; /* 16.50:1 on page */
-  --text-muted: #57534e; /*  7.25:1 on page */
-  --text-soft: #78716c; /*  4.56:1 on page -- AA for body */
+  --text-primary: #141a2e; /* 16.10 page / 17.26 card / 14.71 sunken */
+  --text-muted: #494e62; /*  7.69 page /  8.24 card /  7.02 sunken */
+  /* As soft as the ramp goes. 4.60:1 against --surface-sunken is the binding
+     measurement -- on the page it looks like it has 0.5 to spare (5.04), and
+     that spare is exactly what a neutral Callout spends by sitting in a well. */
+  --text-soft: #646a7b; /*  5.04 page /  5.40 card /  4.60 sunken -- AA for body */
   --text-inverted: #ffffff;
 
   /* ---- Borders --------------------------------------------------------- */
-  --border-subtle: rgba(28, 26, 23, 0.1);
-  --border-strong: rgba(28, 26, 23, 0.18);
+  /* These two are hairlines, and their ratios are recorded so that nobody has
+     to guess whether a claim was ever made. Composited over each ground and
+     measured against that same ground:
+       subtle  1.22 page / 1.22 card / 1.22 sunken
+       strong  1.45 page / 1.45 card / 1.44 sunken
+     Both are far under the 3:1 of WCAG 1.4.11, which is correct for a
+     decorative edge and NOT correct for anything whose boundary is the only
+     thing identifying it as a control. Field's resting input edge is the one
+     place that currently leans on the strong hairline for that job (1.44
+     against the well it encloses, and the well itself is only 1.17 against the
+     card behind it). Do not fix that by strengthening the hairline -- it is
+     load-bearing decoration in ~40 places, and reaching 3:1 needs alpha 0.48
+     here and 0.40 in Ink, which outlines every panel in the app. It needs its
+     own control-boundary token, applied only to inputs. */
+  --border-subtle: rgba(20, 26, 46, 0.1);
+  --border-strong: rgba(20, 26, 46, 0.18);
+  /* Focus is a real 1.4.11 surface and it clears the bar with room:
+     5.94 page / 6.37 card / 5.43 sunken. */
   --border-focus: var(--accent-solid);
 
   /* ---- Accent ---------------------------------------------------------- */
   /* One accent. Used for interactive emphasis, never for decoration. */
-  --accent-solid: #0f766e; /*  5.20:1 on page, 5.47:1 white-on-accent */
-  --accent-hover: #115e59;
-  --accent-text: #0f766e;
-  --accent-subtle: rgba(15, 118, 110, 0.08);
-  --accent-border: rgba(15, 118, 110, 0.28);
+  /* Indigo. The tightest pair in the system is the white label on the filled
+     button, and it is measured through the sheen: 6.37:1 flat drops to 5.41:1
+     once white-at-8% is composited over the top of the fill, which is the worst
+     case because the sheen is strongest at the top edge. */
+  --accent-solid: #3b4edb; /*  5.94 page /  6.37 card /  5.43 sunken; 5.41 white-on-accent, sheened */
+  /* Hover darkens rather than lightens, so the label pair only ever improves. */
+  --accent-hover: #2f3fb8; /*  7.76 page /  8.32 card /  7.09 sunken; 6.88 white-on-accent, sheened */
+  /* Same value as the fill. It survives as text because indigo is dark enough
+     to clear AA even on the sunken well (5.43), and on its own 8% tint over
+     that well -- the Badge/chip pairing -- it still measures 4.84. */
+  --accent-text: #3b4edb; /*  4.84:1 on --accent-subtle over sunken, the worst chip case */
+  --accent-subtle: rgba(59, 78, 219, 0.08);
+  --accent-border: rgba(59, 78, 219, 0.28);
 
   /* ---- State ----------------------------------------------------------- */
   /* Reserved for meaning. Green = it ran. Amber = look at this. Rose = blocked. */
-  --state-success: #15803d; /*  4.77:1 */
-  --state-success-subtle: rgba(21, 128, 61, 0.09);
-  --state-warning: #b45309; /*  4.77:1 */
-  --state-warning-subtle: rgba(180, 83, 9, 0.09);
-  --state-blocked: #be123c; /*  5.97:1 */
-  --state-blocked-subtle: rgba(190, 18, 60, 0.08);
+  /* Each of these is quoted twice: flat on the three grounds, and on its OWN
+     -subtle tint, which is what Callout actually renders. The tint is the
+     harder number and it is the one that set these values. */
+  --state-success: #216e4a; /*  5.77 page /  6.19 card /  5.27 sunken; 4.69 on own tint over sunken */
+  --state-success-subtle: rgba(33, 110, 74, 0.09);
+  --state-warning: #8e4f0b; /*  5.99 page /  6.42 card /  5.47 sunken; 4.84 on own tint over sunken */
+  --state-warning-subtle: rgba(142, 79, 11, 0.09);
+  --state-blocked: #bc173a; /*  5.90 page /  6.32 card /  5.39 sunken; 5.68 white-on-blocked, sheened */
+  --state-blocked-subtle: rgba(188, 23, 58, 0.08);
 
   /* ---- Elevation ------------------------------------------------------- */
   /* Soft and diffuse. Depth should be felt, not outlined. */
-  --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.04), 0 1px 3px rgba(28, 26, 23, 0.06);
-  --shadow-md: 0 4px 12px rgba(28, 26, 23, 0.06), 0 2px 4px rgba(28, 26, 23, 0.04);
-  --shadow-lg: 0 12px 32px rgba(28, 26, 23, 0.09), 0 4px 8px rgba(28, 26, 23, 0.04);
+  --shadow-sm: 0 1px 2px rgba(20, 26, 46, 0.04), 0 1px 3px rgba(20, 26, 46, 0.06);
+  --shadow-md: 0 4px 12px rgba(20, 26, 46, 0.06), 0 2px 4px rgba(20, 26, 46, 0.04);
+  --shadow-lg: 0 12px 32px rgba(20, 26, 46, 0.09), 0 4px 8px rgba(20, 26, 46, 0.04);
 
   /* ---- Material -------------------------------------------------------- */
   /*
@@ -72,15 +114,23 @@
 
   /* The catch of light along a raised top edge. */
   --material-highlight: rgba(255, 255, 255, 0.9);
-  /* The shading under a raised bottom edge, and inside a recess. */
-  --material-shade: rgba(28, 26, 23, 0.13);
+  /* The shading under a raised bottom edge, and inside a recess. Tinted with
+     the theme's ink (#141a2e) rather than black or the old warm brown -- a
+     shadow on a blue-white page that leans brown reads as dirt, not depth.
+     Only the hue moved; every alpha and offset in this section is unchanged. */
+  --material-shade: rgba(20, 26, 46, 0.13);
 
   /* Faint top-to-bottom gradient. A flat fill under a light has a slight
      falloff; without it a "raised" surface still looks like a sticker. */
   /* 8%, not more. The sheen sits over filled controls as well as neutral
      cards, and at 55% it washed the accent button out until white label text
-     measured 1.98:1. Every increase here has to be re-checked against
-     white-on-accent, which is the tightest pair in the system. */
+     measured 1.98:1. (That 1.98 was measured on the PREVIOUS accent and is
+     kept as history, not as a claim about this palette -- 55% over today's
+     indigo recomputes to 2.10:1. Same verdict, different number.) Even at 8%
+     it costs the current indigo button nearly a
+     full point -- 6.37:1 flat, 5.41:1 sheened. Every increase here has to be
+     re-checked against white-on-accent, which is the tightest pair in the
+     system, and the accent gets darkened before this number gets weakened. */
   --material-sheen: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0.08),
@@ -91,26 +141,26 @@
   --raised:
     inset 0 1px 0 var(--material-highlight),
     inset 0 -1px 0 var(--material-shade),
-    0 1px 1px rgba(28, 26, 23, 0.05),
-    0 2px 4px rgba(28, 26, 23, 0.07);
+    0 1px 1px rgba(20, 26, 46, 0.05),
+    0 2px 4px rgba(20, 26, 46, 0.07);
 
   /* Raised further: panels and cards, off the page rather than on it. */
   --raised-lg:
     inset 0 1px 0 var(--material-highlight),
     inset 0 -1px 0 var(--material-shade),
-    0 2px 4px rgba(28, 26, 23, 0.05),
-    0 8px 20px rgba(28, 26, 23, 0.09);
+    0 2px 4px rgba(20, 26, 46, 0.05),
+    0 8px 20px rgba(20, 26, 46, 0.09);
 
   /* Pressed: the same object, pushed in. Light now catches the bottom. */
   --pressed:
-    inset 0 2px 4px rgba(28, 26, 23, 0.16),
+    inset 0 2px 4px rgba(20, 26, 46, 0.16),
     inset 0 -1px 0 rgba(255, 255, 255, 0.5);
 
   /* Recessed: a well cut into the surface -- inputs, terminals, tracks.
      Something goes INTO these, so they must not also look pressable. */
   --recessed:
-    inset 0 2px 3px rgba(28, 26, 23, 0.1),
-    inset 0 1px 1px rgba(28, 26, 23, 0.06),
+    inset 0 2px 3px rgba(20, 26, 46, 0.1),
+    inset 0 1px 1px rgba(20, 26, 46, 0.06),
     0 1px 0 var(--material-highlight);
 
   /* Lifted: hover, before the press. The object rises slightly toward the
@@ -119,28 +169,28 @@
   --lifted:
     inset 0 1px 0 var(--material-highlight),
     inset 0 -1px 0 var(--material-shade),
-    0 2px 3px rgba(28, 26, 23, 0.06),
-    0 6px 12px rgba(28, 26, 23, 0.1);
+    0 2px 3px rgba(20, 26, 46, 0.06),
+    0 6px 12px rgba(20, 26, 46, 0.1);
 
   /* Floating: menus, popovers, toasts. Off the page entirely, so the contact
      shadow disappears and only the cast shadow remains. */
   --floating:
     inset 0 1px 0 var(--material-highlight),
-    0 6px 12px rgba(28, 26, 23, 0.08),
-    0 18px 36px rgba(28, 26, 23, 0.14);
+    0 6px 12px rgba(20, 26, 46, 0.08),
+    0 18px 36px rgba(20, 26, 46, 0.14);
 
   /* Modal: the top of the stack, over a scrim. Falls off over a long distance
      because it is far from the page behind it. */
   --modal:
     inset 0 1px 0 var(--material-highlight),
-    0 10px 20px rgba(28, 26, 23, 0.1),
-    0 32px 64px rgba(28, 26, 23, 0.2);
+    0 10px 20px rgba(20, 26, 46, 0.1),
+    0 32px 64px rgba(20, 26, 46, 0.2);
 
   /* Inlaid: set flush into the surface rather than cut into it. Badges,
      chips, callouts -- things you read, not things you press or type into. A
      hair of inset shading and a lit bottom edge, and nothing more. */
   --inlaid:
-    inset 0 1px 1px rgba(28, 26, 23, 0.07),
+    inset 0 1px 1px rgba(20, 26, 46, 0.07),
     0 1px 0 var(--material-highlight);
 
   /* How far a control travels when pressed. One pixel is enough to feel; more
@@ -148,6 +198,12 @@
   --press-travel: 1px;
   /* And how far it rises on hover. Half a press: noticed, not announced. */
   --lift-travel: 1px;
+  /* How much a picture swells when you hover the card it sits in. A token for
+     the same reason the travels are tokens: Tailwind compiles `scale-*` to the
+     `scale` property, so `transform: none` cannot cancel it and the
+     `motion-reduce:` variant written beside it is dead text. Zeroing this in
+     the reduced-motion block is the only thing that actually stops the zoom. */
+  --hover-zoom: 1.02;
 
   /* ---- Elevation ladder -------------------------------------------------
    * Every surface in the app sits on exactly one of these rungs. The rung
@@ -223,36 +279,73 @@
 }
 
 :root[data-theme="dark"] {
-  /* Warm dark, not blue-black. Same role, different value. */
-  --surface-page: #171614;
-  --surface-raised: #211f1c;
-  --surface-sunken: #100f0e;
+  /*
+   * "Ink" -- Linear + Codecademy lineage. Warm charcoal, deliberately not
+   * blue-black: the two themes are opposites in temperature as well as value,
+   * which is what stops dark from reading as light with the lights off.
+   *
+   * Here the sheen DOES bite. White-at-5% over #201d16 composites to #2b2822,
+   * and every one of these tokens is light text, so that lift shrinks contrast
+   * rather than growing it. The card is the binding ground for the whole theme
+   * -- ratios are quoted page / sheened card / sunken, and the middle number is
+   * the one to read.
+   */
+  --surface-page: #17150f;
+  --surface-raised: #201d16;
+  --surface-sunken: #100e09;
   --surface-overlay: rgba(0, 0, 0, 0.6);
 
-  --text-primary: #f5f3f0; /* 16.33:1 on page */
-  --text-muted: #a8a29e; /*  7.17:1 on page */
-  /* Lightened from #8a8480. That value cleared AA against the page (4.90) but
-     not against a raised card (4.46) -- phase 2 only ever measured text against
-     the page, so raised surfaces were never checked. */
-  --text-soft: #9c9691; /*  6.19:1 on page, 4.90:1 on a sheened card */
-  --text-inverted: #1c1a17;
+  --text-primary: #e6dfd1; /* 13.77 page / 11.08 card / 14.55 sunken */
+  --text-muted: #a2977f; /*  6.32 page /  5.09 card /  6.68 sunken */
+  /* The lesson that produced this file's second rule, restated for Ink. The old
+     palette shipped #8a8480, which cleared AA against the page (4.90) but not
+     against a raised card (4.46), because phase 2 only ever measured against the
+     page. (Those two numbers, 4.90 and 4.46, were measured against the OLD
+     surfaces and are kept as the story, not as a claim about these ones --
+     #8a8480 recomputes to 4.95 page / 3.98 sheened card on today's Ink
+     grounds, so the bug it records would be worse here, not gone.)
+     Here the card number is what was solved for and the page number is
+     the incidental one: 4.64 on a sheened card is the whole margin.
+     There is almost no room left below --text-muted -- muted itself is only
+     5.09 on that card -- so this is as soft as the Ink ramp can legally go. */
+  --text-soft: #98907f; /*  5.76 page /  4.64 card /  6.09 sunken -- card binds */
+  /* Reads on the amber fill, not on a surface: 6.77:1 on --accent-solid once
+     the sheen is composited (the sheen lightens the fill, so it helps here). */
+  --text-inverted: #17150f;
 
-  --border-subtle: rgba(245, 243, 240, 0.1);
-  --border-strong: rgba(245, 243, 240, 0.18);
+  /* Hairlines, measured against the ground they sit on, same as light:
+       subtle  1.26 page / 1.30 card / 1.23 sunken
+       strong  1.58 page / 1.64 card / 1.55 sunken
+     See the note in the light block: decorative here, and not a substitute for
+     a control boundary. Focus (the accent) is 6.39 page / 5.14 card / 6.75
+     sunken, so the state that actually has to be seen is fine in Ink too. */
+  --border-subtle: rgba(230, 223, 209, 0.1);
+  --border-strong: rgba(230, 223, 209, 0.18);
 
-  /* Light-on-dark accent needs to be much lighter to stay legible. */
-  --accent-solid: #14b8a6;
-  --accent-hover: #2dd4bf;
-  --accent-text: #5eead4; /* 12.22:1 on page */
-  --accent-subtle: rgba(45, 212, 191, 0.12);
-  --accent-border: rgba(45, 212, 191, 0.3);
+  /* Amber. Unlike the light theme this fill is light enough to take a DARK
+     label, so the sheen works in our favour: 6.39:1 flat becomes 6.77:1 once
+     white-at-5% is composited over the top of the button. */
+  --accent-solid: #d08a2c; /*  6.39 page /  5.14 card /  6.75 sunken; 6.77 ink-on-accent, sheened */
+  --accent-hover: #e3a244; /*  8.63 ink-on-accent, sheened -- hover lightens, so the pair improves */
+  /* Lighter than the fill, because as text it is competing with the raised card
+     rather than sitting on it, and because chips paint it over the accent's own
+     12% tint, where a sheened card brings it down to 5.41:1 -- its worst case.
+     (Keep a token name and a colon off the same line inside a comment here:
+     monaco-theme.test.ts parses this block with a regex and will read the
+     comment as the declaration.) */
+  --accent-text: #e0a64f; /*  8.46 page /  6.81 card /  8.94 sunken */
+  --accent-subtle: rgba(227, 162, 68, 0.12);
+  --accent-border: rgba(227, 162, 68, 0.3);
 
-  --state-success: #4ade80; /* 10.38:1 */
-  --state-success-subtle: rgba(74, 222, 128, 0.12);
-  --state-warning: #fbbf24; /* 10.83:1 */
-  --state-warning-subtle: rgba(251, 191, 36, 0.12);
-  --state-blocked: #fb7185; /*  6.72:1 */
-  --state-blocked-subtle: rgba(251, 113, 133, 0.12);
+  /* Same discipline as light: the flat ratios are quoted, but the value was set
+     by the token on its own -subtle tint over a sheened card, which is the
+     ground Callout actually gives it. */
+  --state-success: #95a967; /*  7.08 page /  5.70 card /  7.48 sunken; 4.66 on own tint over card */
+  --state-success-subtle: rgba(149, 169, 103, 0.12);
+  --state-warning: #ddb149; /*  9.09 page /  7.32 card /  9.61 sunken; 5.77 on own tint over card */
+  --state-warning-subtle: rgba(221, 177, 73, 0.12);
+  --state-blocked: #e88a73; /*  7.23 page /  5.82 card /  7.64 sunken; 7.59 ink-on-blocked, sheened */
+  --state-blocked-subtle: rgba(232, 138, 115, 0.12);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
