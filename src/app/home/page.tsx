@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   useEffect,
   useRef,
@@ -23,14 +22,23 @@ import {
   type Testimonial,
 } from "@/components/ui/testimonials-columns";
 import { InteractiveImageAccordion } from "@/components/ui/interactive-image-accordion";
+import {
+  AlgorithmsInk,
+  CustomizeInk,
+  InterfaceInk,
+  PlotInk,
+  PrimitivesInk,
+  ProblemSolvingInk,
+  ProgramCreationInk,
+  StartCodingInk,
+} from "@/components/illustrations";
 import { SiteFooter } from "@/components/site-footer";
 import { AppPageBackground, SiteHeader } from "@/components/site-shell";
-import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/design/primitives";
 import { BRAND } from "@/config/brand";
 
-const HERO_WINDOW_SCALE_PERCENT = 75;
-const HERO_WINDOW_X_SHIFT_PERCENT = 25;
+import { HeroDemo } from "./hero-demo";
+
 const REVEAL_ROOT_MARGIN = "0px 0px -12% 0px";
 
 const testimonials: Testimonial[] = [
@@ -146,38 +154,42 @@ const projectSignals = [
     value: "Lower friction without removing rigor",
   },
 ];
+// Drawings, not screenshots. The five PNGs these replaced were 6MB between
+// them and every visitor downloaded all five to look at one; the line art is a
+// few kilobytes of markup that also happens to say what the feature is rather
+// than what the app looked like on the day someone took the picture.
 const creatorAccordionItems = [
   {
     id: 1,
     title: "Simple Program Creation",
-    imageSrc: "/content/program-creation.png",
+    Illustration: ProgramCreationInk,
   },
   {
     id: 2,
     title: "Intuitive Interface",
-    imageSrc: "/content/algorithmic-thinking.png",
+    Illustration: InterfaceInk,
   },
   {
     id: 3,
     title: "AI Assisted Problem Solving",
-    imageSrc: "/content/problem-solving.png",
+    Illustration: ProblemSolvingInk,
   },
   {
     id: 4,
     title: "Plot and Image Creation",
-    imageSrc: "/content/plot-creation.png",
+    Illustration: PlotInk,
   },
   {
     id: 5,
     title: "Customizable IDE",
-    imageSrc: "/content/customize.png",
+    Illustration: CustomizeInk,
   },
 ];
 const learningCenterTopics = [
   {
     id: 1,
-    title: "Primirives and Logic",
-    imageSrc: "/content/learn-1.png",
+    title: "Primitives and Logic",
+    Illustration: PrimitivesInk,
     description:
       "Build intuition for variables, conditions, and the step-by-step reasoning that sits underneath beginner programming.",
     actionLabel: "Open Learning Center",
@@ -186,7 +198,7 @@ const learningCenterTopics = [
   {
     id: 2,
     title: "Data Structures and Algorithms",
-    imageSrc: "/content/learn-2.png",
+    Illustration: AlgorithmsInk,
     description:
       "Move into lists, patterns, and core algorithmic thinking with guided material designed for early computer science learners.",
     actionLabel: "Explore Lessons",
@@ -195,7 +207,7 @@ const learningCenterTopics = [
   {
     id: 3,
     title: "Start Coding Right Away",
-    imageSrc: "/content/learn-3.png",
+    Illustration: StartCodingInk,
     description:
       `Jump from concepts into creation inside ${BRAND.name} and turn plain-English ideas into working programs without syntax getting in the way first.`,
     actionLabel: "Open Dashboard",
@@ -380,123 +392,8 @@ function ReviewCard({
   );
 }
 
-function HeroStage({
-  isLight,
-  inView,
-}: {
-  isLight: boolean;
-  inView: boolean;
-}) {
-  const heroWindowScale = HERO_WINDOW_SCALE_PERCENT / 100;
-  const heroWindowFadeStyle = {
-    maskImage:
-      "linear-gradient(to bottom, black 0%, black 60%, transparent 100%), linear-gradient(to right, black 0%, black 70%, transparent 100%)",
-    maskComposite: "intersect" as const,
-    WebkitMaskImage:
-      "linear-gradient(to bottom, black 0%, black 60%, transparent 100%), linear-gradient(to right, black 0%, black 70%, transparent 100%)",
-    WebkitMaskComposite: "source-in" as const,
-  };
-  // The screenshot is the one thing on the page that is genuinely off the
-  // surface, so it takes the top of the resting ladder; the ghost panes behind
-  // it sit a rung lower so the stack reads back-to-front.
-  const heroShellClass = "shadow-[var(--raised-lg)]";
-  const stackedPaneClass =
-    "border-[var(--border-strong)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised)]";
-  const stackedPaneInnerBorderClass = "border-[var(--border-subtle)]";
-  const glowClass =
-    "bg-[radial-gradient(circle,var(--accent-subtle),transparent_72%)]";
-  return (
-    <div className="pointer-events-none relative z-0 -mb-20 mt-6 w-full md:-mb-24 md:mt-8 lg:-mb-28 lg:mt-10">
-      <div
-        // See Reveal: literal translate needs translate-y-0 to be cancelled.
-        className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${
-          inView ? "translate-y-0" : "translate-y-2"
-        }`}
-        style={{ transitionDelay: "160ms" }}
-      >
-        <div className={`pointer-events-none absolute left-1/2 top-[12%] h-56 w-[36rem] max-w-[76vw] -translate-x-1/2 rounded-full blur-3xl ${glowClass}`} />
-
-        <div className="mx-auto max-w-none">
-          <div className="[perspective:1800px]">
-            <div className="transition-transform duration-[var(--duration-base)] ease-[var(--ease-spring)] will-change-transform">
-              <div className="[transform:rotateX(16deg)]">
-                <div
-                  className="relative mx-auto aspect-[1858/905] w-[min(98rem,98vw)] sm:w-[min(76rem,114vw)] md:w-[min(84rem,118vw)] lg:w-[min(92rem,104vw)] xl:w-[min(98rem,98vw)]"
-                  style={{
-                    transform: `translateX(${HERO_WINDOW_X_SHIFT_PERCENT}%) skewX(0.34rad)`,
-                  }}
-                >
-                  <div
-                    className={`absolute inset-0 rounded-[var(--radius-xl)] border backdrop-blur-[2px] ${stackedPaneClass}`}
-                    style={{
-                      transform: `translate(-1.45rem, -1.5rem) scale(${heroWindowScale})`,
-                      transformOrigin: "top center",
-                      // Depth comes from the shadow rung now rather than from a
-                      // per-theme opacity, so one value serves both themes.
-                      opacity: 0.7,
-                      ...heroWindowFadeStyle,
-                    }}
-                  >
-                    <div
-                      className={`absolute inset-[1px] rounded-[calc(var(--radius-xl)-1px)] border ${stackedPaneInnerBorderClass}`}
-                    />
-                  </div>
-
-                  <div
-                    className={`absolute inset-0 rounded-[var(--radius-xl)] border backdrop-blur-[1px] ${stackedPaneClass}`}
-                    style={{
-                      transform: `translate(-0.72rem, -0.78rem) scale(${heroWindowScale})`,
-                      transformOrigin: "top center",
-                      opacity: 0.86,
-                      ...heroWindowFadeStyle,
-                    }}
-                  >
-                    <div
-                      className={`absolute inset-[1px] rounded-[calc(var(--radius-xl)-1px)] border ${stackedPaneInnerBorderClass}`}
-                    />
-                  </div>
-
-                  <div
-                    className={`absolute inset-0 overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] ${heroShellClass}`}
-                    style={{
-                      transform: `scale(${heroWindowScale})`,
-                      transformOrigin: "top center",
-                      ...heroWindowFadeStyle,
-                    }}
-                  >
-                    <div className="absolute inset-0 rounded-[var(--radius-xl)]">
-                      <div className="absolute inset-0 overflow-hidden rounded-[var(--radius-lg)]">
-                        <Image
-                          // The only surviving theme branch on this page: the
-                          // screenshot is a baked asset, so it has to be picked
-                          // rather than recolored.
-                          src={
-                            isLight
-                              ? "/brand/ide-window-light.png"
-                              : "/brand/ide-window.png"
-                          }
-                          alt={`${BRAND.name} IDE window interface`}
-                          fill
-                          priority
-                          sizes="(min-width: 1280px) 1500px, 100vw"
-                          className="object-contain object-top"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function HomePage() {
   const router = useRouter();
-  const { isLight } = useTheme();
 
   const [isLeaving, setIsLeaving] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -552,7 +449,7 @@ export default function HomePage() {
     "border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] shadow-[var(--raised-lg)]";
   const titleClass = "text-[var(--text-primary)]";
   // Muted rather than soft: this body text lands on raised cards, where soft
-  // only measures 4.90:1 in dark and has no headroom left.
+  // only measures 4.63:1 in dark and has no headroom left.
   const bodyClass = "text-[var(--text-muted)]";
   const labelClass = "text-[var(--text-muted)]";
   // Panels nested inside a card are cut into it, not stacked on top of it.
@@ -641,8 +538,16 @@ export default function HomePage() {
             <div className="mx-auto max-w-3xl pt-2">
               {/* Display leading, not --leading-tight: at 4.3rem a 1.25 ratio
                   opens a gap you read as two headings. Matches
-                  PAGE_HEADING_CLASS and every other display heading. */}
-              <h1 className="mx-auto max-w-3xl text-[clamp(2rem,5vw,4.3rem)] font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)]">
+                  PAGE_HEADING_CLASS and every other display heading.
+
+                  1.05, not the 0.95 this carried under Geist. Source Serif 4's
+                  ink runs 0.986em tall (0.741 ascender + 0.246 descender,
+                  measured at 700), so 0.95 was a line box shorter than the
+                  glyphs standing in it -- a descender on one line and an
+                  ascender on the next overlapped by 2.8px at this size. 1.05 is
+                  the tightest round value that clears the face's own ink and
+                  still reads as one block. */}
+              <h1 className="mx-auto max-w-3xl text-[clamp(2rem,5vw,4.3rem)] font-bold leading-[1.05] tracking-[-0.045em] text-[var(--text-primary)]">
                 Vibe code without giving up independent thinking
               </h1>
 
@@ -674,7 +579,25 @@ export default function HomePage() {
             </div>
           </Reveal>
 
-          <HeroStage isLight={isLight} inView={heroInView} />
+          {/* The hero used to be two 360KB screenshots of the old teal
+              theme, picked by isLight -- the only theme branch left on this
+              page, and an advertisement for a product that no longer looked
+              like that. It is now the thing itself: a real program, its real
+              translation, and a Run that prints what it really prints. */}
+          <div className="relative z-0 mt-[var(--space-10)] w-full md:mt-[var(--space-12)]">
+            <div className="pointer-events-none absolute left-1/2 top-[8%] h-56 w-[36rem] max-w-[76vw] -translate-x-1/2 rounded-full blur-3xl bg-[radial-gradient(circle,var(--accent-subtle),transparent_72%)]" />
+
+            <Reveal
+              inView={heroInView}
+              delay={160}
+              className="relative mx-auto w-full max-w-5xl"
+            >
+              <HeroDemo
+                onGetStarted={handleGetStarted}
+                getStartedLabel={isAuthed ? "Open the editor" : "Write your own"}
+              />
+            </Reveal>
+          </div>
         </div>
 
         <div
@@ -692,7 +615,7 @@ export default function HomePage() {
             <div className={`mb-[var(--space-3)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] ${labelClass}`}>
               Testimonials
             </div>
-            <h2 className={`text-4xl font-bold leading-[0.95] tracking-[-0.045em] md:text-5xl ${titleClass}`}>
+            <h2 className={`text-4xl font-bold leading-[1.05] tracking-[-0.045em] md:text-5xl ${titleClass}`}>
               Hear What Others Say
             </h2>
             <p
@@ -1077,7 +1000,7 @@ export default function HomePage() {
                   Learning Center
                 </div>
                 <h2
-                  className={`mx-auto max-w-3xl text-center text-4xl font-bold leading-[0.95] tracking-[-0.045em] md:text-5xl ${titleClass}`}
+                  className={`mx-auto max-w-3xl text-center text-4xl font-bold leading-[1.05] tracking-[-0.045em] md:text-5xl ${titleClass}`}
                 >
                   Learn Computer Science Concepts Like Never Before
                 </h2>
@@ -1106,26 +1029,55 @@ export default function HomePage() {
                         }
                         className="group relative flex min-h-[29rem] w-full flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] text-left shadow-[var(--raised)] transition-[box-shadow,transform,border-color] duration-[var(--duration-press)] ease-[var(--ease-spring)] hover:-translate-y-[var(--lift-travel)] hover:border-[var(--accent-border)] hover:shadow-[var(--lifted)] active:translate-y-[var(--press-travel)] active:shadow-[var(--pressed)] motion-reduce:transform-none motion-reduce:hover:transform-none motion-reduce:active:transform-none"
                       >
-                        <div className="absolute inset-0 overflow-hidden bg-[var(--surface-sunken)]">
-                          <Image
-                            src={topic.imageSrc}
-                            alt={topic.title}
-                            fill
-                            sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-                            className="object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:scale-[1.03]"
+                        {/* The drawing now has its own well at the top of the
+                            card instead of lying full-bleed behind the text. A
+                            photograph could be cropped by the caption plate and
+                            lose nothing; a line drawing loses the composition,
+                            and the margin around it is half of what makes it
+                            read as editorial rather than as an icon. */}
+                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--surface-sunken)]">
+                          {/* Faint rule grid. It reads as the squared paper the
+                              drawing was made on, which is why it survived the
+                              swap away from photography. */}
+                          <div
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 [background-image:linear-gradient(var(--border-subtle)_1px,transparent_1px),linear-gradient(90deg,var(--border-subtle)_1px,transparent_1px)] [background-position:center] [background-size:32px_32px] opacity-70"
                           />
-                          <div className="pointer-events-none absolute inset-0 [background-image:linear-gradient(var(--border-subtle)_1px,transparent_1px),linear-gradient(90deg,var(--border-subtle)_1px,transparent_1px)] [background-position:center] [background-size:32px_32px] opacity-70" />
-                          {/* Fades the photograph into the caption plate below
-                              so the two do not meet on a hard line. */}
-                          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_45%,color-mix(in_srgb,var(--surface-raised)_70%,transparent)_100%)]" />
-                          {/* The picture is set into the card rather than laid
+                          {/* Decorative here, and only here. The whole card is
+                              one button, so its name is read off its contents
+                              -- a titled drawing puts "a value entering a
+                              condition that branches two ways" in front of the
+                              heading that already says "Primitives and Logic".
+                              The drawing is saying the same thing the caption
+                              says, and the caption says it better.
+
+                              The zoom is a token, not a literal: `scale-*`
+                              compiles to the `scale` property, which
+                              `transform: none` cannot cancel, so a
+                              `motion-reduce:` variant here would be dead text.
+                              The reduced-motion block zeroes the token. */}
+                          <topic.Illustration
+                            decorative
+                            className="absolute inset-0 h-full w-full transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:scale-[var(--hover-zoom)] motion-reduce:transition-none"
+                            preserveAspectRatio="xMidYMid meet"
+                          />
+                          {/* Fades the well into the caption plate below so the
+                              two do not meet on a hard line. */}
+                          <div
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_58%,color-mix(in_srgb,var(--surface-raised)_70%,transparent)_100%)]"
+                          />
+                          {/* The drawing is set into the card rather than laid
                               on top of it, so the well shading reads over it. */}
-                          <div className="pointer-events-none absolute inset-0 shadow-[var(--recessed)]" />
+                          <div
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 shadow-[var(--recessed)]"
+                          />
                         </div>
 
-                        {/* An opaque plate, not a scrim over the photo: caption
-                            text has to clear AA against a surface we control,
-                            and a photograph is not one. */}
+                        {/* An opaque plate, not a scrim over the drawing:
+                            caption text has to clear AA against a surface we
+                            control, and the ink behind it is not one. */}
                         <div className="relative z-10 mt-auto flex flex-col border-t border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-6)]">
                           <h3 className="text-[length:var(--text-2xl)] font-bold leading-[var(--leading-tight)] tracking-[-0.03em] text-[var(--text-primary)]">
                             {topic.title}

@@ -1,15 +1,19 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { BRAND } from "@/config/brand";
+import type { InkIllustrationProps } from "@/components/illustrations";
 import { Button } from "@/design/primitives";
 import { cn } from "@/lib/cn";
 
 type InteractiveAccordionItem = {
   id: number;
   title: string;
-  imageSrc: string;
+  /* A drawing, not a file path. The illustration is inline SVG so it inherits
+     the page's ink and accent tokens; an <img src="...svg"> is a separate
+     document and could not see them, which is how these end up needing a baked
+     hex and breaking one of the two themes. */
+  Illustration: ComponentType<InkIllustrationProps>;
 };
 
 type InteractiveImageAccordionProps = {
@@ -27,7 +31,13 @@ export function InteractiveImageAccordion({
   onCtaClick,
   items,
 }: InteractiveImageAccordionProps) {
-  const [activeIndex, setActiveIndex] = useState(items.length - 1);
+  /* Open the first panel, not the last. The strip is a horizontal scroller
+     (`overflow-x-auto`) and below about 1024px it is wider than the viewport,
+     so whichever panel is open at rest is the one the reader has to scroll to
+     find. Defaulting to the end meant a 375px visitor met four closed rails
+     and no drawing at all -- the section's only illustration parked off the
+     right edge. First is also the reading order the labels already imply. */
+  const [activeIndex, setActiveIndex] = useState(0);
 
   return (
     <div className="relative px-[var(--space-6)] py-[var(--space-8)] md:px-[var(--space-8)] md:py-[var(--space-10)]">
@@ -44,7 +54,7 @@ export function InteractiveImageAccordion({
           <div className="text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
             Features
           </div>
-          <h2 className="mt-[var(--space-3)] text-4xl font-bold leading-[0.95] tracking-[-0.045em] text-[var(--text-primary)] md:text-5xl">
+          <h2 className="mt-[var(--space-3)] text-4xl font-bold leading-[1.05] tracking-[-0.045em] text-[var(--text-primary)] md:text-5xl">
             {title}
           </h2>
           {/* Muted, not soft: this paragraph can land on the page or on a card
@@ -110,6 +120,15 @@ export function InteractiveImageAccordion({
                     // single physical motion and should read as one.
                     "transition-[width,box-shadow,transform,border-color]",
                     "duration-[var(--duration-slow)] ease-[var(--ease-spring)]",
+                    // The width is the motion here, and it is the biggest one
+                    // on the page: a rail opening is 270px of travel that
+                    // shoves four sibling panels sideways, and it fires on
+                    // hover. `motion-reduce:transform-none` below does not
+                    // touch it -- width is not a transform -- so the transition
+                    // itself has to be narrowed. Shading and edge colour stay:
+                    // those are how the strip says which panel is open, and a
+                    // colour crossfade is not motion.
+                    "motion-reduce:transition-[box-shadow,border-color]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-solid)]",
                     "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]",
                     isActive
@@ -117,31 +136,52 @@ export function InteractiveImageAccordion({
                       : "w-[3.8rem] border-[var(--border-subtle)] sm:w-[4.25rem]",
                   )}
                 >
-                  <Image
-                    src={item.imageSrc}
-                    alt={item.title}
-                    fill
-                    sizes={
-                      isActive
-                        ? "(min-width: 1024px) 336px, (min-width: 640px) 288px, 240px"
-                        : "(min-width: 640px) 68px, 61px"
-                    }
-                    className="object-cover"
-                  />
-
-                  {/* The collapsed rails are veiled and the open one is not.
-                      That contrast is the whole selection signal here, since
-                      every panel is otherwise the same material. */}
+                  {/* The drawing is set into the panel rather than laid on it:
+                      a sunken ground plus the recessed shading is the same well
+                      the Learning Centre cards use, and line art needs a paper
+                      that is not the same surface as the caption plate on top
+                      of it. */}
                   <div
                     aria-hidden="true"
+                    className="absolute inset-0 bg-[var(--surface-sunken)]"
+                  />
+                  {/* The drawing only exists in the open panel. A photograph
+                      survived being cropped to a 60px rail -- it stayed a
+                      picture of something. A line drawing cropped that far is a
+                      handful of disconnected strokes, so the collapsed rails
+                      show bare paper and their turned label instead. */}
+                  <div
                     className={cn(
-                      "absolute inset-0 bg-[var(--surface-overlay)]",
+                      "absolute inset-0",
                       "transition-opacity duration-[var(--duration-slow)] ease-[var(--ease-out)]",
-                      isActive ? "opacity-0" : "opacity-100",
+                      "motion-reduce:transition-none",
+                      isActive ? "opacity-100" : "opacity-0",
                     )}
+                  >
+                    <item.Illustration
+                      className="h-full w-full"
+                      preserveAspectRatio="xMidYMid slice"
+                    />
+                  </div>
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 shadow-[var(--recessed)]"
                   />
 
-                  {/* The photograph still has to sit under the page's light. The
+                  {/* There is deliberately no veil over the collapsed rails.
+                      The veil existed to hide a photograph; once the drawing
+                      stopped rendering in the closed state there was nothing
+                      left under it to hide, and all it still did was tint bare
+                      paper. It was also reaching for --surface-overlay, which
+                      is the modal scrim -- rgba(20, 26, 46, 0.45) in Academy.
+                      Over --surface-sunken that composites to roughly
+                      rgb(175, 180, 194) even at 60%, so every closed rail read
+                      as a slate slab on the pale theme. Dark hid the problem
+                      because its scrim is black on an almost-black well.
+                      Selection is carried by the things that actually changed:
+                      the width, --accent-border against --border-subtle, and
+                      the label standing up instead of lying on its side. */}
+                  {/* The drawing still has to sit under the page's light. The
                       sheen is what keeps it a panel rather than a picture
                       pasted on top of one. */}
                   <div
@@ -149,11 +189,12 @@ export function InteractiveImageAccordion({
                     className="absolute inset-0 bg-[image:var(--material-sheen)]"
                   />
 
-                  {/* The caption is a plate on the panel, not text on a photo:
-                      an image can be any two colors it likes, so the label
-                      brings its own surface and keeps its contrast in both
-                      themes. Bottom in both states so the position springs
-                      instead of jumping when the panel opens. */}
+                  {/* The caption is a plate on the panel, not text on the
+                      drawing: the label brings its own surface -- raised, one
+                      rung above the sunken well behind the ink -- and keeps its
+                      contrast in both themes. Bottom in both states so the
+                      position springs instead of jumping when the panel
+                      opens. */}
                   <span
                     className={cn(
                       "absolute left-1/2 whitespace-nowrap rounded-[var(--radius-sm)]",
