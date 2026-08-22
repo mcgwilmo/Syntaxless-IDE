@@ -547,7 +547,21 @@ export const LAYOUT_META: Record<
 };
 
 export const DEV_VISION_PASSWORD = "MatWil.05";
-export const PAGE_HEADING_CLASS = "font-bold leading-[0.95] tracking-[-0.045em]";
+/*
+ * Display headings. font-serif is on the list because a few of the places this
+ * is used are <div>s, not heading elements -- they sit inside cards where an
+ * h-level would claim a place in the document outline that they do not have --
+ * and the h1..h6 rule in globals.css cannot reach those. On the <h2>s that also
+ * wear this class it is simply the same family restated.
+ *
+ * The leading is 1.05 rather than the 0.95 this carried under Geist: Source
+ * Serif 4's ink is 0.986em tall, so a 0.95 line box was shorter than the glyphs
+ * in it and consecutive lines overlapped. Every display heading in the app moved
+ * to 1.05 for the same reason -- if the face changes again, this number is a
+ * function of it, not a taste.
+ */
+export const PAGE_HEADING_CLASS =
+  "font-serif font-bold leading-[1.05] tracking-[-0.045em]";
 
 export type MinimalControlIconName =
   | "run"

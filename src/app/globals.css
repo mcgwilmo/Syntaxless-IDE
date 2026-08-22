@@ -32,11 +32,38 @@
   --scrollbar-thumb-border: transparent;
 }
 
+/*
+ * Type roles.
+ *
+ * layout.tsx loads three faces and puts their (hashed) family names on <html>
+ * as --font-source-*. These three variables are the only place those raw names
+ * are read: everything else asks for a JOB -- body text, a heading, code --
+ * exactly the way colours ask for --text-primary rather than a hex.
+ *
+ * Declared on a bare :root, outside @theme, deliberately. Tailwind already
+ * defines --font-sans / --font-serif / --font-mono in its theme layer and its
+ * font-* utilities compile to `font-family: var(--font-sans)`, so an unlayered
+ * :root override both retargets those utilities AND leaves a real custom
+ * property that plain CSS (the body and heading rules below, Monaco's
+ * fontFamily option) can reference. A value that only ever lived inside
+ * @theme inline would do the first and not the second -- Tailwind inlines those
+ * into the utilities and never emits them as variables.
+ *
+ * The system fallbacks matter: they are what renders in the gap before the
+ * webfont arrives, and what renders forever if it fails.
+ */
+:root {
+  --font-sans: var(--font-source-sans), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+  /* Kept on one line: this value is copied verbatim into the font-family of the
+     stylesheet Monaco writes for itself, and a wrapped value carries its newline
+     all the way through. */
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, Menlo, monospace;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 html {
@@ -64,12 +91,40 @@ body {
     )
     fixed;
   color: var(--text-primary);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   transition:
     background-color var(--duration-base) ease,
     color var(--duration-base) ease;
+}
+
+/*
+ * Headings are the serif. There is no heading component and no shared heading
+ * class -- every h1/h2/h3 in the app is a bare element wearing Tailwind size and
+ * colour utilities -- so the element selector is the only place that reaches all
+ * of them at once, and the only alternative was a font-family utility repeated
+ * across ~40 call sites waiting to be forgotten on the forty-first.
+ *
+ * The handful of display headings that are <div>s rather than heading elements
+ * (they sit inside cards where an h-level would lie about the outline) carry
+ * font-serif through PAGE_HEADING_CLASS instead -- see features/ide/types.ts.
+ *
+ * font-optical-sizing is restated rather than assumed. `auto` is the CSS initial
+ * value, so this declaration changes nothing today; it is here because the axis
+ * it drives is not free -- layout.tsx has to ask Google for `opsz` explicitly --
+ * and because any later font-variation-settings on a heading would silently
+ * switch optical sizing off. Both halves of that arrangement should be visible
+ * from either end.
+ */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
 }
 
 * {
@@ -115,6 +170,20 @@ body {
   outline-offset: 2px;
 }
 
+/* For a focusable region whose own box runs flush to the edge of a parent that
+   clips. The ring above is drawn OUTSIDE the box, so on such an element the
+   left and right sides land beyond the clip and disappear, leaving a couple of
+   horizontal lines that read as a border rather than as focus. Drawing it
+   inside keeps the whole rectangle.
+
+   This is a class here rather than a Tailwind arbitrary variant because the
+   rule it corrects is unlayered: utilities live in @layer utilities, and an
+   unlayered declaration beats every layered one regardless of specificity, so
+   `focus-visible:[outline-offset:-3px]` silently loses. */
+.focus-ring-inset:focus-visible {
+  outline-offset: -3px;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -136,6 +205,15 @@ body {
   :root {
     --press-travel: 0px;
     --lift-travel: 0px;
+    /* Same trap, one property along: `scale` is not `transform` either. */
+    --hover-zoom: 1;
+
+    /* Smooth scrolling is the largest motion on the site -- the entire
+       viewport travels, and it fires from anchor links and from every
+       scrollIntoView the page makes on the reader's behalf. It is declared on
+       `html` above; `:root` is the same element at higher specificity, so this
+       wins without having to repeat the selector. */
+    scroll-behavior: auto;
   }
 }
 
