@@ -8,6 +8,7 @@ import {
   SiteHeader,
   TypingHeading,
 } from "@/components/site-shell";
+import { BRAND } from "@/config/brand";
 import { SiteFooter } from "@/components/site-footer";
 import { Badge, Card } from "@/design/primitives";
 import { cn } from "@/lib/cn";
@@ -608,7 +609,7 @@ export default function DocsPage() {
             />
 
             <p className="mx-auto mt-[var(--space-4)] max-w-2xl text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--text-muted)] md:text-[length:var(--text-base)] md:leading-[var(--leading-relaxed)]">
-              Track the latest updates, new features, and bug fixes as T.R.A.C.E.
+              Track the latest updates, new features, and bug fixes as {BRAND.name}
               evolves through pre-alpha, with the newest release at the top.
             </p>
 

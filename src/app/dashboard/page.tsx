@@ -23,6 +23,7 @@ import {
   SiteHeader,
   TypingHeading,
 } from "@/components/site-shell";
+import { BRAND } from "@/config/brand";
 import { SiteFooter } from "@/components/site-footer";
 import {
   Badge,
@@ -503,7 +504,7 @@ export default function DashboardPage() {
                 className="text-[length:var(--text-2xl)] text-[var(--text-primary)]"
               />
               <p className="mx-auto mt-[var(--space-3)] max-w-xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] text-[var(--text-muted)]">
-                Create your first project to start building in T.R.A.C.E.
+                Create your first project to start building in {BRAND.name}
               </p>
               <div className="mt-[var(--space-6)]">
                 <Button onClick={openCreateModal} size="lg">
@@ -681,7 +682,7 @@ export default function DashboardPage() {
             />
             <Modal label="New Project" className="relative z-10 w-full max-w-md">
               <div className="mb-[var(--space-2)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] text-[var(--text-muted)]">
-                T.R.A.C.E.
+                {BRAND.displayName}
               </div>
               <TypingHeading
                 text="New Project"

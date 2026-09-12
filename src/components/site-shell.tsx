@@ -407,7 +407,7 @@ export function SiteHeader({
               <div className="relative h-7 w-7">
                 <Image
                   src="/brand/logo-mark.png"
-                  alt="T.R.A.C.E."
+                  alt={BRAND.displayName}
                   fill
                   sizes="28px"
                   className="object-contain"
@@ -675,7 +675,7 @@ export function SurfaceCard({ children, className }: SurfaceCardProps) {
 export function PageHero({
   title,
   description,
-  eyebrow = "T.R.A.C.E.",
+  eyebrow = BRAND.displayName,
   badges,
   footer,
   className,

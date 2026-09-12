@@ -1240,7 +1240,7 @@ function IdePageContent() {
                   <Link
                     href="/dashboard"
                     // The mark's alt text named the product, not the
-                    // destination, so this link announced as "T.R.A.C.E., link"
+                    // destination, so this link announced as "<product>, link"
                     // -- which says what it is a picture of, not where it goes.
                     aria-label="Go to dashboard"
                     className={joinClasses(

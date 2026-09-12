@@ -621,7 +621,7 @@ export default function HomePage() {
             <p
               className={`mx-auto mt-[var(--space-4)] max-w-xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] md:text-[length:var(--text-base)] ${bodyClass}`}
             >
-              T.R.A.C.E. has been used in classrooms, workshops, and tutoring sessions with a wide range of learners. Here’s some of the feedback we’ve heard most often about the experience of using the product in those settings.
+              {BRAND.name} has been used in classrooms, workshops, and tutoring sessions with a wide range of learners. Here’s some of the feedback we’ve heard most often about the experience of using the product in those settings.
             </p>
           </Reveal>
 
@@ -940,10 +940,10 @@ export default function HomePage() {
                   Matthew Wilmot · MIT Undergraduate
                 </div>
                 <p className={`mt-[var(--space-6)] max-w-2xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] md:text-[length:var(--text-base)] ${bodyClass}`}>
-                  T.R.A.C.E. began as an attempt to rethink the relationship between human intent and software creation. Rather than forcing users to begin with syntax, the idea is to let them begin with logic, structure, and thought. The goal is not to remove rigor from programming, but to lower the surface-level friction so that more attention can go toward actual problem solving.
+                  {BRAND.name} began as an attempt to rethink the relationship between human intent and software creation. Rather than forcing users to begin with syntax, the idea is to let them begin with logic, structure, and thought. The goal is not to remove rigor from programming, but to lower the surface-level friction so that more attention can go toward actual problem solving.
                 </p>
                 <p className={`mt-[var(--space-6)] max-w-2xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] md:text-[length:var(--text-base)] ${bodyClass}`}>
-                  The motivation behind the product is both practical and educational: make programming feel more direct for builders, while also making computational thinking more accessible for beginners. T.R.A.C.E. is meant to sit at that intersection, where software creation feels cleaner, more intentional, and more human.
+                  The motivation behind the product is both practical and educational: make programming feel more direct for builders, while also making computational thinking more accessible for beginners. {BRAND.name} is meant to sit at that intersection, where software creation feels cleaner, more intentional, and more human.
                 </p>
               </div>
             </Reveal>
@@ -975,7 +975,7 @@ export default function HomePage() {
                 </div>
 
                 <div className={`mt-[var(--space-8)] border-t border-[var(--border-subtle)] pt-[var(--space-5)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] ${labelClass}`}>
-                  T.R.A.C.E. - Pre-Alpha
+                  {BRAND.displayName} - Pre-Alpha
                 </div>
               </div>
             </Reveal>

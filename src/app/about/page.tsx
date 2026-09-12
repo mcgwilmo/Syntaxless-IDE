@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { BRAND } from "@/config/brand";
 import { SiteFooter } from "@/components/site-footer";
 import {
   AppPageBackground,
@@ -162,7 +163,7 @@ export default function AboutPage() {
                 "text-[var(--text-muted)] md:text-[length:var(--text-lg)]"
               )}
             >
-              T.R.A.C.E. helps people use computer science concepts without
+              {BRAND.name} helps people use computer science concepts without
               first having to learn them through a specific programming
               language. It turns English pseudocode into executable programs
               while keeping the focus on logic, structure, and reasoning.
@@ -190,7 +191,7 @@ export default function AboutPage() {
                 "text-[var(--text-muted)] md:text-[length:var(--text-base)]"
               )}
             >
-              T.R.A.C.E. is designed to combine the accessibility of natural
+              {BRAND.name} is designed to combine the accessibility of natural
               language with the discipline of structured programming. Users can
               specify behavior in English, run it in a browser-based IDE, and
               learn from the logic behind the result.
@@ -221,7 +222,7 @@ export default function AboutPage() {
             >
               The Caribbean opportunity is not just access to AI tools. It is
               the development of students, teachers, institutions, and workers
-              who can apply AI with clarity and confidence. T.R.A.C.E. is built
+              who can apply AI with clarity and confidence. {BRAND.name} is built
               around that application-first strategy.
             </p>
 
