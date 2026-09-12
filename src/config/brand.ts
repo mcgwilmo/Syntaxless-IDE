@@ -3,21 +3,27 @@
  *
  * Everything that encodes "what this product is called" lives here, so a rebrand
  * is a change to this file plus an asset swap -- not a sweep across the codebase.
+ * That held: renaming to Rosetta Code was this file plus eighteen display
+ * strings that had never been routed through it, and no asset change at all --
+ * both marks are geometric and carry no lettering.
  *
- * A rebrand is in progress and the final name is undecided. See
- * `restructure/phase-1-plan.md` for the identifiers that are deliberately NOT
- * driven from here (persisted storage keys and backend prompt text), and why.
+ * See `restructure/phase-1-plan.md` for the identifiers deliberately NOT driven
+ * from here (persisted storage keys and backend prompt text), and why.
  */
 
 export const BRAND = {
   /** Full display name. Used in prose, headings, and metadata. */
-  name: "TRACE",
+  name: "Rosetta Code",
 
-  /** Stylized form, where the letter-spaced treatment is wanted. */
-  displayName: "T.R.A.C.E.",
-
-  /** Expansion of the acronym. Drop this if the next name is not an acronym. */
-  tagline: "Thinking and Reasoning Assisted Coding Environment",
+  /**
+   * Stylized form, where a treatment distinct from `name` is wanted.
+   *
+   * "T.R.A.C.E." set this apart by letter-spacing an acronym. Rosetta Code is
+   * not an acronym and has no such form, so the two are identical for now --
+   * the field stays because call sites distinguish prose from chrome, and a
+   * future name may want the distinction back.
+   */
+  displayName: "Rosetta Code",
 
   /** One-line description used for page metadata and social cards. */
   description:
