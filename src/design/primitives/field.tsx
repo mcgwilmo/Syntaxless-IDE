@@ -63,9 +63,14 @@ export function Field({
           // makes a form look like a row of unpressed buttons.
           "shadow-[var(--recessed)]",
           "transition-[border-color,box-shadow] duration-[var(--duration-fast)] outline-none",
+          // Resting uses --border-control, not the strong hairline. This edge is
+          // the only thing identifying the input as a control -- its fill is
+          // just 1.17 against the card behind it -- so WCAG 1.4.11 applies and
+          // the decorative hairline measured 1.44. Error and focus already pass
+          // on their own colour and are left alone.
           error
             ? "border-[var(--state-blocked)]"
-            : "border-[var(--border-strong)] hover:border-[color-mix(in_srgb,var(--border-strong)_140%,transparent)] focus:border-[var(--accent-solid)]",
+            : "border-[var(--border-control)] hover:border-[color-mix(in_srgb,var(--border-control)_140%,transparent)] focus:border-[var(--accent-solid)]",
           className
         )}
         {...props}

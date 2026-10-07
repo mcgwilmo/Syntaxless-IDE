@@ -449,7 +449,10 @@ function ExplorerTree({
  * is how one of them quietly drifts.
  */
 const BUG_FIELD_CLASS = joinClasses(
-  "w-full rounded-[var(--radius-md)] border border-[var(--border-strong)]",
+  // --border-control, not the strong hairline: same 1.4.11 reasoning as
+    // the Field primitive. A recessed well whose edge is the only thing
+    // marking it as a control.
+    "w-full rounded-[var(--radius-md)] border border-[var(--border-control)]",
   "bg-[var(--surface-sunken)] px-[var(--space-4)] py-[var(--space-3)]",
   "text-[length:var(--text-sm)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
   "shadow-[var(--recessed)] outline-none",

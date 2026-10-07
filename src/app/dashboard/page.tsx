@@ -82,12 +82,15 @@ const CARD_LABEL_CLASS = cn(
  * fill contrast against its own container at all.
  */
 const SELECT_CLASS = cn(
-  "w-full rounded-[var(--radius-md)] border border-[var(--border-strong)]",
+  // --border-control, not the strong hairline: same 1.4.11 reasoning as
+    // the Field primitive. A recessed well whose edge is the only thing
+    // marking it as a control.
+    "w-full rounded-[var(--radius-md)] border border-[var(--border-control)]",
   "bg-[var(--surface-sunken)]",
   "px-[var(--space-4)] py-[var(--space-3)]",
   "text-[length:var(--text-base)] text-[var(--text-primary)]",
   "shadow-[var(--recessed)]",
-  "hover:border-[color-mix(in_srgb,var(--border-strong)_140%,transparent)]",
+  "hover:border-[color-mix(in_srgb,var(--border-control)_140%,transparent)]",
   "outline-none focus:border-[var(--accent-solid)]",
   "transition-[border-color,box-shadow] duration-[var(--duration-fast)]"
 );
