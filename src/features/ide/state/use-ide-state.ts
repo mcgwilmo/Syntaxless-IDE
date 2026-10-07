@@ -25,7 +25,7 @@ import {
 } from "@/lib/supabase/client";
 import { useTheme } from "@/components/theme-provider";
 import { STORAGE_KEYS } from "@/config/brand";
-import { compareRuns } from "@/lib/api";
+import { BACKEND_URL, compareRuns } from "@/lib/api";
 import { BackendUnreachableError } from "@/lib/api/config";
 import type { RunDiff } from "@/lib/api/types";
 import {
@@ -128,7 +128,10 @@ export function useIdeState() {
   const searchParams = useSearchParams();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const { isLight, theme, toggleTheme } = useTheme();
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+  // BACKEND_URL, not a second copy of the same expression. This line used to
+  // re-derive the origin independently, so the localhost fallback had to be
+  // fixed in two places and could drift in one.
+  const backendUrl = BACKEND_URL;
   const wsBaseUrl = useMemo(() => toWsUrl(backendUrl), [backendUrl]);
 
   const contextMenuRef = useRef<HTMLDivElement | null>(null);

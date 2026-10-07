@@ -9,7 +9,7 @@
     "lint": "eslint",
     "copy:monaco": "node scripts/copy-monaco.mjs",
     "predev": "npm run copy:monaco && npm run build:lessons",
-    "prebuild": "npm run copy:monaco && npm run build:lessons",
+    "prebuild": "node scripts/check-env.mjs && npm run copy:monaco && npm run build:lessons",
     "build:lessons": "node scripts/build-lessons.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

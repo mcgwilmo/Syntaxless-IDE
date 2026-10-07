@@ -1,11 +1,30 @@
 /**
  * Where the backend lives, and how we talk to it.
  *
- * `NEXT_PUBLIC_BACKEND_URL` is read at build time, not runtime -- a missing or
- * wrong value fails the build rather than degrading in production.
+ * `NEXT_PUBLIC_BACKEND_URL` is inlined at BUILD time, not read at runtime. There
+ * is no proxy route and no rewrite, so every call goes browser -> backend
+ * directly and changing this value requires a rebuild, not just an env edit.
+ *
+ * It used to fall back to localhost unconditionally, and the comment here
+ * claimed that a missing value "fails the build rather than degrading in
+ * production". It did not. A production build with the variable unset shipped a
+ * bundle pointing at http://127.0.0.1:8000, which on an https origin is a
+ * mixed-content block -- surfacing as the same "Could not reach the backend"
+ * message you get when the backend is genuinely down, so the one failure a
+ * deploy is most likely to cause was also the one hardest to tell apart.
+ *
+ * Now it fails where it is cheap to notice: `scripts/check-env.mjs`, wired to
+ * `prebuild`, refuses to build at all without it. The guard lives there rather
+ * than here deliberately -- this module is evaluated in the BROWSER, not during
+ * the prerender pass, so throwing from here would not stop the build. It would
+ * only move the failure from "deploy is broken for everyone" to "/ide crashes
+ * for everyone", which is louder but no earlier.
+ *
+ * So the default below stays, and is now unreachable in a deployed build.
  */
 
-const RAW_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+const RAW_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL?.trim() || "http://127.0.0.1:8000";
 
 /** Base URL with any trailing slash removed, so path joins never double up. */
 export const BACKEND_URL = RAW_BASE_URL.replace(/\/$/, "");

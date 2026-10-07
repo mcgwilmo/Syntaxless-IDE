@@ -27,6 +27,11 @@ jobs:
       # a check ever needs a real key, that check belongs somewhere else.
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key-not-a-real-credential
+      # Same idea, and now required: scripts/check-env.mjs refuses to build
+      # without a backend origin, because a build that silently defaults to
+      # localhost is how the production IDE ended up unable to reach anything.
+      # CI needs a syntactically valid one; it never calls it.
+      NEXT_PUBLIC_BACKEND_URL: https://placeholder-backend.example.com
 
     steps:
       - uses: actions/checkout@v4
