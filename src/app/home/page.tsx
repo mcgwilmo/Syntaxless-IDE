@@ -17,10 +17,6 @@ import {
   getOrCreateSubscription,
   SUBSCRIPTION_META,
 } from "@/lib/subscriptions";
-import {
-  TestimonialsColumn,
-  type Testimonial,
-} from "@/components/ui/testimonials-columns";
 import { InteractiveImageAccordion } from "@/components/ui/interactive-image-accordion";
 import {
   AlgorithmsInk,
@@ -41,66 +37,6 @@ import { HeroDemo } from "./hero-demo";
 
 const REVEAL_ROOT_MARGIN = "0px 0px -12% 0px";
 
-const testimonials: Testimonial[] = [
-  {
-    text: `${BRAND.name} helped our students focus on the logic behind simple programs first, then read the generated Python to understand how each step was expressed in code.`,
-    image: "https://randomuser.me/api/portraits/women/1.jpg",
-    name: "Briana Patton",
-    role: "Programming Instructor",
-  },
-  {
-    text: "It is a great fit for beginner-friendly exercises. Learners can describe loops, conditions, and list operations in plain language and still see real structure on the other side.",
-    image: "https://randomuser.me/api/portraits/men/2.jpg",
-    name: "Bilal Ahmed",
-    role: "CS Teaching Assistant",
-  },
-  {
-    text: "What stood out most was how clearly it supports algorithm practice. It is not pretending to build full production apps, it is helping people think through problems carefully.",
-    image: "https://randomuser.me/api/portraits/women/3.jpg",
-    name: "Saman Malik",
-    role: "Curriculum Designer",
-  },
-  {
-    text: `Most coding tools push people toward fast output. ${BRAND.name} feels better for learning because it keeps the focus on reasoning, checking steps, and understanding the result.`,
-    image: "https://randomuser.me/api/portraits/men/4.jpg",
-    name: "Omar Raza",
-    role: "Algorithms Tutor",
-  },
-  {
-    text: `We used ${BRAND.name} during a workshop and students were solving small problem sets within minutes. Writing the instructions in plain English made the jump into coding feel much less intimidating.`,
-    image: "https://randomuser.me/api/portraits/women/5.jpg",
-    name: "Zainab Hussain",
-    role: "STEM Workshop Facilitator",
-  },
-  {
-    text: "The browser-based setup removed most of the friction for first-time learners. They could start practicing logic problems right away instead of getting stuck on setup.",
-    image: "https://randomuser.me/api/portraits/women/6.jpg",
-    name: "Aliza Khan",
-    role: "Learning Experience Researcher",
-  },
-  {
-    text: `${BRAND.name} works well for demos because people can follow the reasoning behind each simple program. It makes the process feel teachable instead of opaque.`,
-    image: "https://randomuser.me/api/portraits/men/7.jpg",
-    name: "Farhan Siddiqui",
-    role: "Intro CS Lecturer",
-  },
-  {
-    text: "The interface encourages learners to shape their logic carefully before worrying about syntax. That makes it especially useful for early coding confidence.",
-    image: "https://randomuser.me/api/portraits/women/8.jpg",
-    name: "Sana Sheikh",
-    role: "Beginner Coding Coach",
-  },
-  {
-    text: `For algorithm drills and small programming exercises, ${BRAND.name} sits in a really useful space between pseudocode and actual code. It helps learners practice thinking like programmers.`,
-    image: "https://randomuser.me/api/portraits/men/9.jpg",
-    name: "Hassan Ali",
-    role: "Problem-Solving Mentor",
-  },
-];
-
-const firstTestimonialColumn = testimonials.slice(0, 3);
-const secondTestimonialColumn = testimonials.slice(3, 6);
-const thirdTestimonialColumn = testimonials.slice(6, 9);
 const learningSettings = [
   {
     title: "Classrooms",
@@ -306,8 +242,7 @@ function Reveal({
        * properties. The travel tokens are zeroed in globals.css under
        * prefers-reduced-motion, but translate-y-5 is a literal, so nothing was
        * switching it off: this 20px slide ran at full strength for every reader
-       * who had asked the OS for less motion. See testimonials-columns.tsx,
-       * which already documents the same trap.
+       * who had asked the OS for less motion.
        */
       className={`transition-[transform,opacity] duration-[720ms] ease-[var(--ease-out)] will-change-transform motion-reduce:transition-none motion-reduce:translate-y-0 ${className} ${
         inView ? "translate-y-0" : "translate-y-2"
@@ -363,9 +298,7 @@ function ReviewCard({
     <Reveal inView={inView} delay={delay}>
       {/* A quote is read, not pressed, so the card lies off the page and stays
           put on hover. The top-down accent wash is the card's own tint; the
-          skewed sweep that used to rake across it on hover is gone. See
-          testimonials-columns.tsx, which is the same card and lost the same
-          band for the same reason. */}
+          skewed sweep that used to rake across it on hover is gone. */}
       <div className="relative h-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] bg-[image:var(--material-sheen)] p-[var(--space-6)] shadow-[var(--raised-lg)]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,var(--accent-subtle),transparent_60%)]" />
 
@@ -400,8 +333,6 @@ export default function HomePage() {
   const [currentTier, setCurrentTier] = useState<SubscriptionTier>("free");
 
   const [heroRef, heroInView] = useActiveInView<HTMLElement>();
-  const [overviewRevealRef, overviewRevealInView] =
-    useActiveInView<HTMLDivElement>();
   const [creatorRevealRef, creatorRevealInView] =
     useActiveInView<HTMLDivElement>();
   const [learningCenterRevealRef, learningCenterRevealInView] =
@@ -509,8 +440,8 @@ export default function HomePage() {
               PageBackdrop in site-shell states the rule these were breaking:
               the material system is lit by exactly one source, above and
               slightly forward, and an animated background is a second, moving
-              light. Every other ambient wash in the app -- the accordion strip,
-              the testimonial band, the learning-center header -- is a static
+              light. Every other ambient wash in the app -- the accordion strip
+              and the learning-center header -- is a static
               accent-subtle radial, so these two were also the only ones of
               their kind. Brightening and swelling on a 16s cycle is what made
               them read as a lamp behind the page rather than as the page
@@ -605,56 +536,6 @@ export default function HomePage() {
             isLeaving ? "opacity-100" : "opacity-0"
           }`}
         />
-      </section>
-
-      <section
-        className="relative order-4 px-6 pb-24 pt-24 md:pt-28"
-      >
-        <div ref={overviewRevealRef} className="mx-auto w-full max-w-7xl">
-          <Reveal inView={overviewRevealInView} className="text-center">
-            <div className={`mb-[var(--space-3)] text-[length:var(--text-xs)] uppercase tracking-[var(--tracking-label)] ${labelClass}`}>
-              Testimonials
-            </div>
-            <h2 className={`text-4xl font-bold leading-[1.05] tracking-[-0.045em] md:text-5xl ${titleClass}`}>
-              Hear What Others Say
-            </h2>
-            <p
-              className={`mx-auto mt-[var(--space-4)] max-w-xl text-[length:var(--text-sm)] leading-[var(--leading-relaxed)] md:text-[length:var(--text-base)] ${bodyClass}`}
-            >
-              {BRAND.name} has been used in classrooms, workshops, and tutoring sessions with a wide range of learners. Here’s some of the feedback we’ve heard most often about the experience of using the product in those settings.
-            </p>
-          </Reveal>
-
-          <Reveal inView={overviewRevealInView} delay={120} className="mt-12">
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-x-[10%] top-1/2 h-56 -translate-y-1/2 rounded-full blur-3xl bg-[radial-gradient(circle,var(--accent-subtle),transparent_68%)]" />
-                {/* The columns used to loop forever, and the height cap plus the
-                    top/bottom mask fade existed only to hide the seam where the
-                    loop restarted. The loop is gone, so both would now simply
-                    cut the last quote in half and fade it out -- the grid takes
-                    its natural height instead. */}
-                <div className="relative grid items-start gap-[var(--space-5)] md:grid-cols-2 lg:grid-cols-3">
-                  <TestimonialsColumn
-                    testimonials={firstTestimonialColumn}
-                    inView={overviewRevealInView}
-                    entranceDelay={180}
-                  />
-                  <TestimonialsColumn
-                    testimonials={secondTestimonialColumn}
-                    className="hidden md:block"
-                    inView={overviewRevealInView}
-                    entranceDelay={280}
-                  />
-                  <TestimonialsColumn
-                    testimonials={thirdTestimonialColumn}
-                    className="hidden lg:block"
-                    inView={overviewRevealInView}
-                    entranceDelay={380}
-                  />
-                </div>
-              </div>
-            </Reveal>
-        </div>
       </section>
 
       <section
